@@ -1,0 +1,34 @@
+version: '3'
+
+services:
+  node-api-db:
+    image: postgres:14.5
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=db
+    networks:
+      - dev-network
+    volumes:
+      - ./.docker/dev/postgres:/data/db
+    ports:
+      - "5432:5432"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # node-api-redis:
+  #   image: redis:6.2.8-alpine
+  #   restart: unless-stopped
+  #   networks:
+  #     - dev-network
+  #   volumes:
+  #     - ./.docker/dev/redis:/data/redis
+  #   ports:
+  #     - "6379:6379"
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+
+networks:
+  dev-network:
+    driver: bridge

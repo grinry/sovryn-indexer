@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  node-api:
+    build:
+      context: .
+    image: node-api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - DATABASE_URL=postgresql://postgresql:secret@host.docker.internal:5432/db
+    volumes:
+      - ./logs:/logs
+    networks:
+      - app-network
+    ports:
+      - "8000:8000"
+
+networks:
+  app-network:
+    driver: bridge
