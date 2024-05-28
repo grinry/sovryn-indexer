@@ -1,0 +1,10 @@
+{
+  "dexNetworks": {
+    "gobob": {
+      "chainId": "0xed88",
+      "rpc": "https://rpc.gobob.xyz",
+      "subgraph": "https://bob-ambient-subgraph.sovryn.app/subgraphs/name/DistributedCollective/bob-ambient-subgraph",
+      "multiCall": "0x00"
+    }
+  }
+}
