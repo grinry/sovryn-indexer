@@ -1,18 +1,16 @@
-import Joi from 'joi';
+import Joi, { Schema } from 'joi';
 
-import { CustomError } from './custom-error';
+import { ValidationError } from './custom-error';
 
-export type ValidateReturn = Joi.ValidationResult | null;
+export type ValidateReturn = Joi.ValidationResult;
 
-export const validate = (validator: Joi.Schema, data: unknown): ValidateReturn => {
-  const result = validator.validate(data);
+export const validate = <T extends object>(validator: Schema<T>, data: unknown, options?: Joi.ValidationOptions) => {
+  const result = validator.validate(data, options);
   if (result.error) {
-    throw new CustomError(
-      422,
-      'Validation',
+    throw new ValidationError(
       result.error.message,
       result.error.details.map((detail) => detail.message),
     );
   }
-  return result.error ? result : null;
+  return result.value as T;
 };

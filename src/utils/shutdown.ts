@@ -51,3 +51,5 @@ const closeCallbacks = async (code = 0) =>
     logger.info({ code }, 'Shutdown complete.');
     process.exit(code);
   });
+
+onShutdown();

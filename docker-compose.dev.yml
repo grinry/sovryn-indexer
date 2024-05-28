@@ -17,17 +17,17 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  # node-api-redis:
-  #   image: redis:6.2.8-alpine
-  #   restart: unless-stopped
-  #   networks:
-  #     - dev-network
-  #   volumes:
-  #     - ./.docker/dev/redis:/data/redis
-  #   ports:
-  #     - "6379:6379"
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
+  node-api-redis:
+    image: redis:6.2.8-alpine
+    restart: unless-stopped
+    networks:
+      - dev-network
+    volumes:
+      - ./.docker/dev/redis:/data/redis
+    ports:
+      - "6379:6379"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 networks:
   dev-network:

@@ -1,12 +1,20 @@
 {
-  "dexNetworks": {
-    "gobob": {
-      "chainId": 60808,
-      "rpc": "https://rpc.gobob.xyz",
+  "gobob": {
+    "chainId": 60808,
+    "rpc": "https://rpc.gobob.xyz",
+    "features": ["sdex"],
+    "sdex": {
       "subgraph": "https://bob-ambient-subgraph.sovryn.app/subgraphs/name/DistributedCollective/bob-ambient-subgraph",
-      "queryAddress": "0x1dff4Ff93dF17Ad6F44E23368341CcFb8fB8B675",
-      "impactAddress": "0x30B2a8810B091D1DbE4aAA4905141f815586e274",
-      "multicallAddress": null
+      "query": "0x1dff4Ff93dF17Ad6F44E23368341CcFb8fB8B675",
+      "impact": "0x30B2a8810B091D1DbE4aAA4905141f815586e274"
+    }
+  },
+  "rootstock": {
+    "chainId": 30,
+    "rpc": "https://public-node.rsk.co",
+    "features": ["legacy"],
+    "legacy": {
+      "subgraph": "https://subgraph.sovryn.app/subgraphs/name/DistributedCollective/sovryn-subgraph"
     }
   }
 }

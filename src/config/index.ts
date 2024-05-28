@@ -37,6 +37,12 @@ const config = convict({
     env: 'DATABASE_URL',
     sensitive: true,
   },
+  redisCacheUrl: {
+    doc: 'Redis cache connection URL',
+    format: String,
+    default: 'redis://127.0.0.1:6379/0',
+    env: 'REDIS_CACHE_URL',
+  },
 });
 
 config.validate({ allowed: 'strict' });

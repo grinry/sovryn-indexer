@@ -1,9 +1,11 @@
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 
-import { migrationClient } from './client';
+import config from 'config';
 
 (async () => {
+  const migrationClient = postgres(config.databaseUrl, { max: 1 });
   const db = drizzle(migrationClient);
   const tablenames = await db.execute(sql`SELECT tablename FROM pg_tables WHERE schemaname='public'`);
   const tables = tablenames
