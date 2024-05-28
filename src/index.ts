@@ -1,5 +1,5 @@
-import 'dotenv/config';
 import { startApp } from 'app';
+import config from 'config';
 import { queryFromSubgraph } from 'loader/subgraph';
 import { HttpClient } from 'utils/http-client';
 import { logger } from 'utils/logger';
@@ -10,6 +10,8 @@ logger.info('Sovryn Indexer is starting...');
 startApp();
 
 onShutdown();
+
+console.log('config', config);
 
 queryFromSubgraph(
   'https://subgraph.sovryn.app/subgraphs/name/DistributedCollective/sovryn-subgraph',

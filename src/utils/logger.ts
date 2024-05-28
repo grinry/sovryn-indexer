@@ -1,5 +1,7 @@
 import pino from 'pino';
 
+import config from 'config';
+
 const transport = pino.transport({
   targets: [
     {
@@ -17,4 +19,4 @@ const transport = pino.transport({
   ],
 });
 
-export const logger = pino({ level: 'info', timestamp: pino.stdTimeFunctions.isoTime }, transport);
+export const logger = pino({ level: config.logLevel, timestamp: pino.stdTimeFunctions.isoTime }, transport);

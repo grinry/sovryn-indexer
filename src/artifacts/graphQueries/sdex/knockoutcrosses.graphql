@@ -1,0 +1,18 @@
+query($minTime: BigInt, $maxTime: BigInt, $orderDir: OrderDirection) {
+  knockoutCrosses(first: 1000, where: { block_gte: $minTime, block_lte: $maxTime }, 
+    orderBy: block, orderDirection: $orderDir) {
+    id
+    transactionHash
+    pool {
+      base
+      quote
+      poolIdx
+    }
+    block
+    time
+    tick
+    isBid
+    pivotTime
+    feeMileage
+  }
+}

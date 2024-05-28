@@ -1,5 +1,3 @@
-import 'dotenv/config';
-
 import { drizzle } from 'drizzle-orm/postgres-js';
 
 import { migrationClient } from './client';
