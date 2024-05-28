@@ -26,7 +26,7 @@ const config = convict({
   networks: {
     doc: 'Path to the networks configuration file.',
     format: String,
-    default: 'networks.json',
+    default: 'config/networks.json',
     env: 'NETWORKS',
     arg: 'networks',
   },
