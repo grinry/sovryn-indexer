@@ -1,3 +1,5 @@
+import type { DocumentNode } from 'graphql';
+
 import { queryFromSubgraph } from 'loader/subgraph';
 
 import type { Chain } from './chain-config';
@@ -9,7 +11,7 @@ export class LegacyChain {
     //
   }
 
-  public queryFromSubgraph<T>(query: string, startTime: number, endTime: number, isAsc = true) {
-    return queryFromSubgraph<T>(this.config.subgraph, query, startTime, endTime, isAsc);
+  public queryFromSubgraph<T>(query: DocumentNode, variables: Record<string, unknown> = {}) {
+    return queryFromSubgraph<T>(this.config.subgraph, query as any, variables);
   }
 }

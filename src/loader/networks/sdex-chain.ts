@@ -1,3 +1,5 @@
+import type { DocumentNode } from 'graphql';
+
 import { SdexQuery, SdexQuery__factory } from 'artifacts/abis/types';
 import { queryFromSubgraph } from 'loader/subgraph';
 
@@ -12,7 +14,7 @@ export class SdexChain {
     this.query = SdexQuery__factory.connect(config.query, this.context.rpc);
   }
 
-  public queryFromSubgraph<T>(query: string, startTime: number, endTime: number, isAsc = true) {
-    return queryFromSubgraph<T>(this.config.subgraph, query, startTime, endTime, isAsc);
+  public queryFromSubgraph<T>(query: DocumentNode, variables: Record<string, unknown> = {}) {
+    return queryFromSubgraph<T>(this.config.subgraph, query, variables);
   }
 }

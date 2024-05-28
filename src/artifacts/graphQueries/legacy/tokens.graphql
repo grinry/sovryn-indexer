@@ -1,0 +1,14 @@
+query {
+  tokens {
+    id
+    name
+    symbol
+    decimals
+    version
+    lastPriceUsd
+    lastPriceBtc
+    tokenVolume
+    btcVolume
+    usdVolume
+  }
+}

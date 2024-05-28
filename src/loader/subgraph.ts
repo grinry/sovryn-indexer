@@ -1,3 +1,5 @@
+import { DocumentNode, print } from 'graphql';
+
 import { HttpClient } from 'utils/http-client';
 import { logger } from 'utils/logger';
 import { sleep } from 'utils/sleep';
@@ -11,14 +13,6 @@ type GraphRequest = {
   variables: Record<string, any>;
 };
 
-type GraphRequestVariables = {
-  order: string;
-  minTime: number;
-  maxTime: number;
-};
-
-export type Subgraphquery = string;
-
 type SubgraphResponse<T> =
   | {
       data: T;
@@ -31,31 +25,29 @@ type SubgraphResponse<T> =
 
 export async function queryFromSubgraph<T = unknown>(
   subgraph: string,
-  query: Subgraphquery,
-  startTime: number,
-  endTime: number,
-  isAsc = true,
+  query: DocumentNode,
+  variables: Record<string, any> = {},
 ) {
   try {
-    return await queryFromSubgraphTry<T>(subgraph, query, startTime, endTime, isAsc);
+    return await queryFromSubgraphTry<T>(subgraph, query, variables);
   } catch (error) {
     logger.error('Failed to query subgraph, retrying in ' + SUBGRAPH_RETRY_MS + 'ms', { error });
     await sleep(SUBGRAPH_RETRY_MS);
-    return queryFromSubgraph<T>(subgraph, query, startTime, endTime, isAsc);
+    return queryFromSubgraphTry<T>(subgraph, query, variables);
   }
 }
 
 async function queryFromSubgraphTry<T = unknown>(
   subgraph: string,
-  query: Subgraphquery,
-  startTime: number,
-  endTime: number,
-  isAsc = true,
+  query: DocumentNode,
+  variables: Record<string, any> = {},
 ) {
   const request: GraphRequest = {
-    query,
-    variables: makeSubgraphVariables(startTime, endTime, isAsc),
+    query: print(query),
+    variables,
   };
+
+  logger.info({ subgraph, request }, 'Querying subgraph');
 
   const response = await http.post<SubgraphResponse<T>>(subgraph, request);
 
@@ -68,12 +60,4 @@ async function queryFromSubgraphTry<T = unknown>(
   }
 
   throw new Error('Subgraph query failed: ' + response.statusText);
-}
-
-function makeSubgraphVariables(startTime: number, endTime: number, isAsc: boolean): GraphRequestVariables {
-  return {
-    order: isAsc ? 'asc' : 'desc',
-    minTime: startTime,
-    maxTime: endTime,
-  };
 }
