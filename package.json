@@ -7,9 +7,11 @@
   "private": true,
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "typechain": "typechain --target ethers-v6 --out-dir src/types",
+    "typechain": "typechain --target ethers-v6 --out-dir src/artifacts/abis/types './src/artifacts/abis/**/*.json' --always-generate-overloads --discriminate-types",
     "dev": "debug=* NODE_PATH=./src ts-node-dev --respawn --exit-child ./src/index.ts",
+    "predev": "pnpm run typechain",
     "build": "rimraf build && tsc",
+    "prebuild": "pnpm run typechain",
     "start": "NODE_ENV=production NODE_PATH=./build node ./build/index.js",
     "docker:dev": "./scripts/dev.sh",
     "docker:bash": "docker-compose exec sovryn-indexer bash",

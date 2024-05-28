@@ -6,6 +6,7 @@ dist/
 tmp/
 temp/
 logs/
+src/artifacts/abis/types/
 
 database/*
 !database/.gitkeep
