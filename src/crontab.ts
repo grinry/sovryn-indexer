@@ -10,7 +10,7 @@ export const tickWrapper = (fn: (context: CronJob) => Promise<void>) => {
 
 export const startCrontab = () => {
   CronJob.from({
-    cronTime: '0 */2 * * * * *',
+    cronTime: '0 */2 * * * *',
     onTick: tickWrapper(retrieveTokens),
   }).start();
 };
