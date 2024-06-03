@@ -1,0 +1,7 @@
+query($limit: Int) {
+  pools(first: $limit, orderBy: blockCreate) {
+    base
+    quote
+    poolIdx
+  }
+}

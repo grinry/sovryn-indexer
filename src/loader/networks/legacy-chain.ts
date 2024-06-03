@@ -14,4 +14,8 @@ export class LegacyChain {
   public queryFromSubgraph<T>(query: DocumentNode, variables: Record<string, unknown> = {}) {
     return queryFromSubgraph<T>(this.config.subgraph, query as any, variables);
   }
+
+  toString() {
+    return this.context.chainId;
+  }
 }

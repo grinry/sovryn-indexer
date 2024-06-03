@@ -1,3 +1,6 @@
+import { Response } from 'express';
+
+import { toResponse } from './http-response';
 import { logger } from './logger';
 import { redis } from './redis-client';
 
@@ -32,6 +35,25 @@ export async function maybeCache<T>(
     data: result,
     cache: 'miss',
   };
+}
+
+export async function maybeCacheResponse<T>(
+  res: Response,
+  key: string,
+  fn: () => Promise<T>,
+  cacheDurationInSeconds: number,
+) {
+  res.setHeader('Cache-Control', `public, max-age=${cacheDurationInSeconds}`);
+
+  const { data, cache } = await maybeCache(key, fn, cacheDurationInSeconds);
+
+  if (cache === 'hit') {
+    res.setHeader('X-Cache', 'HIT');
+  } else {
+    res.setHeader('X-Cache', 'MISS');
+  }
+
+  return res.json(toResponse(data));
 }
 
 export const cache = {

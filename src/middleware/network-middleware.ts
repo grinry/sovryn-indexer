@@ -18,7 +18,7 @@ export const networkAwareMiddleware =
       { allowUnknown: true },
     );
 
-    const network = networks.getByChainId(chainId);
+    const network = networks.getByChainId(Number(chainId));
 
     if (!network || !features.every((feature) => network.hasFeature(feature))) {
       throw new BadRequestError('Unsupported network: ' + chainId);

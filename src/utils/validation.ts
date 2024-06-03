@@ -14,3 +14,12 @@ export const validate = <T extends object>(validator: Schema<T>, data: unknown, 
   }
   return result.value as T;
 };
+
+export const validatePaginated = (data: unknown) => {
+  const schema = Joi.object({
+    cursor: Joi.string().optional().default(null),
+    limit: Joi.number().min(1).max(1000).optional().default(100),
+  });
+
+  return validate<{ cursor: string | null; limit: number }>(schema, data, { allowUnknown: true, abortEarly: true });
+};

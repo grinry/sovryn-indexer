@@ -10,6 +10,7 @@ import { validateConfig } from './utils';
 
 export class Chain {
   readonly chainId: number;
+  readonly chainIdHex: string;
   readonly rpc: JsonRpcProvider;
   readonly supportsMulticall: boolean = false;
 
@@ -23,6 +24,7 @@ export class Chain {
     validateConfig(name, config);
 
     this.chainId = config.chainId;
+    this.chainIdHex = '0x' + config.chainId.toString(16);
     this.rpc = getProvider(config.rpc);
     this.supportsMulticall = !!config.multicall;
     this.features = config.features;
@@ -41,5 +43,12 @@ export class Chain {
 
   hasFeature(feature: NetworkFeature) {
     return this.features.includes(feature);
+  }
+
+  toJSON() {
+    return {
+      chainId: this.chainId,
+      features: this.features,
+    };
   }
 }

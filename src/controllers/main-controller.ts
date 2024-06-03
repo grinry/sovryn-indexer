@@ -1,15 +1,19 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import gql from 'graphql-tag';
 
+import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { networks } from 'loader/networks';
-import { maybeCache } from 'utils/cache';
+import { maybeCache, maybeCacheResponse } from 'utils/cache';
 import { toResponse } from 'utils/http-response';
+import { asyncRoute } from 'utils/route-wrapper';
 
 const router = Router();
 
-router.get('/chains', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { data } = await maybeCache(
+router.get(
+  '/chains',
+  asyncRoute(async (req: Request, res: Response) =>
+    maybeCacheResponse(
+      res,
       'chains',
       async () =>
         networks.networks.map((network) => {
@@ -20,14 +24,10 @@ router.get('/chains', async (req: Request, res: Response, next: NextFunction) =>
             features: chain.features,
           };
         }),
-      60,
-    );
-
-    return res.json(toResponse(data));
-  } catch (e) {
-    return next(e);
-  }
-});
+      DEFAULT_CACHE_TTL,
+    ),
+  ),
+);
 
 router.get('/tokens', async (req: Request, res: Response, next: NextFunction) => {
   try {
