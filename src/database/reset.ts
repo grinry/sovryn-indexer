@@ -23,7 +23,7 @@ import config from 'config';
       await db.execute(sql`DROP TABLE ${sql.raw(`"public"."${table.tablename}"`)} CASCADE;`);
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
   await migrationClient.end();
 })();

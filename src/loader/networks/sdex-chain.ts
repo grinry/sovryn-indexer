@@ -8,7 +8,6 @@ import type { Chain } from './chain-config';
 import type { SdexChainConfig } from './types';
 
 const gglPools = loadGqlFromArtifacts('graphQueries/sdex/pools.graphql');
-console.log(gglPools);
 
 export class SdexChain {
   readonly query: SdexQuery;
