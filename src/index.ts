@@ -1,10 +1,8 @@
-import 'dotenv/config';
-import { startApp } from 'app';
-import { logger } from 'utils/logger';
-import { onShutdown } from 'utils/shutdown';
+import 'config';
+import 'utils/shutdown';
 
-logger.info('Sovryn Indexer is starting...');
+import { startApp } from 'app';
+import { startCrontab } from 'crontab';
 
 startApp();
-
-onShutdown();
+startCrontab();

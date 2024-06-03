@@ -18,31 +18,38 @@ export function onShutdown(callback?: () => void) {
   process.on('SIGINT', exitHandler);
   process.on('SIGTERM', exitHandler);
 
+  process.on('unhandledRejection', (err) => {
+    logger.fatal(err, 'Uncaught rejection detected');
+  });
+
   process.on('uncaughtException', (err) => {
     logger.fatal(err, 'Uncaught exception detected');
 
-    shuttingDown = true;
-    Promise.allSettled(callbacks.map((cb) => cb())).finally(() => {
-      process.exit(1);
-    });
+    closeCallbacks(1);
 
     // If a graceful shutdown is not achieved after 2 seconds,
     // shut down the process completely
     setTimeout(() => {
+      logger.fatal('Unable to shut down gracefully, force shutting down...');
       process.abort();
     }, 2000).unref();
-    process.exit(1);
   });
 }
 
-function exitHandler(code = 0) {
+async function exitHandler(signal: NodeJS.Signals) {
   if (shuttingDown) {
+    // already shutting down
     return;
   }
-
-  logger.info('Gracefull shutdown requested...');
   shuttingDown = true;
+  logger.info({ signal }, 'Shutting service down...');
+  await closeCallbacks(0);
+}
+
+const closeCallbacks = async (code = 0) =>
   Promise.allSettled(callbacks.map((cb) => cb())).finally(() => {
+    logger.info({ code }, 'Shutdown complete.');
     process.exit(code);
   });
-}
+
+onShutdown();

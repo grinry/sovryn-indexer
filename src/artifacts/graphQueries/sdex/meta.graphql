@@ -1,0 +1,9 @@
+{
+  _meta {
+    block {
+      hash
+      number
+      timestamp
+    }
+  }
+}

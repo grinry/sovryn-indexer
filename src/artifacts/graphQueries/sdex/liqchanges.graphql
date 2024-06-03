@@ -1,0 +1,25 @@
+query($minTime: BigInt, $maxTime: BigInt, $orderDir: OrderDirection) {
+  liquidityChanges(first: 1000, where: { block_gte: $minTime, block_lte: $maxTime }, 
+    orderBy: block, orderDirection: $orderDir) {
+    id
+    transactionHash
+    callIndex
+    user
+    pool {
+      base
+      quote
+      poolIdx
+    }
+    block
+    time
+    positionType
+    changeType
+    bidTick
+    askTick
+    isBid
+    liq
+    baseFlow
+    quoteFlow
+    pivotTime
+  }
+}
