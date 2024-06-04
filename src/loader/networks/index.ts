@@ -36,6 +36,10 @@ class NetworkConfigs {
   public getByChainId(chainId: number) {
     return this._chains.get(chainId);
   }
+
+  public listChains() {
+    return Array.from(this._chains.values());
+  }
 }
 
 export const networks = new NetworkConfigs(JSON.parse(readFileSync(path, 'utf-8')) as NetworkConfigFile);

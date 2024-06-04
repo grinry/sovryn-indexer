@@ -5,7 +5,7 @@ import { getProvider } from 'utils/rpc/rpc';
 
 import { LegacyChain } from './legacy-chain';
 import { SdexChain } from './sdex-chain';
-import { NetworkConfig, NetworkFeature } from './types';
+import { NativeNetworkToken, NetworkConfig, NetworkFeature } from './types';
 import { validateConfig } from './utils';
 
 export class Chain {
@@ -19,6 +19,7 @@ export class Chain {
   readonly features: NetworkFeature[];
   readonly sdex: SdexChain;
   readonly legacy: LegacyChain;
+  readonly token: NativeNetworkToken;
 
   constructor(public readonly name: string, config: NetworkConfig) {
     validateConfig(name, config);
@@ -28,6 +29,7 @@ export class Chain {
     this.rpc = getProvider(config.rpc);
     this.supportsMulticall = !!config.multicall;
     this.features = config.features;
+    this.token = config.token;
 
     if (this.supportsMulticall) {
       this.multicall = Multicall__factory.connect(config.multicall, this.rpc);

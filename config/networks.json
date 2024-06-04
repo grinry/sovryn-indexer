@@ -3,6 +3,11 @@
     "chainId": 60808,
     "rpc": "https://rpc.gobob.xyz",
     "features": ["sdex"],
+    "token": {
+      "symbol": "ETH",
+      "name": "Ethereum (L2 / GoBob)",
+      "decimals": 18
+    },
     "sdex": {
       "subgraph": "https://bob-ambient-subgraph.sovryn.app/subgraphs/name/DistributedCollective/bob-ambient-subgraph",
       "query": "0x1dff4Ff93dF17Ad6F44E23368341CcFb8fB8B675",
@@ -13,6 +18,11 @@
     "chainId": 30,
     "rpc": "https://public-node.rsk.co",
     "features": ["legacy"],
+    "token": {
+      "symbol": "RBTC",
+      "name": "Rootstock RSK",
+      "decimals": 18
+    },
     "legacy": {
       "subgraph": "https://subgraph.sovryn.app/subgraphs/name/DistributedCollective/sovryn-subgraph"
     }

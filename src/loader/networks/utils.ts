@@ -8,6 +8,11 @@ export function validateConfig(name: string, config: NetworkConfig) {
     rpc: Joi.string().required(),
     multicall: Joi.string(),
     features: Joi.array().items(Joi.valid(NetworkFeature.sdex, NetworkFeature.legacy)).required(),
+    token: Joi.object({
+      symbol: Joi.string().required(),
+      name: Joi.string().required(),
+      decimals: Joi.number().min(0).required(),
+    }).required(),
     sdex: Joi.optional(),
     legacy: Joi.optional(),
   }).validate(config ?? {});

@@ -1,7 +1,9 @@
 import { Response } from 'express';
+import { isArray } from 'lodash';
 
 import { toResponse } from './http-response';
 import { logger } from './logger';
+import { PaginationOptions } from './pagination';
 import { redis } from './redis-client';
 
 export type CacheResponse<T> = {
@@ -53,7 +55,7 @@ export async function maybeCacheResponse<T>(
     res.setHeader('X-Cache', 'MISS');
   }
 
-  return res.json(toResponse(data));
+  return data;
 }
 
 export const cache = {
