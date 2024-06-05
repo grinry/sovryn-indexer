@@ -20,7 +20,7 @@
     "features": ["legacy"],
     "token": {
       "symbol": "RBTC",
-      "name": "Rootstock RSK",
+      "name": "Rootstock Smart Bitcoin",
       "decimals": 18
     },
     "legacy": {
