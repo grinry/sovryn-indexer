@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { pgTable, timestamp, varchar, integer, unique, serial } from 'drizzle-orm/pg-core';
 
 export const tokens = pgTable(
@@ -10,7 +11,9 @@ export const tokens = pgTable(
     chainId: integer('chain_id').notNull(),
     address: varchar('address', { length: 64 }),
     createdAt: timestamp('created_at').defaultNow(),
-    updatedAt: timestamp('updated_at').defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => sql`CURRENT_TIMESTAMP`),
   },
   (t) => ({
     chain_address_pkey: unique('chain_address_pkey').on(t.chainId, t.address),

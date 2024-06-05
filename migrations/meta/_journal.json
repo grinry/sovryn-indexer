@@ -1,5 +1,13 @@
 {
   "version": "5",
   "dialect": "pg",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1717575406565,
+      "tag": "0000_gifted_johnny_storm",
+      "breakpoints": true
+    }
+  ]
 }
