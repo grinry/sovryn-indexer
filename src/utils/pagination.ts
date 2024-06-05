@@ -128,3 +128,8 @@ export const createApiQuery = (
   keyFn: (key: string) => PgColumn,
   options: Partial<PaginationOptions> = {},
 ) => new ApiQuery(column, sortBy, keyFn, options);
+
+export const subgraphPaginationOptions = (opts: PaginationOptions) => ({
+  first: opts.limit,
+  skip: opts.cursor ? Number(opts.cursor) : 0,
+});

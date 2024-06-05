@@ -36,6 +36,13 @@ async function prepareLegacyTokens(chain: LegacyChain) {
   try {
     logger.info(`Preparing legacy tokens for chain ${chain.context.chainId}`);
     const items = await chain.queryTokens();
+    items.tokens.push({
+      id: ZeroAddress,
+      name: chain.context.token.name,
+      symbol: chain.context.token.symbol,
+      decimals: chain.context.token.decimals,
+      lastPriceUsd: '0',
+    });
 
     if (items.tokens.length === 0) {
       logger.info('No tokens to add for legacy chain');

@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
 import config from 'config';
+import { logger } from 'utils/logger';
 import { onShutdown } from 'utils/shutdown';
 
 import * as schemas from './schema';
@@ -9,7 +10,9 @@ import * as schemas from './schema';
 export const queryClient = postgres(config.databaseUrl);
 
 export const db = drizzle(queryClient, {
-  logger: true,
+  logger: {
+    logQuery: (query: string, params: unknown[]) => logger.debug({ params }, `Query: ${query}`),
+  },
   schema: schemas,
 });
 
