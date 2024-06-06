@@ -5,11 +5,18 @@ export enum NetworkFeature {
   legacy = 'legacy',
 }
 
+export type NativeNetworkToken = {
+  symbol: string;
+  name: string;
+  decimals: number;
+}
+
 export type NetworkConfig = {
   chainId: number;
   rpc: string;
   multicall: string;
   features: NetworkFeature[];
+  token: NativeNetworkToken;
   sdex?: SdexChainConfig;
   legacy?: LegacyChainConfig;
 };

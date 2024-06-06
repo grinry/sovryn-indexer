@@ -43,6 +43,13 @@ const config = convict({
     default: 'redis://127.0.0.1:6379/0',
     env: 'REDIS_CACHE_URL',
   },
+  readOnly: {
+    doc: 'Read-only mode',
+    format: Boolean,
+    default: false,
+    env: 'READ_ONLY_MODE',
+    arg: 'readOnly',
+  },
 });
 
 config.validate({ allowed: 'strict' });

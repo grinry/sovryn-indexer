@@ -3,6 +3,12 @@
     "chainId": 111,
     "rpc": "https://testnet.rpc.gobob.xyz",
     "features": ["sdex"],
+    "multicall": null,
+    "token": {
+      "symbol": "ETH",
+      "name": "Ethereum (L2 / GoBob)",
+      "decimals": 18
+    },
     "sdex": {
       "subgraph": "https://bob-ambient-subgraph.test.sovryn.app/subgraphs/name/DistributedCollective/bob-ambient-subgraph",
       "query": "0x35a4dd53C1AEd1AFD48659175ab3981f3C39493F",
@@ -12,7 +18,13 @@
   "rootstock": {
     "chainId": 31,
     "rpc": "https://public-node.testnet.rsk.co",
-    "features": ["legacy"],
+    "features": ["legacy"],    
+    "multicall": "0x9e469e1fc7fb4c5d17897b68eaf1afc9df39f103",
+    "token": {
+      "symbol": "RBTC",
+      "name": "Rootstock Smart Bitcoin",
+      "decimals": 18
+    },
     "legacy": {
       "subgraph": "https://subgraph.test.sovryn.app/subgraphs/name/DistributedCollective/sovryn-subgraph"
     }
