@@ -1,6 +1,6 @@
 import { CronJob } from 'cron';
 import { and, eq, inArray } from 'drizzle-orm';
-import { Contract, ZeroAddress } from 'ethers';
+import { Contract, Interface, ZeroAddress } from 'ethers';
 import _, { difference, uniq } from 'lodash';
 
 import { db } from 'database/client';
@@ -99,7 +99,9 @@ async function prepareSdexTokens(chain: SdexChain) {
           name: tokenInfo.name,
           decimals: tokenInfo.decimals,
         })
-        .onConflictDoNothing()
+        .onConflictDoNothing({
+          target: [tokens.chainId, tokens.address],
+        })
         .returning({ id: tokens.id })
         .execute();
       added.push(t);
@@ -127,11 +129,12 @@ async function getTokensToAdd(tokenAddresses: string[], chainId: number) {
   );
 }
 
-const tokenInterface = [
+const tokenAbi = [
   'function symbol() view returns (string)',
   'function name() view returns (string)',
   'function decimals() view returns (uint8)',
 ];
+const tokenInterface = new Interface(tokenAbi);
 
 async function queryTokenInfo(chain: Chain, tokenAddress: string) {
   if (tokenAddress === ZeroAddress) {
@@ -141,13 +144,34 @@ async function queryTokenInfo(chain: Chain, tokenAddress: string) {
       decimals: chain.token.decimals,
     };
   }
-  const contract = new Contract(tokenAddress, tokenInterface, chain.rpc);
-  const symbol = await contract.symbol();
-  const name = await contract.name();
-  const decimals = await contract.decimals();
-  return {
-    symbol,
-    name,
-    decimals,
-  };
+
+  if (chain.supportsMulticall) {
+    return chain.multicall.tryAggregate
+      .staticCall(true, [
+        {
+          target: tokenAddress,
+          callData: tokenInterface.encodeFunctionData('symbol'),
+        },
+        {
+          target: tokenAddress,
+          callData: tokenInterface.encodeFunctionData('name'),
+        },
+        {
+          target: tokenAddress,
+          callData: tokenInterface.encodeFunctionData('decimals'),
+        },
+      ])
+      .then((value) => ({
+        symbol: tokenInterface.decodeFunctionResult('symbol', value[0][1]).toString(),
+        name: tokenInterface.decodeFunctionResult('name', value[1][1]).toString(),
+        decimals: Number(tokenInterface.decodeFunctionResult('decimals', value[2][1])),
+      }));
+  } else {
+    const contract = new Contract(tokenAddress, tokenAbi, chain.rpc);
+    return {
+      symbol: await contract.symbol(),
+      name: await contract.name(),
+      decimals: await contract.decimals(),
+    };
+  }
 }

@@ -3,6 +3,7 @@
     "chainId": 111,
     "rpc": "https://testnet.rpc.gobob.xyz",
     "features": ["sdex"],
+    "multicall": null,
     "token": {
       "symbol": "ETH",
       "name": "Ethereum (L2 / GoBob)",
@@ -18,6 +19,7 @@
     "chainId": 31,
     "rpc": "https://public-node.testnet.rsk.co",
     "features": ["legacy"],    
+    "multicall": "0x9e469e1fc7fb4c5d17897b68eaf1afc9df39f103",
     "token": {
       "symbol": "RBTC",
       "name": "Rootstock Smart Bitcoin",
