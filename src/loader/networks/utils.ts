@@ -7,6 +7,7 @@ export function validateConfig(name: string, config: NetworkConfig) {
     chainId: Joi.number().required(),
     rpc: Joi.string().required(),
     multicall: Joi.string(),
+    stablecoin: Joi.string().required(),
     features: Joi.array().items(Joi.valid(NetworkFeature.sdex, NetworkFeature.legacy)).required(),
     token: Joi.object({
       symbol: Joi.string().required(),
@@ -45,6 +46,7 @@ function validateSdexConfig(name: string, config: SdexChainConfig) {
 function validateLegacyConfig(name: string, config: LegacyChainConfig) {
   const result = Joi.object({
     subgraph: Joi.string().required(),
+    native: Joi.string().required(),
   }).validate(config ?? {});
 
   if (result.error) {

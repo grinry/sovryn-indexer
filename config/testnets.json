@@ -4,6 +4,7 @@
     "rpc": "https://testnet.rpc.gobob.xyz",
     "features": ["sdex"],
     "multicall": null,
+    "stablecoin": "0x9Fddb3a3D9a014A2A1F85DB3ebF6Ba5E26F4e5Ad",
     "token": {
       "symbol": "ETH",
       "name": "Ethereum (L2 / GoBob)",
@@ -20,13 +21,15 @@
     "rpc": "https://public-node.testnet.rsk.co",
     "features": ["legacy"],    
     "multicall": "0x9e469e1fc7fb4c5d17897b68eaf1afc9df39f103",
+    "stablecoin": "0xa9262cc3fb54ea55b1b0af00efca9416b8d59570",
     "token": {
       "symbol": "RBTC",
       "name": "Rootstock Smart Bitcoin",
       "decimals": 18
     },
     "legacy": {
-      "subgraph": "https://subgraph.test.sovryn.app/subgraphs/name/DistributedCollective/sovryn-subgraph"
+      "subgraph": "https://subgraph.test.sovryn.app/subgraphs/name/DistributedCollective/sovryn-subgraph",
+      "native": "0x69FE5cEC81D5eF92600c1A0dB1F11986AB3758Ab"
     }
   }
 }

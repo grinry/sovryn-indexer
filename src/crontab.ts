@@ -1,6 +1,7 @@
 import { CronJob } from 'cron';
 
 import { retrieveTokens } from 'cronjobs/retrieve-tokens';
+import { retrieveUsdPrices } from 'cronjobs/retrieve-usd-prices';
 
 export const tickWrapper = (fn: (context: CronJob) => Promise<void>) => {
   return async function () {
@@ -9,9 +10,17 @@ export const tickWrapper = (fn: (context: CronJob) => Promise<void>) => {
 };
 
 export const startCrontab = () => {
+  // Check and populate supported token list every 2 minutes
+  // CronJob.from({
+  //   // cronTime: '*/10 * * * * *',
+  //   cronTime: '0 */2 * * * *',
+  //   onTick: tickWrapper(retrieveTokens),
+  // }).start();
+
+  // Retrieve USD prices of tokens every minute
   CronJob.from({
-    // cronTime: '*/10 * * * * *',
-    cronTime: '0 */2 * * * *',
-    onTick: tickWrapper(retrieveTokens),
+    cronTime: '0 * * * * *',
+    onTick: tickWrapper(retrieveUsdPrices),
+    runOnInit: true,
   }).start();
 };
