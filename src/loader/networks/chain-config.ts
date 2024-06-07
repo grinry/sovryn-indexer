@@ -1,6 +1,8 @@
 import { JsonRpcProvider } from 'ethers';
 
 import { Multicall, Multicall__factory } from 'artifacts/abis/types';
+import { db } from 'database/client';
+import { chains } from 'database/schema/chains';
 import { getProvider } from 'utils/rpc/rpc';
 
 import { LegacyChain } from './legacy-chain';
