@@ -8,7 +8,7 @@ import { db } from 'database/client';
 import { validate } from './validation';
 
 const MAX_PAGINATION_LIMIT = 1000;
-const DEFAULT_PAGINATION_LIMIT = 300;
+const DEFAULT_PAGINATION_LIMIT = 500;
 
 export type PaginationOptions = {
   cursor: string | null;

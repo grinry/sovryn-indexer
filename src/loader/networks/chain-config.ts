@@ -1,6 +1,8 @@
 import { JsonRpcProvider } from 'ethers';
 
 import { Multicall, Multicall__factory } from 'artifacts/abis/types';
+import { db } from 'database/client';
+import { chains } from 'database/schema/chains';
 import { getProvider } from 'utils/rpc/rpc';
 
 import { LegacyChain } from './legacy-chain';
@@ -15,6 +17,7 @@ export class Chain {
   readonly supportsMulticall: boolean = false;
 
   readonly multicall: Multicall;
+  readonly stablecoinAddress: string;
 
   readonly features: NetworkFeature[];
   readonly sdex: SdexChain;
@@ -30,6 +33,7 @@ export class Chain {
     this.supportsMulticall = !!config.multicall;
     this.features = config.features;
     this.token = config.token;
+    this.stablecoinAddress = config.stablecoin.toLowerCase();
 
     if (this.supportsMulticall) {
       this.multicall = Multicall__factory.connect(config.multicall, this.rpc);

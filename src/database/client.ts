@@ -11,7 +11,7 @@ export const queryClient = postgres(config.databaseUrl);
 
 export const db = drizzle(queryClient, {
   logger: {
-    logQuery: (query: string, params: unknown[]) => logger.debug({ params }, `Query: ${query}`),
+    logQuery: (query: string, params: unknown[]) => logger.info({ params }, `Query: ${query}`),
   },
   schema: schemas,
 });

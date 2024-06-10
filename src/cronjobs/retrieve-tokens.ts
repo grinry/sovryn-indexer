@@ -12,9 +12,11 @@ import { SdexChain } from 'loader/networks/sdex-chain';
 import { NetworkFeature } from 'loader/networks/types';
 import { logger } from 'utils/logger';
 
+const childLogger = logger.child({ module: 'crontab:retrieve-tokens' });
+
 export const retrieveTokens = async (ctx: CronJob) => {
   ctx.stop();
-  logger.info('Retrieving tokens...');
+  childLogger.info('Retrieving tokens...');
 
   const items = networks.listChains();
 
@@ -27,14 +29,14 @@ export const retrieveTokens = async (ctx: CronJob) => {
     }
   }
 
-  logger.info('Tokens retrieval finished.');
+  childLogger.info('Tokens retrieval finished.');
 
   ctx.start();
 };
 
 async function prepareLegacyTokens(chain: LegacyChain) {
   try {
-    logger.info(`Preparing legacy tokens for chain ${chain.context.chainId}`);
+    childLogger.info(`Preparing legacy tokens for chain ${chain.context.chainId}`);
     const items = await chain.queryTokens();
     items.tokens.push({
       id: ZeroAddress,
@@ -45,7 +47,7 @@ async function prepareLegacyTokens(chain: LegacyChain) {
     });
 
     if (items.tokens.length === 0) {
-      logger.info('No tokens to add for legacy chain');
+      childLogger.info('No tokens to add for legacy chain');
       return;
     }
 
@@ -64,15 +66,15 @@ async function prepareLegacyTokens(chain: LegacyChain) {
       .returning({ id: tokens.id })
       .execute();
 
-    logger.info(`Added ${result.length} new tokens for chain ${chain.context.chainId}`);
+    childLogger.info(`Added ${result.length} new tokens for chain ${chain.context.chainId}`);
   } catch (error) {
-    logger.error(error, 'Error while preparing Sdex tokens');
+    childLogger.error(error, 'Error while preparing Sdex tokens');
   }
 }
 
 async function prepareSdexTokens(chain: SdexChain) {
   try {
-    logger.info(`Preparing Sdex tokens for chain ${chain.context.chainId}`);
+    childLogger.info(`Preparing Sdex tokens for chain ${chain.context.chainId}`);
     const items = await chain.queryPools(1000);
     const tokensInPools = [];
     for (const item of items.pools) {
@@ -82,7 +84,7 @@ async function prepareSdexTokens(chain: SdexChain) {
     const toAdd = await getTokensToAdd(tokensInPools, chain.context.chainId);
 
     if (toAdd.length === 0) {
-      logger.info('No tokens to add for Sdex chain');
+      childLogger.info('No tokens to add for Sdex chain');
       return;
     }
 
@@ -107,9 +109,9 @@ async function prepareSdexTokens(chain: SdexChain) {
       added.push(t);
     }
 
-    logger.info(`Added ${added.length} new tokens for chain ${chain.context.chainId} (SDEX)`);
+    childLogger.info(`Added ${added.length} new tokens for chain ${chain.context.chainId} (SDEX)`);
   } catch (error) {
-    logger.error(error, 'Error while preparing Sdex tokens');
+    childLogger.error(error, 'Error while preparing Sdex tokens');
   }
 }
 

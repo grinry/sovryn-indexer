@@ -3,6 +3,8 @@ import { resolve } from 'path';
 import { cwd } from 'process';
 
 import config from 'config';
+import { db } from 'database/client';
+import { chains } from 'database/schema/chains';
 import { logger } from 'utils/logger';
 
 import { Chain } from './chain-config';
@@ -44,3 +46,24 @@ class NetworkConfigs {
 
 export const networks = new NetworkConfigs(JSON.parse(readFileSync(path, 'utf-8')) as NetworkConfigFile);
 logger.info(`Network configs loaded: ${networks.networks.join(', ')}`);
+
+export const updateChains = async () => {
+  const items = networks.listChains();
+  for (const chain of items) {
+    await db
+      .insert(chains)
+      .values({
+        id: chain.chainId,
+        name: chain.name,
+        stablecoinAddress: chain.stablecoinAddress,
+      })
+      .onConflictDoUpdate({
+        target: [chains.id],
+        set: {
+          name: chain.name,
+          stablecoinAddress: chain.stablecoinAddress,
+        },
+      })
+      .execute();
+  }
+};
