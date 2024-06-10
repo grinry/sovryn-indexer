@@ -41,7 +41,7 @@ export const retrieveUsdPrices = async (ctx: CronJob) => {
   const chains = Object.keys(tokensByChain).map((item) => networks.getByChainId(Number(item))!);
 
   for (const chain of chains) {
-    // if legacy supported, process all tokens throught it, because we can get prices of all tokens with single subgraph query.
+    // if legacy supported, process all tokens through it, because we can get prices of all tokens with single subgraph query.
     if (chain.hasFeature(NetworkFeature.legacy)) {
       await prepareLegacyTokens(chain.legacy, tickAt, tokensByChain[chain.chainId]);
     } else if (chain.hasFeature(NetworkFeature.sdex)) {

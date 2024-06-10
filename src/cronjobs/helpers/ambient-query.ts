@@ -1,5 +1,3 @@
-import { formatEther, parseEther, parseUnits } from 'ethers';
-
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { decodeCrocPrice, toDisplayPrice } from 'utils/price';
 

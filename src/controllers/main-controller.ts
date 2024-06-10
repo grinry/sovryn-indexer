@@ -43,7 +43,7 @@ router.get(
     const p = validatePaginatedRequest(req);
     return maybeCacheResponse(
       res,
-      `tokenss/${chainId ?? 0}/${p.limit}/${p.cursor}`,
+      `tokens/${chainId ?? 0}/${p.limit}/${p.cursor}`,
       async () => {
         const quoteToken = alias(tokens, 'quote_token');
         const chain = alias(chains, 'chain');
