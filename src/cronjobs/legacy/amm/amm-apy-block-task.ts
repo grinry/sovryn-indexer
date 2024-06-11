@@ -49,7 +49,7 @@ async function processLegacyChain(chain: LegacyChain) {
     data.flatMap((x) => x),
   );
 
-  const added = await apyBlockRepository.createBlockRow(items).returning({ id: ammApyBlocks.id }).execute();
+  const added = await apyBlockRepository.storeItems(items).returning({ id: ammApyBlocks.id }).execute();
 
   const duration = (Date.now() - startTime) / 1000;
   childLogger.info(

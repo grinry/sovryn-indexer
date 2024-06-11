@@ -1,7 +1,6 @@
 import { pgTable, timestamp, serial, integer, varchar, decimal, index, char, unique } from 'drizzle-orm/pg-core';
 
 import { chains } from '../chains';
-import { tokens } from '../tokens';
 
 export const ammApyBlocks = pgTable(
   'legacy_amm__apy_blocks',
@@ -25,9 +24,7 @@ export const ammApyBlocks = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => ({
-    poolIdx: index('lamab__pool_idx').on(t.chainId, t.pool),
-    poolTokenIdx: index('lamab__pool_token_idx').on(t.chainId, t.poolToken),
-    poolIdxUnq: unique('lamab__pool_idx_unq').on(t.chainId, t.pool, t.block),
+    unq: unique('lamab__unq').on(t.chainId, t.pool, t.block),
   }),
 );
 
@@ -38,10 +35,11 @@ export const ammApyDays = pgTable(
   'legacy_amm__apy_days',
   {
     id: serial('id').primaryKey(),
-    poolToken: char('pool_token', { length: 42 }).notNull(),
     chainId: integer('chain_id')
       .notNull()
       .references(() => chains.id, { onDelete: 'cascade' }),
+    date: timestamp('date').notNull(),
+    poolToken: char('pool_token', { length: 42 }).notNull(),
     pool: char('pool', { length: 42 }).notNull(),
     balanceBtc: decimal('balance_btc', { scale: 18, precision: 25 }).notNull(),
     feeApy: decimal('fee_apy', { scale: 18, precision: 25 }).notNull(),
@@ -49,11 +47,12 @@ export const ammApyDays = pgTable(
     totalApy: decimal('total_apy', { scale: 18, precision: 25 }).notNull(),
     btcVolume: decimal('btc_volume', { scale: 18, precision: 25 }).notNull(),
     createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => ({
-    pollTokenIdx: index('lamad__poll_token_idx').on(t.poolToken),
-    poolIdx: index('lamad__pool_idx').on(t.pool),
-    createdAtIdx: index('lamad__created_at_idx').on(t.createdAt),
+    unq: unique('lamad__unq').on(t.chainId, t.date, t.poolToken),
   }),
 );
 
