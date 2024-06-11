@@ -1,4 +1,5 @@
 import type { DocumentNode } from 'graphql';
+import gql from 'graphql-tag';
 
 import { queryFromSubgraph } from 'loader/subgraph';
 import { loadGqlFromArtifacts } from 'utils/subgraph';
@@ -8,6 +9,46 @@ import type { LegacyChainConfig } from './types';
 
 const gqlTokens = loadGqlFromArtifacts('graphQueries/legacy/tokens.graphql');
 const gqlTokenPrices = loadGqlFromArtifacts('graphQueries/legacy/token-prices.graphql');
+const gqlAmmApyBlocks = loadGqlFromArtifacts('graphQueries/legacy/amm-apy-data.graphql');
+
+export type QueryAmmApyDataForBlock = {
+  liquidityPools: {
+    id: string;
+    type: number;
+    smartToken: { id: string };
+    poolTokens: { id: string; underlyingAssets: { id: string }[] }[];
+    token0: { id: string; lastPriceBtc: string };
+    token1: { id: string; symbol: string; lastPriceBtc: string };
+    token0Balance: string;
+    token1Balance: string;
+  }[];
+  conversions: {
+    _conversionFee: string;
+    _toToken: {
+      id: string;
+      lastPriceBtc: string;
+      lastPriceUsd: string;
+    };
+    emittedBy: {
+      id: string;
+      type: number;
+      poolTokens: {
+        id: string;
+        underlyingAssets: {
+          id: string;
+        }[];
+      }[];
+      smartToken: {
+        id: string;
+      };
+    };
+  }[];
+  liquidityMiningAllocationPoints: {
+    id: string;
+    allocationPoint: string;
+    rewardPerBlock: string;
+  }[];
+};
 
 export class LegacyChain {
   readonly nativeTokenWrapper: string;
@@ -20,6 +61,20 @@ export class LegacyChain {
     return queryFromSubgraph<T>(this.config.subgraph, query as any, variables);
   }
 
+  public async queryBlockNumber() {
+    return this.queryFromSubgraph<{ _meta: { block: { number: number } } }>(
+      gql`
+        {
+          _meta {
+            block {
+              number
+            }
+          }
+        }
+      `,
+    ).then((data) => data._meta.block.number);
+  }
+
   public async queryTokens() {
     return this.queryFromSubgraph<{
       tokens: { id: string; name: string; symbol: string; decimals: number; lastPriceUsd: string }[];
@@ -30,5 +85,41 @@ export class LegacyChain {
     return this.queryFromSubgraph<{ tokens: { id: string; lastPriceUsd: string }[] }>(gqlTokenPrices, {
       ids: addresses,
     });
+  }
+
+  public async queryAmmApyDataForBlock(block: number) {
+    return this.queryFromSubgraph<QueryAmmApyDataForBlock>(gqlAmmApyBlocks, { block });
+  }
+
+  // subgraph limits entity count to 150k items, so we query conversions separately from liquidity pools...
+  public async queryConversionFessByBlock(block: number) {
+    return this.queryFromSubgraph<{ conversions: QueryAmmApyDataForBlock['conversions'] }>(
+      gql`
+        query ($block: Int!) {
+          conversions(where: { blockNumber: $block }, block: { number: $block }) {
+            _conversionFee
+            _toToken {
+              id
+              lastPriceBtc
+              lastPriceUsd
+            }
+            emittedBy {
+              id
+              type
+              poolTokens {
+                id
+                underlyingAssets {
+                  id
+                }
+              }
+              smartToken {
+                id
+              }
+            }
+          }
+        }
+      `,
+      { block },
+    );
   }
 }

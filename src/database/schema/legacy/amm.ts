@@ -1,4 +1,4 @@
-import { pgTable, timestamp, serial, integer, varchar, decimal, index, numeric, char } from 'drizzle-orm/pg-core';
+import { pgTable, timestamp, serial, integer, varchar, decimal, index, char, unique } from 'drizzle-orm/pg-core';
 
 import { chains } from '../chains';
 import { tokens } from '../tokens';
@@ -10,9 +10,7 @@ export const ammApyBlocks = pgTable(
     chainId: integer('chain_id')
       .notNull()
       .references(() => chains.id, { onDelete: 'cascade' }),
-    tokenId: integer('token_id')
-      .notNull()
-      .references(() => tokens.id, { onDelete: 'cascade' }),
+    poolToken: char('pool_token', { length: 42 }).notNull(),
     pool: char('pool', { length: 42 }).notNull(),
     block: integer('block').notNull(),
     blockTimestamp: timestamp('block_timestamp').notNull(),
@@ -28,6 +26,8 @@ export const ammApyBlocks = pgTable(
   },
   (t) => ({
     poolIdx: index('lamab__pool_idx').on(t.chainId, t.pool),
+    poolTokenIdx: index('lamab__pool_token_idx').on(t.chainId, t.poolToken),
+    poolIdxUnq: unique('lamab__pool_idx_unq').on(t.chainId, t.pool, t.block),
   }),
 );
 

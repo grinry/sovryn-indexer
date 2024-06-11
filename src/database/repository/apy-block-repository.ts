@@ -1,20 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 
 import { db } from 'database/client';
-import { ammApyBlocks, tokens } from 'database/schema';
-
-interface AmmApyBlock {
-  chainId: number;
-  poolToken: string;
-  blockTimestamp: number;
-  block: number;
-  pool: string;
-  balanceBtc: string;
-  conversionFeeBtc: string;
-  rewards: string;
-  rewardsCurrency: string;
-  rewardsBtc: string;
-}
+import { ammApyBlocks, NewAmmApyBlock, tokens } from 'database/schema';
 
 export const apyBlockRepository = {
   getLastBlock: async (chainId: number) =>
@@ -28,30 +15,11 @@ export const apyBlockRepository = {
       })
       .then((item) => item?.block ?? null),
 
-  createBlockRow: async (data: AmmApyBlock) => {
-    const token = await db.query.tokens.findFirst({
-      columns: {
-        id: true,
-      },
-      where: eq(tokens.address, data.poolToken),
-    });
-    return db
+  createBlockRow: (data: NewAmmApyBlock[]) =>
+    db
       .insert(ammApyBlocks)
-      .values({
-        chainId: data.chainId,
-        tokenId: token.id,
-        block: data.block,
-        blockTimestamp: new Date(data.blockTimestamp * 1000),
-        pool: data.pool,
-        balanceBtc: data.balanceBtc,
-        conversionFeeBtc: data.conversionFeeBtc,
-        rewards: data.rewards,
-        rewardsCurrency: data.rewardsCurrency,
-        rewardsBtc: data.rewardsBtc,
-      })
+      .values(data)
       .onConflictDoNothing({
         target: [ammApyBlocks.chainId, ammApyBlocks.pool, ammApyBlocks.block],
-      })
-      .execute();
-  },
+      }),
 };
