@@ -1,6 +1,36 @@
 import { pgTable, timestamp, serial, integer, varchar, decimal, index, char, unique } from 'drizzle-orm/pg-core';
 
 import { chains } from '../chains';
+import { tokens } from '../tokens';
+
+export const tAmmPools = pgTable(
+  'legacy_amm__pools',
+  {
+    id: serial('id').primaryKey(),
+    chainId: integer('chain_id')
+      .notNull()
+      .references(() => chains.id, { onDelete: 'cascade' }),
+    pool: char('pool', { length: 42 }).notNull(),
+    token1Id: integer('token1_id')
+      .notNull()
+      .references(() => tokens.id, { onDelete: 'cascade' }),
+    token2Id: integer('token2_id')
+      .notNull()
+      .references(() => tokens.id, { onDelete: 'cascade' }),
+    token1Volume: decimal('token1_volume', { scale: 18, precision: 50 }).notNull(),
+    token2Volume: decimal('token2_volume', { scale: 18, precision: 50 }).notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => ({
+    unq: unique('lap__unq').on(t.chainId, t.pool),
+  }),
+);
+
+export type TAmmPool = typeof tAmmPools.$inferSelect;
+export type TNewAmmPool = typeof tAmmPools.$inferInsert;
 
 export const ammApyBlocks = pgTable(
   'legacy_amm__apy_blocks',
