@@ -33,6 +33,7 @@ export async function queryFromSubgraph<T = unknown>(
   } catch (error) {
     logger.error('Failed to query subgraph, retrying in ' + SUBGRAPH_RETRY_MS + 'ms', { error });
     await sleep(SUBGRAPH_RETRY_MS);
+    // todo: add retry limit, exponential backoff and use `queryFromSubgraph` here...
     return queryFromSubgraphTry<T>(subgraph, query, variables);
   }
 }
@@ -53,8 +54,9 @@ async function queryFromSubgraphTry<T = unknown>(
 
   if (response.ok) {
     if (response.data.errors) {
-      logger.fatal({ subgraph, request, errors: response.data.errors }, 'Subgraph query failed:');
-      return undefined;
+      // logger.fatal({ subgraph, request, errors: response.data.errors }, 'Subgraph query failed:');
+      // return undefined;
+      throw new Error('Subgraph returned with errors: ' + JSON.stringify(response.data.errors));
     }
     return response.data.data;
   }
