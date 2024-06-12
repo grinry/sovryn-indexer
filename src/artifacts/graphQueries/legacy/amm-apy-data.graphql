@@ -13,11 +13,14 @@ query ($block: Int!) {
     }
     token0 {
       id
+      symbol
+      decimals
       lastPriceBtc
     }
     token1 {
       id
       symbol
+      decimals
       lastPriceBtc
     }
     token0Balance

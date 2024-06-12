@@ -17,8 +17,8 @@ export type QueryAmmApyDataForBlock = {
     type: number;
     smartToken: { id: string };
     poolTokens: { id: string; underlyingAssets: { id: string }[] }[];
-    token0: { id: string; lastPriceBtc: string };
-    token1: { id: string; symbol: string; lastPriceBtc: string };
+    token0: { id: string; symbol: string; decimals: number; lastPriceBtc: string };
+    token1: { id: string; symbol: string; decimals: number; lastPriceBtc: string };
     token0Balance: string;
     token1Balance: string;
   }[];

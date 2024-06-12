@@ -1,15 +1,14 @@
 import { Router } from 'express';
-import Joi, { exist } from 'joi';
+import Joi from 'joi';
 
-import { DEFAULT_CACHE_TTL } from 'config/constants';
+import { LONG_CACHE_TTL, MEDIUM_CACHE_TTL } from 'config/constants';
 import { apyDayRepository } from 'database/repository/apy-day-repository';
-import { maybeCache, maybeCacheResponse } from 'utils/cache';
+import { maybeCacheResponse } from 'utils/cache';
 import { toResponse } from 'utils/http-response';
-import { validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
 
-import { parseApyHistoryData } from './amm.utils';
+import { getOnChainData, parseApyHistoryData } from './amm.utils';
 
 const router = Router();
 
@@ -24,7 +23,7 @@ router.get(
         const rows = await apyDayRepository.getAllPoolData(chainId).execute();
         return parseApyHistoryData(rows);
       },
-      DEFAULT_CACHE_TTL,
+      MEDIUM_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
 );
@@ -47,7 +46,7 @@ router.get(
         const rows = await apyDayRepository.getOnePoolData(chainId, pool).execute();
         return parseApyHistoryData(rows);
       },
-      DEFAULT_CACHE_TTL,
+      MEDIUM_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
 );
@@ -67,7 +66,7 @@ router.get(
       res,
       `legacy/amm/${chainId}/today/${pool}`,
       async () => apyDayRepository.getLastPoolApy(chainId, pool),
-      DEFAULT_CACHE_TTL,
+      MEDIUM_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
 );
@@ -83,7 +82,7 @@ router.get(
         const rows = await apyDayRepository.getAllPoolData(chainId, 90).execute();
         return parseApyHistoryData(rows);
       },
-      DEFAULT_CACHE_TTL,
+      LONG_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
 );
@@ -105,7 +104,7 @@ router.get(
         const rows = await apyDayRepository.getOnePoolData(chainId, pool, 90).execute();
         return parseApyHistoryData(rows);
       },
-      DEFAULT_CACHE_TTL,
+      LONG_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
 );
@@ -124,7 +123,7 @@ router.get(
       res,
       `legacy/amm/${chainId}/pool-balance/${pool}`,
       async () => {
-        const balanceData = {}; // todo: implement...
+        const balanceData = await getOnChainData(req.network.legacy, pool);
         const apyData = await apyDayRepository.getLastPoolApy(chainId, pool);
         return {
           ...balanceData,
@@ -136,7 +135,7 @@ router.get(
           })),
         };
       },
-      1,
+      LONG_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
 );
