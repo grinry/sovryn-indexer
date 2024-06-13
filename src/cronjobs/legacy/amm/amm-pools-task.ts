@@ -60,7 +60,7 @@ async function processLegacyChain(chain: LegacyChain) {
     token2Volume: item.quoteVolume24h,
   }));
 
-  childLogger.info({ chain: chain.context.chainId, items: items.length, tp }, 'Processing AMM pools data...');
+  childLogger.info({ chain: chain.context.chainId, items: items.length }, 'Processing AMM pools data...');
 
   const result = await db
     .insert(tAmmPools)
@@ -188,8 +188,6 @@ const parseData = (
     const dayQuoteVolume = parseFloat(
       isBaseTokenConnector0 ? item.yesterday[1].totalVolume : item.yesterday[0].totalVolume,
     );
-
-    // todo: retrieve prices from price table, inside controller instead of here...
 
     return {
       poolId: item.current.id,
