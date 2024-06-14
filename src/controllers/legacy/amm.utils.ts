@@ -1,7 +1,12 @@
+import { BlockTag } from 'ethers';
+import gql from 'graphql-tag';
 import { isNil } from 'lodash';
 import { bignumber } from 'mathjs';
 
+import { LiquidityPoolV1Converter__factory, LiquidityPoolV2Converter__factory } from 'artifacts/abis/types';
 import { AmmApyDay } from 'database/schema';
+import { LegacyChain, QueryAmmApyDataForBlock } from 'loader/networks/legacy-chain';
+import { logger } from 'utils/logger';
 
 type BalanceHistory = Array<{
   activity_date: Date;
@@ -89,4 +94,96 @@ function updateBalanceHistory(row: ParsableAmmApyDay, balanceHistory: BalanceHis
       .valueOf();
   }
   return balanceHistory;
+}
+
+export async function getOnChainData(chain: LegacyChain, pool: string) {
+  const data = await chain
+    .queryFromSubgraph<{ liquidityPool: QueryAmmApyDataForBlock['liquidityPools'][number] }>(
+      gql`
+        query ($pool: ID!) {
+          liquidityPool(id: $pool) {
+            id
+            type
+            smartToken {
+              id
+            }
+            poolTokens {
+              id
+              underlyingAssets {
+                id
+              }
+            }
+            token0 {
+              id
+              symbol
+              lastPriceBtc
+              decimals
+            }
+            token1 {
+              id
+              symbol
+              lastPriceBtc
+              decimals
+            }
+            token0Balance
+            token1Balance
+          }
+        }
+      `,
+      { pool },
+    )
+    .then((data) => data.liquidityPool);
+
+  // token0 actually is not always BTC, but leaving it like this to make compatible with FE and amm-apy wrapper BE.
+
+  const tokenAddress = data.token1.id;
+  const btcAddress = data.token0.id;
+
+  const stakedBalanceToken =
+    data.type === 2
+      ? await getV2StakedBalance(chain, pool, tokenAddress, data.token1.decimals)
+      : await getV1StakedBalance(chain, pool, tokenAddress, data.token1.decimals);
+
+  const stakedBalanceBtc =
+    data.type === 2
+      ? await getV2StakedBalance(chain, pool, btcAddress, data.token0.decimals)
+      : await getV1StakedBalance(chain, pool, btcAddress, data.token0.decimals);
+
+  return {
+    poolName: `${data.token0.symbol}-${data.token1.symbol}`,
+    poolVersion: data.type,
+    ammPool: data.token1.symbol,
+    contractBalanceToken: Number(data.token1Balance),
+    contractBalanceBtc: Number(data.token0Balance),
+    stakedBalanceToken: Number(stakedBalanceToken.toFixed(18)),
+    stakedBalanceBtc: Number(stakedBalanceBtc.toFixed(18)),
+    tokenDelta: Number(bignumber(data.token1Balance).minus(stakedBalanceToken).toFixed(18)),
+    btcDelta: Number(bignumber(data.token0Balance).minus(stakedBalanceBtc).toFixed(18)),
+  };
+}
+
+async function getV1StakedBalance(
+  chain: LegacyChain,
+  pool: string,
+  token: string,
+  decimals: number,
+  block: BlockTag = 'latest',
+) {
+  const contract = LiquidityPoolV1Converter__factory.connect(pool, chain.context.rpc);
+  return contract.getConnectorBalance
+    .staticCall(token, { blockTag: block })
+    .then((data) => bignumber(data).div(Math.pow(10, decimals)));
+}
+
+async function getV2StakedBalance(
+  chain: LegacyChain,
+  pool: string,
+  token: string,
+  decimals: number,
+  block: BlockTag = 'latest',
+) {
+  const contract = LiquidityPoolV2Converter__factory.connect(pool, chain.context.rpc);
+  return contract.reserveStakedBalance
+    .staticCall(token, { blockTag: block })
+    .then((data) => bignumber(data).div(Math.pow(10, decimals)));
 }
