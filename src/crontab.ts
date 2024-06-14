@@ -1,6 +1,8 @@
 import { CronJob } from 'cron';
 
 import { ammApyBlockTask } from 'cronjobs/legacy/amm/amm-apy-block-task';
+import { ammApyDailyDataTask } from 'cronjobs/legacy/amm/amm-apy-daily-data-task';
+import { ammCleanUpTask } from 'cronjobs/legacy/amm/amm-cleanup-task';
 import { retrieveTokens } from 'cronjobs/retrieve-tokens';
 import { retrieveUsdPrices } from 'cronjobs/retrieve-usd-prices';
 
@@ -25,10 +27,24 @@ export const startCrontab = () => {
   //   onTick: tickWrapper(retrieveUsdPrices),
   // }).start();
 
-  // LEGACY
+  // START LEGACY JOBS (AMM)
+  // Retrieve AMM APY blocks every 2 minutes
+  // CronJob.from({
+  //   cronTime: '*/2 * * * *',
+  //   onTick: tickWrapper(ammApyBlockTask),
+  // }).start();
+
+  // Retrieve daily AMM APY blocks every 30 minutes
   CronJob.from({
-    cronTime: '*/2 * * * *',
-    onTick: tickWrapper(ammApyBlockTask),
+    cronTime: '*/30 * * * *',
+    onTick: tickWrapper(ammApyDailyDataTask),
     runOnInit: true,
   }).start();
+
+  // Remove AMM APY data older than 2 days every 2 hours
+  CronJob.from({
+    cronTime: '15 */2 * * *',
+    onTick: tickWrapper(ammCleanUpTask),
+  }).start();
+  // END LEGACY JOBS (AMM)
 };
