@@ -1,0 +1,55 @@
+query ($block: Int!) {
+  liquidityPools(where: { activated: true }, block: { number: $block }) {
+    id
+    type
+    smartToken {
+      id
+    }
+    poolTokens {
+      id
+      underlyingAssets {
+        id
+      }
+    }
+    token0 {
+      id
+      symbol
+      decimals
+      lastPriceBtc
+    }
+    token1 {
+      id
+      symbol
+      decimals
+      lastPriceBtc
+    }
+    token0Balance
+    token1Balance
+  }
+  # conversions(where: { blockNumber: $block }, block: { number: $block }) {
+  #   _conversionFee
+  #   _toToken {
+  #     id
+  #     lastPriceBtc
+  #     lastPriceUsd
+  #   }
+  #   emittedBy {
+  #     id
+  #     type
+  #     poolTokens {
+  #       id
+  #       underlyingAssets {
+  #         id
+  #       }
+  #     }
+  #     smartToken {
+  #       id
+  #     }
+  #   }
+  # }
+  liquidityMiningAllocationPoints(block: { number: $block }) {
+    id
+    allocationPoint
+    rewardPerBlock
+  }
+}

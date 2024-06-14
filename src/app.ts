@@ -11,6 +11,10 @@ import { logger } from 'utils/logger';
 import { onShutdown } from 'utils/shutdown';
 
 const app = express();
+app.use((req, res, next) => {
+  res.setHeader('Connection', 'close');
+  next();
+});
 app.use(pino({ logger, autoLogging: false }));
 app.use(cors());
 app.use(helmet());

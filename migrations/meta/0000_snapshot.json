@@ -44,15 +44,7 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "chains_id_unique_pk": {
-          "name": "chains_id_unique_pk",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id"
-          ]
-        }
-      }
+      "uniqueConstraints": {}
     },
     "public.tokens": {
       "name": "tokens",
