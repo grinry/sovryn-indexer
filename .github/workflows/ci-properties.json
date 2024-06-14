@@ -1,0 +1,18 @@
+{
+  "app_name": "sovryn-indexer",
+  "aws_region": "us-east-2",
+  "k8s_cluster_name": "k8-mainnet",
+  "registry": "docker.io",
+  "image_name": "sovryn/sovryn-indexer",
+  "prod_branch": "main",
+  "dev_branch": "develop",
+  "dockerfile_path": ".",
+  "APP_ENV_VARS": {
+    "APP_NAME": "sovryn-indexer",
+    "LOG_LEVEL": "debug",
+    "PORT": "3000",
+    "POSTGRES_PORT": "5432"
+  },
+  "DEV_ENV_VARS": {},
+  "PROD_ENV_VARS": {}
+}
