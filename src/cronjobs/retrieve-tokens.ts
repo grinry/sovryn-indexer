@@ -3,6 +3,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { Contract, Interface, ZeroAddress } from 'ethers';
 import _, { difference, uniq } from 'lodash';
 
+import { ERC20__factory } from 'artifacts/abis/types';
 import { db } from 'database/client';
 import { tokens } from 'database/schema';
 import { networks } from 'loader/networks';
@@ -99,7 +100,7 @@ async function prepareSdexTokens(chain: SdexChain) {
           address: item,
           symbol: tokenInfo.symbol,
           name: tokenInfo.name,
-          decimals: tokenInfo.decimals,
+          decimals: Number(tokenInfo.decimals),
         })
         .onConflictDoNothing({
           target: [tokens.chainId, tokens.address],
@@ -131,12 +132,7 @@ async function getTokensToAdd(tokenAddresses: string[], chainId: number) {
   );
 }
 
-const tokenAbi = [
-  'function symbol() view returns (string)',
-  'function name() view returns (string)',
-  'function decimals() view returns (uint8)',
-];
-const tokenInterface = new Interface(tokenAbi);
+const tokenInterface = ERC20__factory.createInterface();
 
 async function queryTokenInfo(chain: Chain, tokenAddress: string) {
   if (tokenAddress === ZeroAddress) {
@@ -169,7 +165,7 @@ async function queryTokenInfo(chain: Chain, tokenAddress: string) {
         decimals: Number(tokenInterface.decodeFunctionResult('decimals', value[2][1])),
       }));
   } else {
-    const contract = new Contract(tokenAddress, tokenAbi, chain.rpc);
+    const contract = ERC20__factory.connect(tokenAddress, chain.rpc);
     return {
       symbol: await contract.symbol(),
       name: await contract.name(),
