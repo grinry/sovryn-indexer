@@ -1,6 +1,6 @@
 {
-  "id": "7633b7ce-f8a8-4ecc-b43c-1dbf11b1bd81",
-  "prevId": "c00e6e2d-d3e9-4107-a133-1a6f06087d2f",
+  "id": "f5146c70-fa5f-46e1-ae21-3ae8e3b713ad",
+  "prevId": "7633b7ce-f8a8-4ecc-b43c-1dbf11b1bd81",
   "version": "6",
   "dialect": "postgresql",
   "tables": {
@@ -264,6 +264,121 @@
             "chain_id",
             "date",
             "pool_token"
+          ]
+        }
+      }
+    },
+    "public.legacy_amm__pools": {
+      "name": "legacy_amm__pools",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pool": {
+          "name": "pool",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token1_id": {
+          "name": "token1_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token2_id": {
+          "name": "token2_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token1_volume": {
+          "name": "token1_volume",
+          "type": "numeric(50, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token2_volume": {
+          "name": "token2_volume",
+          "type": "numeric(50, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "legacy_amm__pools_chain_id_chains_id_fk": {
+          "name": "legacy_amm__pools_chain_id_chains_id_fk",
+          "tableFrom": "legacy_amm__pools",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "legacy_amm__pools_token1_id_tokens_id_fk": {
+          "name": "legacy_amm__pools_token1_id_tokens_id_fk",
+          "tableFrom": "legacy_amm__pools",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token1_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "legacy_amm__pools_token2_id_tokens_id_fk": {
+          "name": "legacy_amm__pools_token2_id_tokens_id_fk",
+          "tableFrom": "legacy_amm__pools",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token2_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "lap__unq": {
+          "name": "lap__unq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chain_id",
+            "pool"
           ]
         }
       }
