@@ -2,6 +2,8 @@ import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { cwd } from 'process';
 
+import { sql } from 'drizzle-orm';
+
 import config from 'config';
 import { db } from 'database/client';
 import { chains } from 'database/schema/chains';
@@ -49,21 +51,17 @@ logger.info(`Network configs loaded: ${networks.networks.join(', ')}`);
 
 export const updateChains = async () => {
   const items = networks.listChains();
-  for (const chain of items) {
-    await db
-      .insert(chains)
-      .values({
-        id: chain.chainId,
-        name: chain.name,
-        stablecoinAddress: chain.stablecoinAddress,
-      })
-      .onConflictDoUpdate({
-        target: [chains.id],
-        set: {
-          name: chain.name,
-          stablecoinAddress: chain.stablecoinAddress,
-        },
-      })
-      .execute();
-  }
+  const result = await db
+    .insert(chains)
+    .values(items.map((chain) => ({ id: chain.chainId, name: chain.name, stablecoinAddress: chain.stablecoinAddress })))
+    .onConflictDoUpdate({
+      target: [chains.id],
+      set: {
+        name: sql`excluded.name`,
+        stablecoinAddress: sql`excluded.stablecoin_address`,
+      },
+    })
+    .returning({ id: chains.id })
+    .execute();
+  logger.info(`Updated chains: ${result.length}`);
 };

@@ -3,8 +3,7 @@ CREATE TABLE IF NOT EXISTS "chains" (
 	"name" varchar(256) NOT NULL,
 	"stablecoin_address" char(42) NOT NULL,
 	"created_at" timestamp DEFAULT now(),
-	"updated_at" timestamp DEFAULT now(),
-	CONSTRAINT "chains_id_unique_pk" UNIQUE("id")
+	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "tokens" (
