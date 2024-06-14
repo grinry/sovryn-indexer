@@ -11,7 +11,7 @@ startApp();
 
 if (!config.readOnly) {
   logger.info('Running in read-write mode. Starting crontab...');
-  updateChains();
+  // updateChains();
   startCrontab();
 } else {
   logger.info('Running in read-only mode.');
