@@ -11,6 +11,7 @@ COPY . ./
 RUN pnpm install
 
 # Build dist
+RUN pnpm typechain
 RUN pnpm build
 
 # Start production image build
