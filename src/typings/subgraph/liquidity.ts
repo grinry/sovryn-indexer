@@ -10,8 +10,8 @@ export type LiquidityChanges = {
   };
   block: string;
   time: string;
-  positionType: 'concentrated' | 'ambient'; // Adjust based on your actual types
-  changeType: 'burn' | 'mint'; // Adjust based on your actual types
+  positionType: 'concentrated' | 'ambient';
+  changeType: 'burn' | 'mint';
   bidTick: number;
   askTick: number;
   isBid: boolean;

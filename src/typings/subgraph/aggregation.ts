@@ -1,8 +1,8 @@
-export type AggregatedPosition = {
+export type AggregatedPositionResult = {
   poolId: string;
   user: string;
-  baseAmount: number;
-  quoteAmount: number;
+  baseAmount: string;
+  quoteAmount: string;
   aggregatedLiquidity: string;
   aggregatedBaseFlow: string;
   aggregatedQuoteFlow: string;
