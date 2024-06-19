@@ -6,4 +6,10 @@ export type AggregatedPositionResult = {
   aggregatedLiquidity: string;
   aggregatedBaseFlow: string;
   aggregatedQuoteFlow: string;
+  baseToken: string;
+  quoteToken: string;
+  positionType: string;
+  bidTick: number;
+  askTick: number;
+  liq: string;
 };

@@ -10,7 +10,7 @@ export type LiquidityChanges = {
   };
   block: string;
   time: string;
-  positionType: 'concentrated' | 'ambient';
+  positionType: PositionType;
   changeType: 'burn' | 'mint';
   bidTick: number;
   askTick: number;
@@ -26,11 +26,18 @@ export type LiquidityChangesResponse = {
 };
 
 export type LiquidityPosition = {
-  id: string;
-  base: string;
-  quote: string;
-  positionType: string;
-  liq: string;
-  baseFlow: string;
-  quoteFlow: string;
+  ambientLiq: string;
+  concLiq: string;
+  rewardLiq: string;
+  baseQty: string;
+  quoteQty: string;
+  aggregatedLiquidity: string;
+  aggregatedBaseFlow: string;
+  aggregatedQuoteFlow: string;
+  positionType: PositionType;
 };
+
+export enum PositionType {
+  ambient = 'ambient',
+  concentrated = 'concentrated',
+}

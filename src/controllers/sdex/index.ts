@@ -2,9 +2,8 @@ import { Router } from 'express';
 import Joi from 'joi';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
-import { aggregatePositions } from 'utils/aggregationUtils';
 import { maybeCacheResponse } from 'utils/cache';
-import { BadRequestError, HttpError } from 'utils/custom-error';
+import { BadRequestError } from 'utils/custom-error';
 import { toResponse } from 'utils/http-response';
 import { validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
@@ -14,6 +13,9 @@ const router = Router();
 const querySchema = Joi.object({
   user: Joi.string().required(),
   chainId: Joi.string().required(),
+  base: Joi.string().required(),
+  quote: Joi.string().required(),
+  poolIdx: Joi.number().required(),
 });
 
 router.get(
@@ -46,24 +48,19 @@ router.get(
       throw new BadRequestError(error.details[0].message);
     }
 
-    const { user, chainId } = value;
+    const { user, chainId, base, quote, poolIdx } = value;
 
     return maybeCacheResponse(
       res,
       `sdex/user_pool_positions/${chainId}/${user}`,
       async () => {
-        const response = await req.network.sdex.queryUserPositions(user);
-
-        const userPoolPositions = response.liquidityChanges;
-
-        if (!userPoolPositions) {
-          throw new HttpError(500, 'Failed to fetch user pool positions');
-        }
-
-        return aggregatePositions(userPoolPositions);
+        const liquidity = await req.network.sdex.getUpdatedLiquidity(user, base, quote, poolIdx);
+        return {
+          liquidity,
+        };
       },
       DEFAULT_CACHE_TTL,
-    ).then((data) => res.json(toResponse(data)));
+    ).then((data) => res.json(toResponse(data.liquidity)));
   }),
 );
 

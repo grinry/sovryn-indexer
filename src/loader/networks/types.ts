@@ -9,7 +9,7 @@ export type NativeNetworkToken = {
   symbol: string;
   name: string;
   decimals: number;
-}
+};
 
 export type NetworkConfig = {
   chainId: number;
@@ -25,6 +25,7 @@ export type NetworkConfig = {
 export type SdexChainConfig = {
   subgraph: string;
   query: string;
+  multicall: string;
   impact: string;
 };
 
