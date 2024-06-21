@@ -8,7 +8,7 @@ RUN corepack enable && corepack prepare pnpm@8.15.6 --activate
 COPY . ./
 
 # Install deps and build
-RUN pnpm install && pnpm typechain && pnpm build && cp -r /src/artifacts /build/artifacts
+RUN pnpm install && pnpm typechain && pnpm build && cp -r /src/artifacts/* /build/artifacts
 
 ENV NODE_ENV production
 ENV NODE_PATH ./build
