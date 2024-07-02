@@ -19,6 +19,10 @@ export type LiquidityChanges = {
   baseFlow: string;
   quoteFlow: string;
   pivotTime: string | null;
+  aprDuration: string;
+  aprPostLiq: string;
+  aprContributedLiq: string;
+  aprEst: string;
 };
 
 export type LiquidityChangesResponse = {
@@ -35,6 +39,12 @@ export type LiquidityPosition = {
   aggregatedBaseFlow: string;
   aggregatedQuoteFlow: string;
   positionType: PositionType;
+  bidTick: number;
+  askTick: number;
+  aprDuration: string;
+  aprPostLiq: string;
+  aprContributedLiq: string;
+  aprEst: string;
 };
 
 export enum PositionType {
