@@ -4,6 +4,7 @@ import { bignumber } from 'mathjs';
 import { SdexQuery } from 'artifacts/abis/types';
 import { LiquidityChangesResponse, PositionType } from 'typings/subgraph/liquidity';
 import { aggregatePositions, filterPositions } from 'utils/aggregationUtils';
+import { calculateAPR } from 'utils/aprCalculation';
 
 export async function getLPTokenBalance(rpc: ethers.JsonRpcProvider, user: string, baseToken: string): Promise<string> {
   if (baseToken === ZeroAddress) {
@@ -38,7 +39,16 @@ export async function getUserPositions(
       const lpTokenAddress = await queryContract.queryPoolLpTokenAddress(base, quote, poolIdx);
       const lpTokenBalance = await getLPTokenBalance(rpc, user, lpTokenAddress);
       const ambientLiq = bignumber(ambientTokens.liq).plus(bignumber(lpTokenBalance)).toString();
-
+      const apr = calculateAPR(
+        false, // isConcentrated
+        '0', // rewardLiq
+        '0', // concLiq
+        ambientLiq,
+        0, // bidTick
+        0, // askTick
+        parseFloat(userLiquidity.time), // weightedAverageDuration
+        parseFloat(userLiquidity.liq), // netCumulativeLiquidity
+      );
       return {
         ambientLiq,
         time: userLiquidity.time,
@@ -53,10 +63,10 @@ export async function getUserPositions(
         positionType: userLiquidity.positionType,
         bidTick: userLiquidity.bidTick,
         askTick: userLiquidity.askTick,
-        aprDuration: userLiquidity.aprDuration,
-        aprPostLiq: userLiquidity.aprPostLiq,
-        aprContributedLiq: userLiquidity.aprContributedLiq,
-        aprEst: userLiquidity.aprEst,
+        aprDuration: apr.aprDuration,
+        aprPostLiq: apr.aprPostLiq,
+        aprContributedLiq: apr.aprContributedLiq,
+        aprEst: apr.aprEst,
       };
     }),
   );
@@ -72,6 +82,17 @@ export async function getUserPositions(
       ]);
 
       if (!bignumber(rangeTokens.liq).isZero()) {
+        const apr = calculateAPR(
+          true, // isConcentrated
+          bignumber(rewardLiq.liqRewards).toString(), // rewardLiq
+          bignumber(rangeTokens.liq).toString(), // concLiq
+          '0', // ambientLiq
+          bidTick, // bidTick
+          askTick, // askTick
+          parseFloat(userLiquidity.time), // weightedAverageDuration
+          parseFloat(userLiquidity.liq), // netCumulativeLiquidity
+        );
+
         return {
           ambientLiq: '0',
           time: userLiquidity.time,
@@ -86,10 +107,10 @@ export async function getUserPositions(
           positionType: userLiquidity.positionType,
           bidTick: userLiquidity.bidTick,
           askTick: userLiquidity.askTick,
-          aprDuration: userLiquidity.aprDuration,
-          aprPostLiq: userLiquidity.aprPostLiq,
-          aprContributedLiq: userLiquidity.aprContributedLiq,
-          aprEst: userLiquidity.aprEst,
+          aprDuration: apr.aprDuration,
+          aprPostLiq: apr.aprPostLiq,
+          aprContributedLiq: apr.aprContributedLiq,
+          aprEst: apr.aprEst,
         };
       }
       return null;

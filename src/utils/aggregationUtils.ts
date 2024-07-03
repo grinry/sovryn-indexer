@@ -37,7 +37,6 @@ export function aggregatePositions(positions: LiquidityPosition[]) {
   return positions.reduce(
     (acc, curr) => ({
       ambientLiq: bignumber(acc.ambientLiq).plus(curr.ambientLiq).toString(),
-      aprEst: curr.aprEst,
       time: curr.time,
       transactionHash: firstDepositTxHash,
       concLiq: bignumber(acc.concLiq).plus(curr.concLiq).toString(),
@@ -53,10 +52,10 @@ export function aggregatePositions(positions: LiquidityPosition[]) {
       aprDuration: curr.aprDuration,
       aprPostLiq: curr.aprPostLiq,
       aprContributedLiq: curr.aprContributedLiq,
+      aprEst: curr.aprEst,
     }),
     {
       ambientLiq: '0',
-      aprEst: '0',
       time: '0',
       transactionHash: '0',
       concLiq: '0',
@@ -72,6 +71,7 @@ export function aggregatePositions(positions: LiquidityPosition[]) {
       aprDuration: '0',
       aprPostLiq: '0',
       aprContributedLiq: '0',
+      aprEst: '0',
     },
   );
 }

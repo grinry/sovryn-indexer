@@ -46,7 +46,7 @@ router.get(
 
     return maybeCacheResponse(
       res,
-      `sdex/user_pool_positions/${chainId}/${user}`,
+      `sdex/user_pool_positions/${chainId}/${user}/${base}/${quote}/${poolIdx}`,
       async () => {
         const liquidity = await req.network.sdex.getUpdatedLiquidity(user, base, quote, poolIdx);
         return {
