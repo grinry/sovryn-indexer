@@ -25,7 +25,6 @@ export type NetworkConfig = {
 export type SdexChainConfig = {
   subgraph: string;
   query: string;
-  multicall: string;
   impact: string;
 };
 

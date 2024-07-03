@@ -1,7 +1,5 @@
-import { ethers, ZeroAddress } from 'ethers';
 import { DocumentNode } from 'graphql';
 
-import QueryContractABI from 'artifacts/abis/SdexQuery.json';
 import { SdexQuery, SdexQuery__factory } from 'artifacts/abis/types';
 import { queryFromSubgraph } from 'loader/subgraph';
 import { getUserPositions } from 'loader/userPositionsLoader';
@@ -16,11 +14,9 @@ const gqlLiquidityChanges = loadGqlFromArtifacts('graphQueries/sdex/liqchanges.g
 
 export class SdexChain {
   readonly query: SdexQuery;
-  readonly queryContract: ethers.Contract;
 
   constructor(readonly context: Chain, readonly config: SdexChainConfig) {
     this.query = SdexQuery__factory.connect(config.query, this.context.rpc);
-    this.queryContract = new ethers.Contract(config.query, QueryContractABI, this.context.rpc);
   }
 
   public queryFromSubgraph<T>(query: DocumentNode, variables: Record<string, unknown> = {}) {

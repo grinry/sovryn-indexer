@@ -41,6 +41,8 @@ export async function getUserPositions(
 
       return {
         ambientLiq,
+        time: userLiquidity.time,
+        transactionHash: userLiquidity.transactionHash,
         concLiq: '0',
         rewardLiq: '0',
         baseQty: ambientTokens.baseQty.toString(),
@@ -72,6 +74,8 @@ export async function getUserPositions(
       if (!bignumber(rangeTokens.liq).isZero()) {
         return {
           ambientLiq: '0',
+          time: userLiquidity.time,
+          transactionHash: userLiquidity.transactionHash,
           concLiq: rangeTokens.liq.toString(),
           rewardLiq: rewardLiq.liqRewards.toString(),
           baseQty: rangeTokens.baseQty.toString(),
@@ -82,10 +86,10 @@ export async function getUserPositions(
           positionType: userLiquidity.positionType,
           bidTick: userLiquidity.bidTick,
           askTick: userLiquidity.askTick,
-          aprDuration: userLiquidity.aprDuration.toString(),
-          aprPostLiq: userLiquidity.aprPostLiq.toString(),
-          aprContributedLiq: userLiquidity.aprContributedLiq.toString(),
-          aprEst: userLiquidity.aprEst.toString(),
+          aprDuration: userLiquidity.aprDuration,
+          aprPostLiq: userLiquidity.aprPostLiq,
+          aprContributedLiq: userLiquidity.aprContributedLiq,
+          aprEst: userLiquidity.aprEst,
         };
       }
       return null;

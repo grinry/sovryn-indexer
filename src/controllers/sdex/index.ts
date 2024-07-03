@@ -3,10 +3,10 @@ import Joi from 'joi';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { maybeCacheResponse } from 'utils/cache';
-import { BadRequestError } from 'utils/custom-error';
 import { toResponse } from 'utils/http-response';
 import { validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
+import { validate } from 'utils/validation';
 
 const router = Router();
 
@@ -42,13 +42,7 @@ router.get(
 router.get(
   '/user_pool_positions',
   asyncRoute(async (req, res) => {
-    const { error, value } = querySchema.validate(req.query);
-
-    if (error) {
-      throw new BadRequestError(error.details[0].message);
-    }
-
-    const { user, chainId, base, quote, poolIdx } = value;
+    const { user, chainId, base, quote, poolIdx } = validate(querySchema, req.query);
 
     return maybeCacheResponse(
       res,
