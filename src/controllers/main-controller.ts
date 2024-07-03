@@ -16,8 +16,11 @@ import { asyncRoute } from 'utils/route-wrapper';
 import dayjs from 'dayjs';
 import _ from 'lodash';
 import { NetworkFeature } from 'loader/networks/types';
+import { logger } from 'utils/logger';
 
 const router = Router();
+
+const childLogger = logger.child({ module: 'main-controller:debug' });
 
 router.get(
   '/chains',
@@ -100,7 +103,7 @@ router.get(
       res,
       `chart/${chainId ?? 0}/${baseTokenAddress}/${quoteTokenAddress}`,
       async () => {
-        const startTimestamp = dayjs().subtract(10, 'hours').toDate();
+        const startTimestamp = dayjs().subtract(3, 'hour').toDate();
         const endTimestamp = dayjs().toDate();
 
         const tokens = await db.query.tokens.findMany({
@@ -154,22 +157,65 @@ router.get(
             ),
           );
 
-        const result = baseTokenPrices.map((item) => {
-          const quoteTokenEquivalent = quoteTokenPrices.find((price) => price.date === item.date);
+        const result = baseTokenPrices
+          .map((item) => {
+            const quoteTokenEquivalent = quoteTokenPrices.find((price) => price.date === item.date);
 
-          if (quoteTokenEquivalent.value !== '0') {
-            return {
-              baseId: item.baseId,
-              quoteId: quoteTokenEquivalent.baseId,
-              date: item.date,
-              value: Number(item.value) / Number(quoteTokenEquivalent.value),
-            };
+            if (quoteTokenEquivalent.value !== '0') {
+              return {
+                baseId: item.baseId,
+                quoteId: quoteTokenEquivalent.baseId,
+                date: item.date,
+                value: Number(item.value) / Number(quoteTokenEquivalent.value),
+              };
+            }
+
+            return null;
+          })
+          .sort((a, b) => dayjs(b.date).unix() - dayjs(a.date).unix());
+
+        const resultDayJs = result.map((item) => ({ ...item, date: dayjs(item.date) }));
+
+        const groups = [];
+        let currentGroup = [];
+        let groupStartTime = resultDayJs[result.length - 1].date;
+
+        resultDayJs.forEach((item) => {
+          if (Math.abs(item.date.diff(groupStartTime, 'minute')) <= 30) {
+            currentGroup.push(item);
+          } else {
+            currentGroup = [item];
+            groups.push(currentGroup);
+            groupStartTime = item.date;
           }
-
-          return null;
         });
 
-        return result;
+        const tickResult = groups
+          .filter((group) => group.length > 0)
+          .map((item) => {
+            const startTime = item[item.length - 1].date;
+            const endTime = item[0].date;
+
+            const open = item[item.length - 1].value;
+            const close = item[0].value;
+
+            const values = item.reduce((acc, curValue) => {
+              acc.push(curValue.value);
+              return acc;
+            }, []);
+
+            return {
+              start: startTime,
+              end: endTime,
+              open,
+              close,
+              high: Math.max(...values),
+              low: Math.min(...values),
+            };
+          })
+          .sort((a, b) => dayjs(b.start).unix() - dayjs(a.start).unix());
+
+        return tickResult;
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
