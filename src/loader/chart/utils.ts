@@ -36,10 +36,13 @@ export const constructCandlesticks = async (intervals: Interval[], timeframe: nu
     .sort((a, b) => dayjs(b.start).unix() - dayjs(a.start).unix());
 };
 
-export const getPrices = async (chainId: number, baseTokenAddress: string, quoteTokenAddress: string) => {
-  const startTimestamp = dayjs().subtract(3, 'hour').toDate();
-  const endTimestamp = dayjs().toDate();
-
+export const getPrices = async (
+  chainId: number,
+  baseTokenAddress: string,
+  quoteTokenAddress: string,
+  startTimestamp: Date,
+  endTimestamp: Date,
+) => {
   const { baseTokenId, quoteTokenId, stablecoinId } = await getTokenIds(chainId, baseTokenAddress, quoteTokenAddress);
 
   const baseTokenData = await queryTokenData(baseTokenId, stablecoinId, startTimestamp, endTimestamp);

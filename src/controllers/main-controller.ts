@@ -14,6 +14,7 @@ import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/paginat
 import { asyncRoute } from 'utils/route-wrapper';
 import _ from 'lodash';
 import { constructCandlesticks, getPrices } from 'loader/chart/utils';
+import dayjs from 'dayjs';
 
 const router = Router();
 
@@ -93,13 +94,16 @@ router.get(
     const chainId = validateChainId(req, true);
     const baseTokenAddress = String(req.query.base);
     const quoteTokenAddress = String(req.query.quote);
+    const start = dayjs.unix(Number(req.query.start)).toDate();
+    const end = dayjs.unix(Number(req.query.end)).toDate();
+    const timeframe = Number(req.query.timeframe);
 
     return maybeCacheResponse(
       res,
-      `chart/${chainId ?? 0}/${baseTokenAddress}/${quoteTokenAddress}`,
+      `chart/${chainId ?? 0}/${baseTokenAddress}/${quoteTokenAddress}/${start}/${end}/${timeframe}`,
       async () => {
-        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress);
-        const candlesticks = await constructCandlesticks(intervals, 30);
+        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end);
+        const candlesticks = await constructCandlesticks(intervals, timeframe);
 
         return candlesticks;
       },
