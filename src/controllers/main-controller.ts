@@ -1,4 +1,4 @@
-import { eq, and, sql, desc } from 'drizzle-orm';
+import { eq, and, sql, desc, between } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { Router, Request, Response } from 'express';
 
@@ -13,6 +13,9 @@ import { maybeCacheResponse } from 'utils/cache';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
+import dayjs from 'dayjs';
+import _ from 'lodash';
+import { NetworkFeature } from 'loader/networks/types';
 
 const router = Router();
 
@@ -83,6 +86,93 @@ router.get(
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toPaginatedResponse(data)));
+  }),
+);
+
+router.get(
+  '/chart',
+  asyncRoute(async (req: Request, res: Response) => {
+    const chainId = validateChainId(req, true);
+    const baseTokenAddress = String(req.query.base);
+    const quoteTokenAddress = String(req.query.quote);
+
+    return maybeCacheResponse(
+      res,
+      `chart/${chainId ?? 0}/${baseTokenAddress}/${quoteTokenAddress}`,
+      async () => {
+        const startTimestamp = dayjs().subtract(10, 'hours').toDate();
+        const endTimestamp = dayjs().toDate();
+
+        const tokens = await db.query.tokens.findMany({
+          columns: {
+            id: true,
+            chainId: true,
+            address: true,
+            decimals: true,
+          },
+        });
+
+        const tokensByChain = _.groupBy(tokens, (item) => item.chainId);
+        const chains = Object.keys(tokensByChain).map((item) => networks.getByChainId(Number(item))!);
+        const chain = chains.find((item) => item.chainId === chainId);
+
+        const chainType = chain.hasFeature(NetworkFeature.legacy) ? chain.legacy : chain.sdex;
+
+        const baseTokenId = tokens.find((token) => token.address === baseTokenAddress.toLowerCase())?.id;
+        const quoteTokenId = tokens.find((token) => token.address === quoteTokenAddress.toLowerCase())?.id;
+        const stablecoinId = tokens.find((token) => token.address === chainType.context.stablecoinAddress)?.id;
+
+        const baseTokenPrices = await db
+          .select({
+            baseId: prices.baseId,
+            quoteId: prices.quoteId,
+            date: sql`date_trunc('minute', ${prices.tickAt})`.mapWith(String).as('date'),
+            value: prices.value,
+          })
+          .from(prices)
+          .where(
+            and(
+              eq(prices.baseId, baseTokenId),
+              eq(prices.quoteId, stablecoinId),
+              between(prices.tickAt, startTimestamp, endTimestamp),
+            ),
+          );
+
+        const quoteTokenPrices = await db
+          .select({
+            baseId: prices.baseId,
+            quoteId: prices.quoteId,
+            date: sql`date_trunc('minute', ${prices.tickAt})`.mapWith(String).as('date'),
+            value: prices.value,
+          })
+          .from(prices)
+          .where(
+            and(
+              eq(prices.baseId, quoteTokenId),
+              eq(prices.quoteId, stablecoinId),
+              between(prices.tickAt, startTimestamp, endTimestamp),
+            ),
+          );
+
+        const result = baseTokenPrices.map((item) => {
+          const quoteTokenEquivalent = quoteTokenPrices.find((price) => price.date === item.date);
+
+          if (quoteTokenEquivalent.value !== '0') {
+            return {
+              baseId: item.baseId,
+              quoteId: quoteTokenEquivalent.baseId,
+              date: item.date,
+              value: Number(item.value) / Number(quoteTokenEquivalent.value),
+            };
+          }
+
+          return null;
+        });
+
+        return result;
+      },
+      DEFAULT_CACHE_TTL,
+    ).then((data) => res.json(toResponse(data)));
   }),
 );
 
