@@ -1,26 +1,21 @@
-import { eq, and, sql, desc, between } from 'drizzle-orm';
+import { eq, and, sql, desc } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { Router, Request, Response } from 'express';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
-import { tokens } from 'database/schema';
+import { prices, tokens } from 'database/schema';
 import { chains } from 'database/schema/chains';
-import { prices } from 'database/schema/prices';
 import { networks } from 'loader/networks';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
-import dayjs from 'dayjs';
 import _ from 'lodash';
-import { NetworkFeature } from 'loader/networks/types';
-import { logger } from 'utils/logger';
+import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 
 const router = Router();
-
-const childLogger = logger.child({ module: 'main-controller:debug' });
 
 router.get(
   '/chains',
@@ -103,119 +98,10 @@ router.get(
       res,
       `chart/${chainId ?? 0}/${baseTokenAddress}/${quoteTokenAddress}`,
       async () => {
-        const startTimestamp = dayjs().subtract(3, 'hour').toDate();
-        const endTimestamp = dayjs().toDate();
+        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress);
+        const candlesticks = await constructCandlesticks(intervals, 30);
 
-        const tokens = await db.query.tokens.findMany({
-          columns: {
-            id: true,
-            chainId: true,
-            address: true,
-            decimals: true,
-          },
-        });
-
-        const tokensByChain = _.groupBy(tokens, (item) => item.chainId);
-        const chains = Object.keys(tokensByChain).map((item) => networks.getByChainId(Number(item))!);
-        const chain = chains.find((item) => item.chainId === chainId);
-
-        const chainType = chain.hasFeature(NetworkFeature.legacy) ? chain.legacy : chain.sdex;
-
-        const baseTokenId = tokens.find((token) => token.address === baseTokenAddress.toLowerCase())?.id;
-        const quoteTokenId = tokens.find((token) => token.address === quoteTokenAddress.toLowerCase())?.id;
-        const stablecoinId = tokens.find((token) => token.address === chainType.context.stablecoinAddress)?.id;
-
-        const baseTokenPrices = await db
-          .select({
-            baseId: prices.baseId,
-            quoteId: prices.quoteId,
-            date: sql`date_trunc('minute', ${prices.tickAt})`.mapWith(String).as('date'),
-            value: prices.value,
-          })
-          .from(prices)
-          .where(
-            and(
-              eq(prices.baseId, baseTokenId),
-              eq(prices.quoteId, stablecoinId),
-              between(prices.tickAt, startTimestamp, endTimestamp),
-            ),
-          );
-
-        const quoteTokenPrices = await db
-          .select({
-            baseId: prices.baseId,
-            quoteId: prices.quoteId,
-            date: sql`date_trunc('minute', ${prices.tickAt})`.mapWith(String).as('date'),
-            value: prices.value,
-          })
-          .from(prices)
-          .where(
-            and(
-              eq(prices.baseId, quoteTokenId),
-              eq(prices.quoteId, stablecoinId),
-              between(prices.tickAt, startTimestamp, endTimestamp),
-            ),
-          );
-
-        const result = baseTokenPrices
-          .map((item) => {
-            const quoteTokenEquivalent = quoteTokenPrices.find((price) => price.date === item.date);
-
-            if (quoteTokenEquivalent.value !== '0') {
-              return {
-                baseId: item.baseId,
-                quoteId: quoteTokenEquivalent.baseId,
-                date: item.date,
-                value: Number(item.value) / Number(quoteTokenEquivalent.value),
-              };
-            }
-
-            return null;
-          })
-          .sort((a, b) => dayjs(b.date).unix() - dayjs(a.date).unix());
-
-        const resultDayJs = result.map((item) => ({ ...item, date: dayjs(item.date) }));
-
-        const groups = [];
-        let currentGroup = [];
-        let groupStartTime = resultDayJs[result.length - 1].date;
-
-        resultDayJs.forEach((item) => {
-          if (Math.abs(item.date.diff(groupStartTime, 'minute')) <= 30) {
-            currentGroup.push(item);
-          } else {
-            currentGroup = [item];
-            groups.push(currentGroup);
-            groupStartTime = item.date;
-          }
-        });
-
-        const tickResult = groups
-          .filter((group) => group.length > 0)
-          .map((item) => {
-            const startTime = item[item.length - 1].date;
-            const endTime = item[0].date;
-
-            const open = item[item.length - 1].value;
-            const close = item[0].value;
-
-            const values = item.reduce((acc, curValue) => {
-              acc.push(curValue.value);
-              return acc;
-            }, []);
-
-            return {
-              start: startTime,
-              end: endTime,
-              open,
-              close,
-              high: Math.max(...values),
-              low: Math.min(...values),
-            };
-          })
-          .sort((a, b) => dayjs(b.start).unix() - dayjs(a.start).unix());
-
-        return tickResult;
+        return candlesticks;
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
