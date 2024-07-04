@@ -15,6 +15,8 @@ import { asyncRoute } from 'utils/route-wrapper';
 import _ from 'lodash';
 import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 import dayjs from 'dayjs';
+import { validate } from 'utils/validation';
+import Joi from 'joi';
 
 const router = Router();
 
@@ -91,18 +93,33 @@ router.get(
 router.get(
   '/chart',
   asyncRoute(async (req: Request, res: Response) => {
-    const chainId = validateChainId(req, true);
-    const baseTokenAddress = String(req.query.base);
-    const quoteTokenAddress = String(req.query.quote);
-    const start = dayjs.unix(Number(req.query.start)).toDate();
-    const end = dayjs.unix(Number(req.query.end)).toDate();
-    const timeframe = Number(req.query.timeframe);
+    const {
+      chainId,
+      base: baseTokenAddress,
+      quote: quoteTokenAddress,
+      start: startTimestamp,
+      end: endTimestamp,
+      timeframe,
+    } = validate<{ chainId: number; base: string; quote: string; start: number; end: number; timeframe: number }>(
+      Joi.object({
+        chainId: Joi.number().required(),
+        base: Joi.string().required(),
+        quote: Joi.string().required(),
+        start: Joi.number().required(),
+        end: Joi.number().required(),
+        timeframe: Joi.number().required(),
+      }),
+      req.query,
+    );
 
     return maybeCacheResponse(
       res,
-      `chart/${chainId ?? 0}/${baseTokenAddress}/${quoteTokenAddress}/${start}/${end}/${timeframe}`,
+      `chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${startTimestamp}/${endTimestamp}/${timeframe}`,
       async () => {
-        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end);
+        const startDate = dayjs.unix(startTimestamp).toDate();
+        const endDate = dayjs.unix(endTimestamp).toDate();
+
+        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, startDate, endDate);
         const candlesticks = await constructCandlesticks(intervals, timeframe);
 
         return candlesticks;
