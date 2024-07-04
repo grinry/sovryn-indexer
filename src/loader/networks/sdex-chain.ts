@@ -39,7 +39,7 @@ export class SdexChain {
 
   public async getUpdatedLiquidity(user: string, base: string, quote: string, poolIdx: number) {
     const { liquidityChanges } = await this.queryUserPositions(user);
-    return getUserPositions(this.query, this.context.rpc, user, base, quote, poolIdx, liquidityChanges);
+    return getUserPositions(this.query, this.context.rpc, user, base, quote, poolIdx, liquidityChanges, this.context);
   }
 
   toString() {
