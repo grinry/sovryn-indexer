@@ -7,7 +7,7 @@ import { bignumber } from 'mathjs';
 import { db } from 'database/client';
 import { tokenRepository } from 'database/repository/token-repository';
 import { NewTvlItem, tvlRepository } from 'database/repository/tvl-repository';
-import { NewToken, tokens, TvlGroup, tvlTable } from 'database/schema';
+import { NewToken, tokens, TvlGroup } from 'database/schema';
 import { Chain } from 'loader/networks/chain-config';
 import { LegacyChain } from 'loader/networks/legacy-chain';
 import { SdexChain } from 'loader/networks/sdex-chain';

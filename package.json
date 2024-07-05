@@ -10,7 +10,7 @@
     "typechain": "typechain --target ethers-v6 --out-dir src/artifacts/abis/types './src/artifacts/abis/**/*.json' --discriminate-types",
     "dev": "debug=* NODE_PATH=./src ts-node-dev --rs --exit-child ./src/index.ts",
     "predev": "pnpm run typechain",
-    "build": "rimraf build && tsc",
+    "build": "rimraf build && tsc --project tsconfig.json",
     "prebuild": "pnpm run typechain",
     "start": "NODE_ENV=production NODE_PATH=./build node ./build/index.js",
     "docker:dev": "./scripts/dev.sh",
@@ -51,7 +51,7 @@
     "redis": "^4.6.14",
     "rimraf": "^5.0.7",
     "typechain": "^8.3.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.5.3"
   },
   "devDependencies": {
     "@types/convict": "^6.1.6",

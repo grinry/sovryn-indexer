@@ -19,5 +19,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["app-env.d.ts", "./src/**/*.tsx", "./src/**/*.ts", ],
-  "exclude": ["node_modules", "test/**/*.ts"]
+  "exclude": ["node_modules", "./src/artifacts/**/*.ts", "test/**/*.ts", ]
 }
