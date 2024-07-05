@@ -1,10 +1,12 @@
 import dayjs from 'dayjs';
 import { desc, eq, sql, and, or, gte, avg, max, min } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
+import { isNil } from 'lodash';
 import { bignumber, max as bnMax, min as bnMin } from 'mathjs';
 
 import { db } from 'database/client';
-import { chains, prices, tAmmPools, tokens } from 'database/schema';
+import { tvlRepository } from 'database/repository/tvl-repository';
+import { chains, prices, tAmmPools, tokens, TvlGroup } from 'database/schema';
 
 export async function prepareSummary() {
   const base = alias(tokens, 'base');
@@ -136,4 +138,52 @@ export async function prepareSummary() {
     updated_at: new Date().toISOString(),
     total_volume_usd: totalUsdVolume.toFixed(18),
   };
+}
+
+export async function prepareTvl() {
+  const data = await tvlRepository.loadAll().execute();
+
+  const output = {
+    total_btc: 0,
+    total_usd: 0,
+    updatedAt: new Date(),
+  };
+
+  Object.values(TvlGroup).forEach((item) => {
+    output[item] = {
+      totalBtc: 0,
+      totalUsd: 0,
+    };
+  });
+
+  // todo: load usd prices and map to token
+
+  data.forEach((item) => {
+    if (!isNil(output[item.group])) {
+      const entry = {
+        assetName: item.symbol.split('_')[0],
+        contract: item.contract,
+        asset: item.asset,
+        balance: Number(item.balance),
+        balanceBtc: Number(item.balance), // todo: calculate btc balance
+        balanceUsd: Number(item.balance), // todo: calculate usd balance
+      };
+      output[item.group][`${item.symbol}_${item.name}`] = entry;
+
+      /** Increment tvl btc group */
+      if (!isNaN(output[item.group].totalBtc)) {
+        output[item.group].totalBtc = Number(output[item.group].totalBtc) + entry.balanceBtc;
+      }
+      /** Increment tvl btc total */
+      if (!isNaN(output.total_btc)) output.total_btc += entry.balanceBtc;
+      /** Increment tvl usd group */
+      if (!isNaN(output[item.group].totalUsd)) {
+        output[item.group].totalUsd = Number(output[item.group].totalUsd) + entry.balanceUsd;
+      }
+      /** Increment tvl usd total */
+      if (!isNaN(output.total_usd)) output.total_usd += entry.balanceUsd;
+    }
+  });
+
+  return output;
 }

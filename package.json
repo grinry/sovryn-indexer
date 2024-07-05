@@ -22,7 +22,8 @@
     "migrate": "tsx src/database/migrate.ts",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/database/seed.ts",
-    "db:reset": "tsx src/database/reset.ts"
+    "db:reset": "tsx src/database/reset.ts",
+    "debug": "tsx src/loader/debugging/index.ts"
   },
   "dependencies": {
     "@typechain/ethers-v6": "^0.5.1",
