@@ -11,7 +11,7 @@ export enum TvlGroup {
   staking = 'tvlStaking',
   zero = 'tvlZero',
   mynt = 'tvlMynt',
-  sdexPools = 'tvlSdexPools',
+  sdex = 'tvlSdex',
 }
 
 export const tvlTable = pgTable(

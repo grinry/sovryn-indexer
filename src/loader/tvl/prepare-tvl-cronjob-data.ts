@@ -294,7 +294,7 @@ export async function getSdexTvl(chain: SdexChain) {
           tokenId: token.id,
           name: token.symbol,
           balance: balance,
-          group: TvlGroup.sdexPools,
+          group: TvlGroup.sdex,
         });
       } catch (e) {
         logger.error({ token, error: e.message }, 'Error while processing Sdex TVL');

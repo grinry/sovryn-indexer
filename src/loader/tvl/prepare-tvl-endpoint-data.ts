@@ -14,7 +14,7 @@ function makeGroups(chain: Chain) {
     return Object.values(TvlGroup);
   }
   if (chain.hasFeature(NetworkFeature.sdex)) {
-    return [TvlGroup.staking, TvlGroup.sdexPools];
+    return [TvlGroup.staking, TvlGroup.sdex];
   }
   if (chain.hasFeature(NetworkFeature.legacy)) {
     return [TvlGroup.amm, TvlGroup.lending, TvlGroup.protocol, TvlGroup.subprotocol, TvlGroup.zero, TvlGroup.mynt];
