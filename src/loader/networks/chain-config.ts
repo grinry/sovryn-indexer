@@ -1,8 +1,6 @@
 import { JsonRpcProvider } from 'ethers';
 
 import { Multicall, Multicall__factory } from 'artifacts/abis/types';
-import { db } from 'database/client';
-import { chains } from 'database/schema/chains';
 import { getProvider } from 'utils/rpc/rpc';
 
 import { LegacyChain } from './legacy-chain';
@@ -56,5 +54,18 @@ export class Chain {
       chainId: this.chainId,
       features: this.features,
     };
+  }
+
+  async executeMulticall(calls: Array<{ target: string; callData: string }>) {
+    if (!this.multicall) {
+      throw new Error('Multicall is not supported on this network');
+    }
+
+    const results = await this.multicall.tryAggregate.staticCall(true, calls);
+    if (results[0].success && results[0].returnData) {
+      return results[0].returnData;
+    } else {
+      throw new Error('Multicall failed or returned empty');
+    }
   }
 }

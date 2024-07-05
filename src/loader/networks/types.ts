@@ -9,7 +9,7 @@ export type NativeNetworkToken = {
   symbol: string;
   name: string;
   decimals: number;
-}
+};
 
 export type NetworkConfig = {
   chainId: number;

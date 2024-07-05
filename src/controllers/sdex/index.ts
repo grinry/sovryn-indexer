@@ -1,12 +1,22 @@
 import { Router } from 'express';
+import Joi from 'joi';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { maybeCacheResponse } from 'utils/cache';
 import { toResponse } from 'utils/http-response';
 import { validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
+import { validate } from 'utils/validation';
 
 const router = Router();
+
+const querySchema = Joi.object({
+  user: Joi.string().required(),
+  chainId: Joi.string().required(),
+  base: Joi.string().required(),
+  quote: Joi.string().required(),
+  poolIdx: Joi.number().required(),
+});
 
 router.get(
   '/pool_list',
@@ -29,12 +39,23 @@ router.get(
   }),
 );
 
-router.get('/user_pool_positions', async (req, res) => {
-  res.status(200).json({
-    data: {
-      user_pool_positions: [],
-    },
-  });
-});
+router.get(
+  '/user_pool_positions',
+  asyncRoute(async (req, res) => {
+    const { user, chainId, base, quote, poolIdx } = validate(querySchema, req.query);
+
+    return maybeCacheResponse(
+      res,
+      `sdex/user_pool_positions/${chainId}/${user}/${base}/${quote}/${poolIdx}`,
+      async () => {
+        const liquidity = await req.network.sdex.getUpdatedLiquidity(user, base, quote, poolIdx);
+        return {
+          liquidity,
+        };
+      },
+      DEFAULT_CACHE_TTL,
+    ).then((data) => res.json(toResponse(data.liquidity)));
+  }),
+);
 
 export default router;

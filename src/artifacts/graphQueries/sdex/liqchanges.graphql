@@ -1,6 +1,7 @@
-query($minTime: BigInt, $maxTime: BigInt, $orderDir: OrderDirection) {
-  liquidityChanges(first: 1000, where: { block_gte: $minTime, block_lte: $maxTime }, 
-    orderBy: block, orderDirection: $orderDir) {
+query($user: Bytes) {
+  liquidityChanges(first: 1000, where: { user: $user },
+    orderBy: block,
+    orderDirection: desc) {
     id
     transactionHash
     callIndex

@@ -178,6 +178,35 @@
         "type": "uint256"
       }
     ],
+    "name": "queryPoolLpTokenAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "base",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "quote",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "poolIdx",
+        "type": "uint256"
+      }
+    ],
     "name": "queryCurve",
     "outputs": [
       {

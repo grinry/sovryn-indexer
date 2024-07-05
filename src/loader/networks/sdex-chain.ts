@@ -1,17 +1,19 @@
-import type { DocumentNode } from 'graphql';
+import { DocumentNode } from 'graphql';
 
 import { SdexQuery, SdexQuery__factory } from 'artifacts/abis/types';
 import { queryFromSubgraph } from 'loader/subgraph';
+import { getUserPositions } from 'loader/userPositionsLoader';
+import { LiquidityChangesResponse } from 'typings/subgraph/liquidity';
 import { loadGqlFromArtifacts } from 'utils/subgraph';
 
 import type { Chain } from './chain-config';
 import type { SdexChainConfig } from './types';
 
-const gglPools = loadGqlFromArtifacts('graphQueries/sdex/pools.graphql');
+const gqlPools = loadGqlFromArtifacts('graphQueries/sdex/pools.graphql');
+const gqlLiquidityChanges = loadGqlFromArtifacts('graphQueries/sdex/liqchanges.graphql');
 
 export class SdexChain {
   readonly query: SdexQuery;
-  // todo: add impact
 
   constructor(readonly context: Chain, readonly config: SdexChainConfig) {
     this.query = SdexQuery__factory.connect(config.query, this.context.rpc);
@@ -28,7 +30,16 @@ export class SdexChain {
         quote: string;
         poolIdx: number;
       }[];
-    }>(gglPools, { limit });
+    }>(gqlPools, { limit });
+  }
+
+  public async queryUserPositions(user: string) {
+    return this.queryFromSubgraph<LiquidityChangesResponse>(gqlLiquidityChanges, { user });
+  }
+
+  public async getUpdatedLiquidity(user: string, base: string, quote: string, poolIdx: number) {
+    const { liquidityChanges } = await this.queryUserPositions(user);
+    return getUserPositions(this.query, this.context.rpc, user, base, quote, poolIdx, liquidityChanges, this.context);
   }
 
   toString() {
