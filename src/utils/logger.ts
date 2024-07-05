@@ -6,12 +6,14 @@ const transport = pino.transport({
   targets: [
     {
       target: 'pino-pretty',
+      level: config.logLevel,
       options: {
         colorize: true,
       },
     },
     {
       target: 'pino/file',
+      level: config.logLevel,
       options: {
         destination: `${process.cwd()}/app.log`,
       },

@@ -15,7 +15,10 @@ export class Chain {
   readonly supportsMulticall: boolean = false;
 
   readonly multicall: Multicall;
+  readonly stakingAddress: string;
   readonly stablecoinAddress: string;
+  readonly bitcoinAddress: string;
+  readonly sovAddress: string;
 
   readonly features: NetworkFeature[];
   readonly sdex: SdexChain;
@@ -32,6 +35,9 @@ export class Chain {
     this.features = config.features;
     this.token = config.token;
     this.stablecoinAddress = config.stablecoin.toLowerCase();
+    this.bitcoinAddress = config.bitcoin.toLowerCase();
+    this.sovAddress = config.sov.toLowerCase();
+    this.stakingAddress = config.staking.toLowerCase();
 
     if (this.supportsMulticall) {
       this.multicall = Multicall__factory.connect(config.multicall, this.rpc);

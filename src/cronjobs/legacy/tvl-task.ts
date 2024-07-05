@@ -1,19 +1,22 @@
 import { CronJob } from 'cron';
-import { eq } from 'drizzle-orm';
-import gql from 'graphql-tag';
-import _, { isNil } from 'lodash';
-import { bignumber } from 'mathjs';
 
-import { ERC20__factory } from 'artifacts/abis/types';
-import { db } from 'database/client';
-import { apyBlockRepository } from 'database/repository/apy-block-repository';
-import { ammApyBlocks, NewAmmApyBlock, tokens } from 'database/schema';
 import { networks } from 'loader/networks';
-import { LegacyChain, QueryAmmApyDataForBlock } from 'loader/networks/legacy-chain';
+import { LegacyChain } from 'loader/networks/legacy-chain';
+import { SdexChain } from 'loader/networks/sdex-chain';
 import { NetworkFeature } from 'loader/networks/types';
+import {
+  getAmmPoolTvl,
+  getLendingPoolTvl,
+  getMyntTvl,
+  getProtocolTvl,
+  getSdexTvl,
+  getStakingTvl,
+  getSubprotocolTvl,
+  getZeroTvl,
+} from 'loader/tvl/prepare-tvl-cronjob-data';
 import { logger } from 'utils/logger';
 
-const childLogger = logger.child({ module: 'crontab:legacy:tvl' });
+const childLogger = logger.child({ module: 'crontab:tvl' });
 
 export const tvlTask = async (ctx: CronJob) => {
   ctx.stop();
@@ -25,38 +28,28 @@ export const tvlTask = async (ctx: CronJob) => {
     if (item.hasFeature(NetworkFeature.legacy)) {
       await processLegacyChain(item.legacy);
     }
+
+    if (item.hasFeature(NetworkFeature.sdex)) {
+      // await processSdexChain(item.sdex);
+    }
   }
 
   childLogger.info('TVL task retrieved.');
   ctx.start();
 };
 
-async function processLegacyChain(chain: LegacyChain) {
-  const protocolStats = await chain
-    .queryFromSubgraph<{
-      protocolStats: {
-        tokens: { id: string; symbol: string; lastPriceUsd: number; lastPriceBtc: number; decimals: number }[];
-      };
-    }>(
-      gql`
-        query {
-          protocolStats(id: "0") {
-            tokens {
-              id
-              symbol
-              decimals
-              lastPriceUsd
-              lastPriceBtc
-            }
-          }
-        }
-      `,
-    )
-    .then((data) => data.protocolStats.tokens);
-}
+const processLegacyChain = (chain: LegacyChain) =>
+  Promise.allSettled([
+    // getAmmPoolTvl(chain),
+    // getLendingPoolTvl(chain),
+    // getProtocolTvl(chain),
+    // getSubprotocolTvl(chain),
+    // getZeroTvl(chain),
+    getMyntTvl(chain),
+    // getStakingTvl(chain.context),
+  ]).then((results) => logger.debug({ chain: chain.context.chainId, results }, 'Legacy chain processed'));
 
-async function getTokenBalance(chain: LegacyChain, userAddress: string, tokenAddress: string, tokenDecimals: number) {
-  const tokenContract = ERC20__factory.connect(tokenAddress, chain.context.rpc);
-  const balance = await tokenContract.balanceOf(userAddress);
-  return bignumber(balance.toString()).div(bignumber(10).pow(tokenDecimals)).toFixed(18);
-}
+const processSdexChain = (chain: SdexChain) =>
+  Promise.allSettled([getSdexTvl(chain), getStakingTvl(chain.context)]).then((results) =>
+    logger.debug({ chain: chain.context.chainId, results }, 'Sdex chain processed'),
+  );

@@ -7,7 +7,10 @@ export function validateConfig(name: string, config: NetworkConfig) {
     chainId: Joi.number().required(),
     rpc: Joi.string().required(),
     multicall: Joi.string(),
+    staking: Joi.string(),
     stablecoin: Joi.string().required(),
+    bitcoin: Joi.string().required(),
+    sov: Joi.string().required(),
     features: Joi.array().items(Joi.valid(NetworkFeature.sdex, NetworkFeature.legacy)).required(),
     token: Joi.object({
       symbol: Joi.string().required(),
@@ -47,6 +50,9 @@ function validateLegacyConfig(name: string, config: LegacyChainConfig) {
   const result = Joi.object({
     subgraph: Joi.string().required(),
     native: Joi.string().required(),
+    protocol: Joi.string().required(),
+    troveManager: Joi.string().required(),
+    stabilityPool: Joi.string().required(),
   }).validate(config ?? {});
 
   if (result.error) {

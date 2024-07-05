@@ -1,10 +1,10 @@
 import dayjs from 'dayjs';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { eq, inArray, sql, and } from 'drizzle-orm';
 
 import { db } from 'database/client';
 import { NewTvlTableItem, tokens, tvlTable } from 'database/schema';
 
-type NewTvlItem = Omit<NewTvlTableItem, 'date'>;
+export type NewTvlItem = Omit<NewTvlTableItem, 'date'>;
 
 export const tvlRepository = {
   create: (data: NewTvlItem | NewTvlItem[]) =>
@@ -19,7 +19,7 @@ export const tvlRepository = {
           group: sql`excluded.group`,
         },
       }),
-  loadAll: () =>
+  loadAll: (chainId?: number) =>
     db
       .select({
         name: tvlTable.name,
@@ -32,5 +32,10 @@ export const tvlRepository = {
       })
       .from(tvlTable)
       .innerJoin(tokens, eq(tvlTable.tokenId, tokens.id))
-      .where(inArray(tvlTable.date, sql`(select MAX(${tvlTable.date}) from ${tvlTable})`)),
+      .where(
+        and(
+          chainId ? eq(tvlTable.chainId, chainId) : undefined,
+          inArray(tvlTable.date, sql`(select MAX(${tvlTable.date}) from ${tvlTable})`),
+        ),
+      ),
 };

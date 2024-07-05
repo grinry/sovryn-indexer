@@ -11,20 +11,32 @@ export const validateChainId = (req: Request, optional = false) =>
   Number(
     validate<{ chainId: number }>(
       Joi.object({
-        chainId: optional ? Joi.string().optional().default(0) : Joi.string().required(),
+        chainId: optional ? Joi.string().optional().empty('').default(0) : Joi.string().required(),
       }),
       req.query,
       { allowUnknown: true },
     ).chainId,
   );
 
+export enum NetworkFeatureFlag {
+  some = 'some',
+  all = 'all',
+}
+
 export const networkAwareMiddleware =
-  (features: NetworkFeature[] = [NetworkFeature.sdex, NetworkFeature.legacy]) =>
+  (
+    features: NetworkFeature[] = [NetworkFeature.sdex, NetworkFeature.legacy],
+    flag: NetworkFeatureFlag = NetworkFeatureFlag.some,
+  ) =>
   (req: Request, res: Response, next: NextFunction) => {
     const chainId = validateChainId(req);
     const network = networks.getByChainId(chainId);
 
-    if (!network || !features.every((feature) => network.hasFeature(feature))) {
+    if (
+      !network || flag === NetworkFeatureFlag.all
+        ? !features.every((feature) => network.hasFeature(feature))
+        : !features.some((feature) => network.hasFeature(feature))
+    ) {
       throw new BadRequestError('Unsupported network: ' + chainId);
     }
 

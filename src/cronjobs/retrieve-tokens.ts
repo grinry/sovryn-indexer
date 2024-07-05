@@ -38,6 +38,7 @@ export const retrieveTokens = async (ctx: CronJob) => {
 async function prepareLegacyTokens(chain: LegacyChain) {
   try {
     childLogger.info(`Preparing legacy tokens for chain ${chain.context.chainId}`);
+    // todo: looks like it does not query some tokens, like ZUSD. Need to investigate.
     const items = await chain.queryTokens();
     items.tokens.push({
       id: ZeroAddress,

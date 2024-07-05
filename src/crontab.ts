@@ -19,22 +19,22 @@ export const startCrontab = async () => {
   // populate chain config on startup before running other tasks
   await updateChains();
 
-  // // Check and populate supported token list every 2 minutes
-  CronJob.from({
-    // cronTime: '*/10 * * * * *',
-    cronTime: '*/2 * * * *',
-    onTick: tickWrapper(retrieveTokens),
-    runOnInit: true,
-  }).start();
+  // // // Check and populate supported token list every 2 minutes
+  // CronJob.from({
+  //   // cronTime: '*/10 * * * * *',
+  //   cronTime: '*/2 * * * *',
+  //   onTick: tickWrapper(retrieveTokens),
+  //   runOnInit: true,
+  // }).start();
 
-  // // Retrieve USD prices of tokens every minute
-  CronJob.from({
-    cronTime: '*/1 * * * *',
-    onTick: tickWrapper(retrieveUsdPrices),
-  }).start();
+  // // // Retrieve USD prices of tokens every minute
+  // CronJob.from({
+  //   cronTime: '*/1 * * * *',
+  //   onTick: tickWrapper(retrieveUsdPrices),
+  // }).start();
 
   // LEGACY JOBS
-  ammApyJobs();
+  // ammApyJobs();
   graphWrapperJobs();
 };
 
@@ -60,10 +60,10 @@ function ammApyJobs() {
 
 // Tasks migrated from Sovryn-graph-wrapper repository.
 function graphWrapperJobs() {
-  CronJob.from({
-    cronTime: '*/30 * * * *',
-    onTick: tickWrapper(ammPoolsTask),
-  }).start();
+  // CronJob.from({
+  //   cronTime: '*/30 * * * *',
+  //   onTick: tickWrapper(ammPoolsTask),
+  // }).start();
 
   CronJob.from({
     cronTime: '*/30 * * * *',
