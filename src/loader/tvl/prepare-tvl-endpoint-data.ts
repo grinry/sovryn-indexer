@@ -8,6 +8,7 @@ import { TvlGroup } from 'database/schema';
 import { Chain } from 'loader/networks/chain-config';
 import { NetworkFeature } from 'loader/networks/types';
 import { findEndPrice } from 'loader/price';
+import { logger } from 'utils/logger';
 
 function makeGroups(chain: Chain) {
   if (chain.hasFeature(NetworkFeature.legacy) && chain.hasFeature(NetworkFeature.sdex)) {
@@ -74,6 +75,53 @@ export async function prepareTvlEndpoint(chain: Chain) {
       /** Increment tvl usd total */
       if (output.total_usd) output.total_usd = bignumber(output.total_usd).add(entry.balanceUsd).toString();
     }
+  });
+
+  return output;
+}
+
+export async function prepareTvlSummaryEndpoint(chains: Chain[]) {
+  const items = await Promise.all(chains.map((chain) => prepareTvlEndpoint(chain)));
+  // sum all tvl values
+  const output = {
+    totalBtc: '0',
+    totalUsd: '0',
+    updatedAt: new Date(),
+    chains: chains.map((chain) => ({
+      chainId: chain.chainId,
+      name: chain.name,
+      totalBtc: '0',
+      totalUsd: '0',
+    })),
+    features: {},
+  };
+
+  const groups = Object.values(TvlGroup);
+
+  groups.forEach((item) => {
+    output.features[item] = {
+      totalBtc: '0',
+      totalUsd: '0',
+    };
+  });
+
+  items.forEach((item, index) => {
+    logger.info({ item, index }, 'Tvl data');
+    groups.forEach((group) => {
+      if (!isNil(item[group])) {
+        output.features[group].totalBtc = bignumber(output.features[group].totalBtc)
+          .add(item[group].totalBtc)
+          .toString();
+        output.features[group].totalUsd = bignumber(output.features[group].totalUsd)
+          .add(item[group].totalUsd)
+          .toString();
+      }
+    });
+    output.totalBtc = bignumber(output.totalBtc).add(item.total_btc).toString();
+    output.totalUsd = bignumber(output.totalUsd).add(item.total_usd).toString();
+
+    output.chains[index].totalBtc = item.total_btc;
+    output.chains[index].totalUsd = item.total_usd;
   });
 
   return output;

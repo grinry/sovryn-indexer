@@ -26,6 +26,14 @@ export function findEndPrice(entry: number, destination: number, prices: NewPric
   const path = bfsShortestPath(graph, entry, destination);
   const groupedPath = groupItemsInPairs(path ?? []);
 
+  if (entry === destination) {
+    return bignumber(1);
+  }
+
+  if (groupedPath.length === 0) {
+    return bignumber(0);
+  }
+
   let price = bignumber(1);
   for (const [base, quote] of groupedPath) {
     price = bignumber(price).mul(findPrice(base, quote, prices));
