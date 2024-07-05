@@ -37,6 +37,7 @@ export function validateConfig(name: string, config: NetworkConfig) {
 function validateSdexConfig(name: string, config: SdexChainConfig) {
   const result = Joi.object({
     subgraph: Joi.string().required(),
+    dex: Joi.string().required(),
     query: Joi.string().required(),
     impact: Joi.string().required(),
   }).validate(config ?? {});

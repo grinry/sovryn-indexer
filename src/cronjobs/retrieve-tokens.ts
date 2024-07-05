@@ -1,11 +1,11 @@
 import { CronJob } from 'cron';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { ZeroAddress } from 'ethers';
 import _, { difference, uniq } from 'lodash';
 
 import { ERC20__factory } from 'artifacts/abis/types';
 import { db } from 'database/client';
-import { tokens } from 'database/schema';
+import { NewToken, tokens } from 'database/schema';
 import { networks } from 'loader/networks';
 import { Chain } from 'loader/networks/chain-config';
 import { LegacyChain } from 'loader/networks/legacy-chain';
@@ -101,28 +101,34 @@ async function prepareSdexTokens(chain: SdexChain) {
       return;
     }
 
-    const added = [];
+    const newTokens: NewToken[] = [];
 
     for (const item of toAdd) {
       const tokenInfo = await queryTokenInfo(chain.context, item);
-      const t = await db
+      newTokens.push({
+        chainId: chain.context.chainId,
+        address: item,
+        symbol: tokenInfo.symbol,
+        name: tokenInfo.name,
+        decimals: tokenInfo.decimals,
+        ignored: tokenInfo.name.startsWith('MOCK') && tokenInfo.symbol.startsWith('m'),
+      });
+    }
+
+    logger.info({ newTokens }, 'New tokens');
+
+    if (newTokens.length > 0) {
+      const result = await db
         .insert(tokens)
-        .values({
-          chainId: chain.context.chainId,
-          address: item,
-          symbol: tokenInfo.symbol,
-          name: tokenInfo.name,
-          decimals: tokenInfo.decimals,
-        })
+        .values(newTokens)
         .onConflictDoNothing({
           target: [tokens.chainId, tokens.address],
         })
         .returning({ id: tokens.id })
         .execute();
-      added.push(t);
-    }
 
-    childLogger.info(`Added ${added.length} new tokens for chain ${chain.context.chainId} (SDEX)`);
+      childLogger.info(`Added ${result.length} new tokens for chain ${chain.context.chainId} (SDEX)`);
+    }
   } catch (error) {
     childLogger.error(error, 'Error while preparing Sdex tokens');
   }

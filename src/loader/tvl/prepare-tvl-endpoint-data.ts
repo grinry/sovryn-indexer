@@ -6,7 +6,21 @@ import { tokenRepository } from 'database/repository/token-repository';
 import { tvlRepository } from 'database/repository/tvl-repository';
 import { TvlGroup } from 'database/schema';
 import { Chain } from 'loader/networks/chain-config';
+import { NetworkFeature } from 'loader/networks/types';
 import { findEndPrice } from 'loader/price';
+
+function makeGroups(chain: Chain) {
+  if (chain.hasFeature(NetworkFeature.legacy) && chain.hasFeature(NetworkFeature.sdex)) {
+    return Object.values(TvlGroup);
+  }
+  if (chain.hasFeature(NetworkFeature.sdex)) {
+    return [TvlGroup.staking, TvlGroup.sdexPools];
+  }
+  if (chain.hasFeature(NetworkFeature.legacy)) {
+    return [TvlGroup.amm, TvlGroup.lending, TvlGroup.protocol, TvlGroup.subprotocol, TvlGroup.zero, TvlGroup.mynt];
+  }
+  return [];
+}
 
 export async function prepareTvlEndpoint(chain: Chain) {
   const data = await tvlRepository.loadAll(chain.chainId).execute();
@@ -17,7 +31,7 @@ export async function prepareTvlEndpoint(chain: Chain) {
     updatedAt: new Date(),
   };
 
-  Object.values(TvlGroup).forEach((item) => {
+  makeGroups(chain).forEach((item) => {
     output[item] = {
       totalBtc: '0',
       totalUsd: '0',

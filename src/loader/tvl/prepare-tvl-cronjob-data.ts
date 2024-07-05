@@ -164,8 +164,6 @@ export async function getStakingTvl(chain: Chain) {
     })
     .execute();
 
-  logger.info({ sov, chain: chain.stakingAddress }, 'sov');
-
   if (sov) {
     const balance = await getErc20Balance(chain.rpc, sov.address, chain.stakingAddress);
     if (!isNil(balance) && balance > 0) {
@@ -274,5 +272,42 @@ export async function getMyntTvl(chain: LegacyChain) {
 }
 
 export async function getSdexTvl(chain: SdexChain) {
-  //
+  try {
+    logger.info('Processing Sdex TVL data');
+    const tokens = await tokenRepository.listForChain(chain.context.chainId).execute();
+
+    const items: NewTvlItem[] = [];
+
+    for (const token of tokens) {
+      try {
+        // todo: put to multicall
+        // todo: create multicall helper with batches
+        const balance = await getErc20Balance(chain.context.rpc, token.address, chain.config.dex).then((value) =>
+          bignumber(value)
+            .div(10 ** token.decimals)
+            .toString(),
+        );
+
+        items.push({
+          chainId: chain.context.chainId,
+          contract: chain.config.dex,
+          tokenId: token.id,
+          name: token.symbol,
+          balance: balance,
+          group: TvlGroup.sdexPools,
+        });
+      } catch (e) {
+        logger.error({ token, error: e.message }, 'Error while processing Sdex TVL');
+      }
+    }
+
+    if (items) {
+      logger.info({ items }, 'Sdex TVL data processed');
+      await tvlRepository.create(items);
+    }
+
+    logger.info({ items }, 'Sdex TVL data processed');
+  } catch (e) {
+    logger.error({ error: e.message }, 'Error while processing Sdex TVL');
+  }
 }

@@ -26,11 +26,11 @@ export const tvlTask = async (ctx: CronJob) => {
 
   for (const item of items) {
     if (item.hasFeature(NetworkFeature.legacy)) {
-      await processLegacyChain(item.legacy);
+      // await processLegacyChain(item.legacy);
     }
 
     if (item.hasFeature(NetworkFeature.sdex)) {
-      // await processSdexChain(item.sdex);
+      await processSdexChain(item.sdex);
     }
   }
 

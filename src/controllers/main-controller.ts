@@ -71,9 +71,11 @@ router.get(
             chainId: tokens.chainId,
             address: tokens.address,
             usdPrice: sql`${sb.value}`.as('last_usd_price'),
+            ignored: tokens.ignored,
             // usdPriceTime: sb.tickAt,
           })
           .from(tokens)
+          .where(eq(tokens.ignored, false))
           .innerJoin(chain, eq(tokens.chainId, chain.id))
           .innerJoin(quoteToken, and(eq(quoteToken.chainId, chain.id), eq(quoteToken.address, chain.stablecoinAddress)))
           .innerJoin(sb, and(eq(sb.baseId, tokens.id), eq(sb.quoteId, quoteToken.id)))

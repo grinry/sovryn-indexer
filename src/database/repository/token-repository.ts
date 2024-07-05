@@ -6,7 +6,11 @@ import { tokens } from 'database/schema';
 import { Chain } from 'loader/networks/chain-config';
 
 export const tokenRepository = {
-  listForChain: (chainId: number) => db.select().from(tokens).where(eq(tokens.chainId, chainId)),
+  listForChain: (chainId: number) =>
+    db
+      .select()
+      .from(tokens)
+      .where(and(eq(tokens.chainId, chainId), eq(tokens.ignored, false))),
   findAllByAddress: (address: string[], chainId?: number) =>
     db
       .select()

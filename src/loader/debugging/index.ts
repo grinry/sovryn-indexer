@@ -21,7 +21,7 @@ import { sleep } from 'utils/sleep';
             contract: '0x1234567890123456789012345678901234567890',
             tokenId: 3,
             balance: '3000000000000000000',
-            group: TvlGroup.sdex,
+            group: TvlGroup.sdexPools,
             name: 'Sdex',
           },
           {

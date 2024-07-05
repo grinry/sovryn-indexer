@@ -1,6 +1,6 @@
 import { DocumentNode } from 'graphql';
 
-import { SdexQuery, SdexQuery__factory } from 'artifacts/abis/types';
+import { SdexQuery, SdexQuery__factory, SdexSwapDex, SdexSwapDex__factory } from 'artifacts/abis/types';
 import { queryFromSubgraph } from 'loader/subgraph';
 import { getUserPositions } from 'loader/userPositionsLoader';
 import { LiquidityChangesResponse } from 'typings/subgraph/liquidity';
@@ -13,9 +13,11 @@ const gqlPools = loadGqlFromArtifacts('graphQueries/sdex/pools.graphql');
 const gqlLiquidityChanges = loadGqlFromArtifacts('graphQueries/sdex/liqchanges.graphql');
 
 export class SdexChain {
+  readonly dex: SdexSwapDex;
   readonly query: SdexQuery;
 
   constructor(readonly context: Chain, readonly config: SdexChainConfig) {
+    this.dex = SdexSwapDex__factory.connect(config.dex, this.context.rpc);
     this.query = SdexQuery__factory.connect(config.query, this.context.rpc);
   }
 
