@@ -28,13 +28,13 @@ export const startCrontab = async () => {
   }).start();
 
   // Retrieve USD prices of tokens every minute
-  // CronJob.from({
-  //   cronTime: '*/1 * * * *',
-  //   onTick: tickWrapper(retrieveUsdPrices),
-  // }).start();
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(retrieveUsdPrices),
+  }).start();
 
   // LEGACY JOBS
-  // ammApyJobs();
+  ammApyJobs();
   graphWrapperJobs();
 };
 
@@ -60,10 +60,10 @@ function ammApyJobs() {
 
 // Tasks migrated from Sovryn-graph-wrapper repository.
 function graphWrapperJobs() {
-  // CronJob.from({
-  //   cronTime: '*/30 * * * *',
-  //   onTick: tickWrapper(ammPoolsTask),
-  // }).start();
+  CronJob.from({
+    cronTime: '*/30 * * * *',
+    onTick: tickWrapper(ammPoolsTask),
+  }).start();
 
   CronJob.from({
     cronTime: '*/30 * * * *',
