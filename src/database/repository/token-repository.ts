@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { ZeroAddress } from 'ethers';
 
 import { db } from 'database/client';
@@ -33,5 +33,9 @@ export const tokenRepository = {
   findByAddress: (address: string, chainId?: number) =>
     db.query.tokens.findFirst({
       where: and(chainId ? eq(tokens.chainId, chainId) : undefined, eq(tokens.address, address.toLowerCase())),
+    }),
+  getBySymbol: (symbol: string, chainId: number) =>
+    db.query.tokens.findFirst({
+      where: and(eq(tokens.chainId, chainId), eq(sql`lower(${tokens.symbol})`, symbol.toLowerCase())),
     }),
 };

@@ -92,7 +92,7 @@ export class LegacyChain {
   }
 
   public async queryTokenPrices(addresses: string[]) {
-    return this.queryFromSubgraph<{ tokens: { id: string; lastPriceUsd: string }[] }>(gqlTokenPrices, {
+    return this.queryFromSubgraph<{ tokens: { id: string; symbol: string; lastPriceUsd: string }[] }>(gqlTokenPrices, {
       ids: addresses,
     });
   }

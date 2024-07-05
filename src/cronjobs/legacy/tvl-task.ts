@@ -40,14 +40,14 @@ export const tvlTask = async (ctx: CronJob) => {
 
 const processLegacyChain = (chain: LegacyChain) =>
   Promise.allSettled([
-    // getAmmPoolTvl(chain),
-    // getLendingPoolTvl(chain),
-    // getProtocolTvl(chain),
-    // getSubprotocolTvl(chain),
-    // getZeroTvl(chain),
+    getAmmPoolTvl(chain),
+    getLendingPoolTvl(chain),
+    getProtocolTvl(chain),
+    getSubprotocolTvl(chain),
+    getZeroTvl(chain),
     getMyntTvl(chain),
-    // getStakingTvl(chain.context),
-  ]).then((results) => logger.debug({ chain: chain.context.chainId, results }, 'Legacy chain processed'));
+    getStakingTvl(chain.context),
+  ]);
 
 const processSdexChain = (chain: SdexChain) =>
   Promise.allSettled([getSdexTvl(chain), getStakingTvl(chain.context)]).then((results) =>

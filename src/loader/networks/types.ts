@@ -37,5 +37,7 @@ export type LegacyChainConfig = {
   protocol: string;
   troveManager: string;
   stabilityPool: string;
+  myntAggregator?: string;
+  zusdToken?: string;
   // todo: add contract addresses as needed such as staking, pool registries, etc.
 };

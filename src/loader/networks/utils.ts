@@ -53,6 +53,8 @@ function validateLegacyConfig(name: string, config: LegacyChainConfig) {
     protocol: Joi.string().required(),
     troveManager: Joi.string().required(),
     stabilityPool: Joi.string().required(),
+    myntAggregator: Joi.string().default(null),
+    zusdToken: Joi.string().default(null),
   }).validate(config ?? {});
 
   if (result.error) {

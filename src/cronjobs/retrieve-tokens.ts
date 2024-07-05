@@ -1,6 +1,6 @@
 import { CronJob } from 'cron';
 import { and, eq, inArray } from 'drizzle-orm';
-import { Contract, Interface, ZeroAddress } from 'ethers';
+import { ZeroAddress } from 'ethers';
 import _, { difference, uniq } from 'lodash';
 
 import { ERC20__factory } from 'artifacts/abis/types';
@@ -47,6 +47,17 @@ async function prepareLegacyTokens(chain: LegacyChain) {
       decimals: chain.context.token.decimals,
       lastPriceUsd: '0',
     });
+
+    // add zusd token if it exists in config, because it's not in the subgraph.
+    if (chain.config.zusdToken && !items.tokens.find((item) => item.id === chain.config.zusdToken.toLowerCase())) {
+      items.tokens.push({
+        id: chain.config.zusdToken.toLowerCase(),
+        name: 'ZUSD',
+        symbol: 'ZUSD',
+        decimals: 18,
+        lastPriceUsd: '0',
+      });
+    }
 
     if (items.tokens.length === 0) {
       childLogger.info('No tokens to add for legacy chain');

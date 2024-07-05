@@ -1,6 +1,7 @@
 query ($ids: [ID]!) {
   tokens(where: { id_in: $ids }) {
     id
+    symbol
     lastPriceUsd
   }
 }

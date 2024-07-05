@@ -38,7 +38,9 @@
       "native": "0x69FE5cEC81D5eF92600c1A0dB1F11986AB3758Ab",
       "protocol": "0x25380305f223B32FDB844152abD2E82BC5Ad99c3",
       "troveManager": "0xd8aB7EC3bd20A0Ce3084e124bFBC9Aa96a6D7FdD",
-      "stabilityPool": "0x176D218CaB70002CEF08e15271476187c37ed25f"
+      "stabilityPool": "0x176D218CaB70002CEF08e15271476187c37ed25f",
+      "zusdToken": "0x6b41566353d6c7b8c2a7931d498f11489dacac29",
+      "myntAggregator": "0xAc2D05a148Ab512EDEdc7280C00292ed33D31F1a"
     }
   }
 }

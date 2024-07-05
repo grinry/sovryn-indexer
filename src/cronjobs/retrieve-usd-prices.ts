@@ -95,8 +95,27 @@ async function prepareLegacyTokens(chain: LegacyChain, date: Date, tokensToQuery
       }
     }
 
+    // if ZUSD token price is requested, but subgraph does not return it, add price of DLLR to it.
+    if (
+      tokensToQuery.find((item) => item.address.toLowerCase() === chain.config.zusdToken.toLowerCase()) &&
+      !items.find((item) => item.id.toLowerCase() === chain.config.zusdToken.toLowerCase())
+    ) {
+      const dllr = items.find((item) => item.symbol.toLowerCase() === 'dllr');
+      if (dllr) {
+        const zusdId = tokensToQuery.find(
+          (item) => item.address.toLowerCase() === chain.config.zusdToken.toLowerCase(),
+        )!.id;
+        toAdd.push({
+          baseId: zusdId,
+          quoteId: stablecoin.id,
+          tickAt: date,
+          value: dllr.lastPriceUsd,
+        });
+      }
+    }
+
     for (const item of items) {
-      const token = tokensToQuery.find((t) => t.address === item.id);
+      const token = tokensToQuery.find((t) => t.address.toLowerCase() === item.id.toLowerCase());
       if (!token) {
         childLogger.error({ address: item.id }, 'Token not found in tokens list');
         continue;

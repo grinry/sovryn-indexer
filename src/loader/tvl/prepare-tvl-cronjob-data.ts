@@ -191,9 +191,7 @@ export async function getZeroTvl(chain: LegacyChain) {
   try {
     const items: NewTvlItem[] = [];
 
-    const btc = await db.query.tokens.findFirst({
-      where: and(eq(tokens.chainId, chain.context.chainId), eq(tokens.symbol, 'WRBTC')),
-    });
+    const btc = await tokenRepository.getBySymbol('WRBTC', chain.context.chainId).execute();
 
     if (btc) {
       const collateralBalance = await chain.troveManager
@@ -209,9 +207,7 @@ export async function getZeroTvl(chain: LegacyChain) {
       });
     }
 
-    const zusd = await db.query.tokens.findFirst({
-      where: and(eq(tokens.chainId, chain.context.chainId), eq(tokens.symbol, 'ZUSD')),
-    });
+    const zusd = await tokenRepository.getBySymbol('ZUSD', chain.context.chainId).execute();
 
     if (zusd) {
       const zusdBalance = await chain.stabilityPool.getTotalZUSDDeposits().then((item) => bignumber(item).div(1e18));
@@ -234,7 +230,47 @@ export async function getZeroTvl(chain: LegacyChain) {
 }
 
 export async function getMyntTvl(chain: LegacyChain) {
-  //
+  try {
+    const myntAggregator = chain.config.myntAggregator?.toLowerCase();
+    if (!myntAggregator) {
+      // chain does not have Mynt aggregator, skipping
+      return;
+    }
+
+    const zusdToken = await tokenRepository.getBySymbol('ZUSD', chain.context.chainId).execute();
+    const docToken = await tokenRepository.getBySymbol('DOC', chain.context.chainId).execute();
+
+    logger.info({ zusdToken, docToken }, 'tokens?');
+
+    const myntTokens = [docToken, zusdToken].filter((item) => item) as NewToken[];
+
+    const items: NewTvlItem[] = [];
+
+    for (const token of myntTokens) {
+      const balance = await getErc20Balance(chain.context.rpc, token.address, myntAggregator);
+      logger.info({ balance, token, myntAggregator }, 'balance?');
+      if (!isNil(balance)) {
+        items.push({
+          chainId: chain.context.chainId,
+          contract: myntAggregator,
+          tokenId: token.id,
+          name: `${token.symbol}_Mynt`,
+          balance: bignumber(balance)
+            .div(10 ** token.decimals)
+            .toString(),
+          group: TvlGroup.mynt,
+        });
+      }
+    }
+
+    if (items.length > 0) {
+      await tvlRepository.create(items);
+    }
+
+    logger.info({ items }, 'Mynt TVL data processed');
+  } catch (e) {
+    logger.error({ error: e.message }, 'Error while processing Mynt TVL');
+  }
 }
 
 export async function getSdexTvl(chain: SdexChain) {
