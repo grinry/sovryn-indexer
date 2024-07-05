@@ -12,6 +12,9 @@ export type LiquidityChanges = {
   time: string;
   positionType: PositionType;
   changeType: 'burn' | 'mint';
+  liqChange: string;
+  resetRewards: string;
+  timeFirstMint: string;
   bidTick: number;
   askTick: number;
   isBid: boolean;

@@ -53,6 +53,9 @@ function aprDenominator(isConcentrated: boolean, concLiq: string, netCumulativeL
   if (isConcentrated) {
     return castBigToFloat(concLiq);
   } else {
+    if (isNaN(netCumulativeLiquidity) || !isFinite(netCumulativeLiquidity)) {
+      return 0;
+    }
     return netCumulativeLiquidity;
   }
 }

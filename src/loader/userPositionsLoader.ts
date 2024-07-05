@@ -6,9 +6,11 @@ import { LiquidityChangesResponse, PositionType } from 'typings/subgraph/liquidi
 import {
   aggregatePositions,
   filterPositions,
+  netCumulativeLiquidity,
   parseAmbientTokensResult,
   parseRangeTokensResult,
   parseRewardResult,
+  weightedAverageDuration,
 } from 'utils/aggregationUtils';
 import { calculateAPR } from 'utils/aprCalculation';
 
@@ -72,16 +74,6 @@ export async function getUserPositions(
         const lpTokenBalance = await getLPTokenBalance(rpc, user, lpTokenAddress);
 
         const ambientLiq = bignumber(ambientTokens.liq).plus(bignumber(lpTokenBalance)).toFixed(0);
-        const apr = calculateAPR(
-          false, // isConcentrated
-          '0', // rewardLiq
-          '0', // concLiq
-          ambientLiq,
-          0, // bidTick
-          0, // askTick
-          parseFloat(userLiquidity.time), // weightedAverageDuration
-          parseFloat(userLiquidity.liq), // netCumulativeLiquidity
-        );
         return {
           ambientLiq,
           time: userLiquidity.time,
@@ -96,10 +88,10 @@ export async function getUserPositions(
           positionType: userLiquidity.positionType,
           bidTick: userLiquidity.bidTick,
           askTick: userLiquidity.askTick,
-          aprDuration: apr.aprDuration,
-          aprPostLiq: apr.aprPostLiq,
-          aprContributedLiq: apr.aprContributedLiq,
-          aprEst: apr.aprEst,
+          aprDuration: '0',
+          aprPostLiq: '0',
+          aprContributedLiq: '0',
+          aprEst: '0',
         };
       }
       return null;
@@ -159,18 +151,18 @@ export async function getUserPositions(
             '0', // ambientLiq
             userLiquidity.bidTick, // bidTick
             userLiquidity.askTick, // askTick
-            parseFloat(userLiquidity.time), // weightedAverageDuration
-            parseFloat(userLiquidity.liq), // netCumulativeLiquidity
+            weightedAverageDuration(liquidityChanges), // weightedAverageDuration
+            netCumulativeLiquidity(liquidityChanges), // netCumulativeLiquidity
           );
 
           return {
             ambientLiq: '0',
             time: userLiquidity.time,
             transactionHash: userLiquidity.transactionHash,
-            concLiq: rangeTokens.liq,
-            rewardLiq: rewardLiq.liqRewards,
-            baseQty: rangeTokens.baseQty,
-            quoteQty: rangeTokens.quoteQty,
+            concLiq: rangeTokens.liq.toString(),
+            rewardLiq: rewardLiq.liqRewards.toString(),
+            baseQty: rangeTokens.baseQty.toString(),
+            quoteQty: rangeTokens.quoteQty.toString(),
             aggregatedLiquidity: userLiquidity.liq.toString(),
             aggregatedBaseFlow: userLiquidity.baseFlow.toString(),
             aggregatedQuoteFlow: userLiquidity.quoteFlow.toString(),
