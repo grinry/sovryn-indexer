@@ -1,4 +1,4 @@
-import { ethers, ZeroAddress } from 'ethers';
+import { ethers } from 'ethers';
 import { bignumber } from 'mathjs';
 
 import { SdexQuery } from 'artifacts/abis/types';
@@ -15,17 +15,7 @@ import {
 import { calculateAPR } from 'utils/aprCalculation';
 
 import { Chain } from './networks/chain-config';
-
-export async function getLPTokenBalance(rpc: ethers.JsonRpcProvider, user: string, token: string): Promise<string> {
-  if (token === ZeroAddress) {
-    const balance = await rpc.getBalance(user);
-    return balance.toString();
-  } else {
-    const tokenContract = new ethers.Contract(token, ['function balanceOf(address) view returns (uint256)'], rpc);
-    const balance = await tokenContract.balanceOf(user);
-    return balance.toString();
-  }
-}
+import { getErc20Balance } from './token';
 
 export async function getUserPositions(
   queryContract: SdexQuery,
@@ -71,7 +61,7 @@ export async function getUserPositions(
           lpTokenAddressResult.returnData,
         )[0];
 
-        const lpTokenBalance = await getLPTokenBalance(rpc, user, lpTokenAddress);
+        const lpTokenBalance = await getErc20Balance(rpc, lpTokenAddress, user).then((balance) => balance.toString());
 
         const ambientLiq = bignumber(ambientTokens.liq).plus(bignumber(lpTokenBalance)).toFixed(0);
         return {

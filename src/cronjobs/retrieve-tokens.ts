@@ -1,10 +1,11 @@
 import { CronJob } from 'cron';
-import { and, eq, inArray } from 'drizzle-orm';
-import { Contract, Interface, ZeroAddress } from 'ethers';
+import { and, eq, inArray, sql } from 'drizzle-orm';
+import { ZeroAddress } from 'ethers';
 import _, { difference, uniq } from 'lodash';
 
+import { ERC20__factory } from 'artifacts/abis/types';
 import { db } from 'database/client';
-import { tokens } from 'database/schema';
+import { NewToken, tokens } from 'database/schema';
 import { networks } from 'loader/networks';
 import { Chain } from 'loader/networks/chain-config';
 import { LegacyChain } from 'loader/networks/legacy-chain';
@@ -37,6 +38,7 @@ export const retrieveTokens = async (ctx: CronJob) => {
 async function prepareLegacyTokens(chain: LegacyChain) {
   try {
     childLogger.info(`Preparing legacy tokens for chain ${chain.context.chainId}`);
+    // todo: looks like it does not query some tokens, like ZUSD. Need to investigate.
     const items = await chain.queryTokens();
     items.tokens.push({
       id: ZeroAddress,
@@ -45,6 +47,17 @@ async function prepareLegacyTokens(chain: LegacyChain) {
       decimals: chain.context.token.decimals,
       lastPriceUsd: '0',
     });
+
+    // add zusd token if it exists in config, because it's not in the subgraph.
+    if (chain.config.zusdToken && !items.tokens.find((item) => item.id === chain.config.zusdToken.toLowerCase())) {
+      items.tokens.push({
+        id: chain.config.zusdToken.toLowerCase(),
+        name: 'ZUSD',
+        symbol: 'ZUSD',
+        decimals: 18,
+        lastPriceUsd: '0',
+      });
+    }
 
     if (items.tokens.length === 0) {
       childLogger.info('No tokens to add for legacy chain');
@@ -88,28 +101,34 @@ async function prepareSdexTokens(chain: SdexChain) {
       return;
     }
 
-    const added = [];
+    const newTokens: NewToken[] = [];
 
     for (const item of toAdd) {
       const tokenInfo = await queryTokenInfo(chain.context, item);
-      const t = await db
+      newTokens.push({
+        chainId: chain.context.chainId,
+        address: item,
+        symbol: tokenInfo.symbol,
+        name: tokenInfo.name,
+        decimals: tokenInfo.decimals,
+        ignored: tokenInfo.name.startsWith('MOCK') && tokenInfo.symbol.startsWith('m'),
+      });
+    }
+
+    logger.info({ newTokens }, 'New tokens');
+
+    if (newTokens.length > 0) {
+      const result = await db
         .insert(tokens)
-        .values({
-          chainId: chain.context.chainId,
-          address: item,
-          symbol: tokenInfo.symbol,
-          name: tokenInfo.name,
-          decimals: tokenInfo.decimals,
-        })
+        .values(newTokens)
         .onConflictDoNothing({
           target: [tokens.chainId, tokens.address],
         })
         .returning({ id: tokens.id })
         .execute();
-      added.push(t);
-    }
 
-    childLogger.info(`Added ${added.length} new tokens for chain ${chain.context.chainId} (SDEX)`);
+      childLogger.info(`Added ${result.length} new tokens for chain ${chain.context.chainId} (SDEX)`);
+    }
   } catch (error) {
     childLogger.error(error, 'Error while preparing Sdex tokens');
   }
@@ -131,12 +150,7 @@ async function getTokensToAdd(tokenAddresses: string[], chainId: number) {
   );
 }
 
-const tokenAbi = [
-  'function symbol() view returns (string)',
-  'function name() view returns (string)',
-  'function decimals() view returns (uint8)',
-];
-const tokenInterface = new Interface(tokenAbi);
+const tokenInterface = ERC20__factory.createInterface();
 
 async function queryTokenInfo(chain: Chain, tokenAddress: string) {
   if (tokenAddress === ZeroAddress) {
@@ -169,11 +183,11 @@ async function queryTokenInfo(chain: Chain, tokenAddress: string) {
         decimals: Number(tokenInterface.decodeFunctionResult('decimals', value[2][1])),
       }));
   } else {
-    const contract = new Contract(tokenAddress, tokenAbi, chain.rpc);
+    const contract = ERC20__factory.connect(tokenAddress, chain.rpc);
     return {
       symbol: await contract.symbol(),
       name: await contract.name(),
-      decimals: await contract.decimals(),
+      decimals: await contract.decimals().then((value) => Number(value)),
     };
   }
 }

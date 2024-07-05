@@ -4,6 +4,7 @@ import { ammApyBlockTask } from 'cronjobs/legacy/amm/amm-apy-block-task';
 import { ammApyDailyDataTask } from 'cronjobs/legacy/amm/amm-apy-daily-data-task';
 import { ammCleanUpTask } from 'cronjobs/legacy/amm/amm-cleanup-task';
 import { ammPoolsTask } from 'cronjobs/legacy/amm/amm-pools-task';
+import { tvlTask } from 'cronjobs/legacy/tvl-task';
 import { retrieveTokens } from 'cronjobs/retrieve-tokens';
 import { retrieveUsdPrices } from 'cronjobs/retrieve-usd-prices';
 import { updateChains } from 'loader/networks';
@@ -26,7 +27,7 @@ export const startCrontab = async () => {
     runOnInit: true,
   }).start();
 
-  // // Retrieve USD prices of tokens every minute
+  // Retrieve USD prices of tokens every minute
   CronJob.from({
     cronTime: '*/1 * * * *',
     onTick: tickWrapper(retrieveUsdPrices),
@@ -42,21 +43,18 @@ function ammApyJobs() {
   CronJob.from({
     cronTime: '*/2 * * * *',
     onTick: tickWrapper(ammApyBlockTask),
-    runOnInit: true,
   }).start();
 
   // Retrieve daily AMM APY blocks every 30 minutes
   CronJob.from({
     cronTime: '*/30 * * * *',
     onTick: tickWrapper(ammApyDailyDataTask),
-    runOnInit: true,
   }).start();
 
   // Remove AMM APY data older than 2 days every 2 hours
   CronJob.from({
     cronTime: '15 */2 * * *',
     onTick: tickWrapper(ammCleanUpTask),
-    runOnInit: true,
   }).start();
 }
 
@@ -65,6 +63,11 @@ function graphWrapperJobs() {
   CronJob.from({
     cronTime: '*/30 * * * *',
     onTick: tickWrapper(ammPoolsTask),
+  }).start();
+
+  CronJob.from({
+    cronTime: '*/30 * * * *',
+    onTick: tickWrapper(tvlTask),
     runOnInit: true,
   }).start();
 }

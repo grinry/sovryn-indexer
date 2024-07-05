@@ -1,6 +1,7 @@
 import type { DocumentNode } from 'graphql';
 import gql from 'graphql-tag';
 
+import { StabilityPool, StabilityPool__factory, TroveManager, TroveManager__factory } from 'artifacts/abis/types';
 import { queryFromSubgraph } from 'loader/subgraph';
 import { loadGqlFromArtifacts } from 'utils/subgraph';
 
@@ -52,9 +53,18 @@ export type QueryAmmApyDataForBlock = {
 
 export class LegacyChain {
   readonly nativeTokenWrapper: string;
+  readonly protocolAddress: string;
+
+  readonly troveManager: TroveManager;
+  readonly stabilityPool: StabilityPool;
+
   // todo: add contract addresses as needed such as staking, pool registries, etc.
   constructor(readonly context: Chain, readonly config: LegacyChainConfig) {
     this.nativeTokenWrapper = config.native.toLowerCase();
+    this.protocolAddress = config.protocol.toLowerCase();
+
+    this.troveManager = TroveManager__factory.connect(this.config.troveManager, context.rpc);
+    this.stabilityPool = StabilityPool__factory.connect(this.config.stabilityPool, context.rpc);
   }
 
   public queryFromSubgraph<T>(query: DocumentNode, variables: Record<string, unknown> = {}) {
@@ -82,7 +92,7 @@ export class LegacyChain {
   }
 
   public async queryTokenPrices(addresses: string[]) {
-    return this.queryFromSubgraph<{ tokens: { id: string; lastPriceUsd: string }[] }>(gqlTokenPrices, {
+    return this.queryFromSubgraph<{ tokens: { id: string; symbol: string; lastPriceUsd: string }[] }>(gqlTokenPrices, {
       ids: addresses,
     });
   }

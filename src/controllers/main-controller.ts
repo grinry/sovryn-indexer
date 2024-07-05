@@ -1,22 +1,22 @@
+import dayjs from 'dayjs';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { Router, Request, Response } from 'express';
+import Joi from 'joi';
+import _ from 'lodash';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
 import { prices, tokens } from 'database/schema';
 import { chains } from 'database/schema/chains';
+import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 import { networks } from 'loader/networks';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
-import _ from 'lodash';
-import { constructCandlesticks, getPrices } from 'loader/chart/utils';
-import dayjs from 'dayjs';
 import { validate } from 'utils/validation';
-import Joi from 'joi';
 
 const router = Router();
 
@@ -71,9 +71,11 @@ router.get(
             chainId: tokens.chainId,
             address: tokens.address,
             usdPrice: sql`${sb.value}`.as('last_usd_price'),
+            ignored: tokens.ignored,
             // usdPriceTime: sb.tickAt,
           })
           .from(tokens)
+          .where(eq(tokens.ignored, false))
           .innerJoin(chain, eq(tokens.chainId, chain.id))
           .innerJoin(quoteToken, and(eq(quoteToken.chainId, chain.id), eq(quoteToken.address, chain.stablecoinAddress)))
           .innerJoin(sb, and(eq(sb.baseId, tokens.id), eq(sb.quoteId, quoteToken.id)))

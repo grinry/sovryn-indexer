@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, timestamp, varchar, integer, unique, serial, char } from 'drizzle-orm/pg-core';
+import { pgTable, timestamp, varchar, integer, unique, serial, char, boolean } from 'drizzle-orm/pg-core';
 
 import { chains } from './chains';
 
@@ -14,6 +14,7 @@ export const tokens = pgTable(
       .notNull()
       .references(() => chains.id, { onDelete: 'cascade' }),
     address: char('address', { length: 42 }),
+    ignored: boolean('ignored').default(false),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at')
       .defaultNow()

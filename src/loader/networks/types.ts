@@ -15,7 +15,10 @@ export type NetworkConfig = {
   chainId: number;
   rpc: string;
   multicall: string;
+  staking: string;
   stablecoin: string;
+  bitcoin: string;
+  sov: string;
   features: NetworkFeature[];
   token: NativeNetworkToken;
   sdex?: SdexChainConfig;
@@ -24,6 +27,7 @@ export type NetworkConfig = {
 
 export type SdexChainConfig = {
   subgraph: string;
+  dex: string;
   query: string;
   impact: string;
 };
@@ -31,5 +35,10 @@ export type SdexChainConfig = {
 export type LegacyChainConfig = {
   subgraph: string;
   native: string;
+  protocol: string;
+  troveManager: string;
+  stabilityPool: string;
+  myntAggregator?: string;
+  zusdToken?: string;
   // todo: add contract addresses as needed such as staking, pool registries, etc.
 };
