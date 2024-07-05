@@ -4,15 +4,19 @@ import { Router, Request, Response } from 'express';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
-import { tokens } from 'database/schema';
+import { prices, tokens } from 'database/schema';
 import { chains } from 'database/schema/chains';
-import { prices } from 'database/schema/prices';
 import { networks } from 'loader/networks';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
+import _ from 'lodash';
+import { constructCandlesticks, getPrices } from 'loader/chart/utils';
+import dayjs from 'dayjs';
+import { validate } from 'utils/validation';
+import Joi from 'joi';
 
 const router = Router();
 
@@ -83,6 +87,45 @@ router.get(
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toPaginatedResponse(data)));
+  }),
+);
+
+router.get(
+  '/chart',
+  asyncRoute(async (req: Request, res: Response) => {
+    const {
+      chainId,
+      base: baseTokenAddress,
+      quote: quoteTokenAddress,
+      start: startTimestamp,
+      end: endTimestamp,
+      timeframe,
+    } = validate<{ chainId: number; base: string; quote: string; start: number; end: number; timeframe: number }>(
+      Joi.object({
+        chainId: Joi.number().required(),
+        base: Joi.string().required(),
+        quote: Joi.string().required(),
+        start: Joi.number().required(),
+        end: Joi.number().required(),
+        timeframe: Joi.number().required(),
+      }),
+      req.query,
+    );
+
+    return maybeCacheResponse(
+      res,
+      `chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${startTimestamp}/${endTimestamp}/${timeframe}`,
+      async () => {
+        const startDate = dayjs.unix(startTimestamp).toDate();
+        const endDate = dayjs.unix(endTimestamp).toDate();
+
+        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, startDate, endDate);
+        const candlesticks = await constructCandlesticks(intervals, timeframe);
+
+        return candlesticks;
+      },
+      DEFAULT_CACHE_TTL,
+    ).then((data) => res.json(toResponse(data)));
   }),
 );
 
