@@ -10,6 +10,7 @@ import { networks } from 'loader/networks';
 import { LegacyChain } from 'loader/networks/legacy-chain';
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { NetworkFeature } from 'loader/networks/types';
+import { areAddressesEqual } from 'utils/compare';
 import { floorDate } from 'utils/date';
 import { logger } from 'utils/logger';
 
@@ -97,14 +98,12 @@ async function prepareLegacyTokens(chain: LegacyChain, date: Date, tokensToQuery
 
     // if ZUSD token price is requested, but subgraph does not return it, add price of DLLR to it.
     if (
-      tokensToQuery.find((item) => item.address.toLowerCase() === chain.config.zusdToken.toLowerCase()) &&
-      !items.find((item) => item.id.toLowerCase() === chain.config.zusdToken.toLowerCase())
+      tokensToQuery.find((item) => areAddressesEqual(item.address, chain.config.zusdToken)) &&
+      !items.find((item) => areAddressesEqual(item.id, chain.config.zusdToken))
     ) {
       const dllr = items.find((item) => item.symbol.toLowerCase() === 'dllr');
       if (dllr) {
-        const zusdId = tokensToQuery.find(
-          (item) => item.address.toLowerCase() === chain.config.zusdToken.toLowerCase(),
-        )!.id;
+        const zusdId = tokensToQuery.find((item) => areAddressesEqual(item.address, chain.config.zusdToken))!.id;
         toAdd.push({
           baseId: zusdId,
           quoteId: stablecoin.id,
@@ -115,7 +114,7 @@ async function prepareLegacyTokens(chain: LegacyChain, date: Date, tokensToQuery
     }
 
     for (const item of items) {
-      const token = tokensToQuery.find((t) => t.address.toLowerCase() === item.id.toLowerCase());
+      const token = tokensToQuery.find((t) => areAddressesEqual(t.address, item.id));
       if (!token) {
         childLogger.error({ address: item.id }, 'Token not found in tokens list');
         continue;
