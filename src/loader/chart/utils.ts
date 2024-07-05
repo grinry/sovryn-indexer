@@ -1,10 +1,11 @@
-import { db } from 'database/client';
-import { prices } from 'database/schema';
 import dayjs from 'dayjs';
 import { sql, and, eq, between } from 'drizzle-orm';
-import { networks } from 'loader/networks';
-import { NetworkFeature } from 'loader/networks/types';
 import _ from 'lodash';
+
+import { db } from 'database/client';
+import { prices } from 'database/schema';
+import { networks } from 'loader/networks';
+
 import { Interval } from './types';
 
 export const constructCandlesticks = async (intervals: Interval[], timeframe: number) => {
@@ -95,11 +96,9 @@ const getTokenIds = async (chainId: number, baseTokenAddress: string, quoteToken
   const chains = Object.keys(tokensByChain).map((item) => networks.getByChainId(Number(item))!);
   const chain = chains.find((item) => item.chainId === chainId);
 
-  const chainType = chain.hasFeature(NetworkFeature.legacy) ? chain.legacy : chain.sdex;
-
   const baseTokenId = tokens.find((token) => token.address === baseTokenAddress.toLowerCase())?.id;
   const quoteTokenId = tokens.find((token) => token.address === quoteTokenAddress.toLowerCase())?.id;
-  const stablecoinId = tokens.find((token) => token.address === chainType.context.stablecoinAddress)?.id;
+  const stablecoinId = tokens.find((token) => token.address === chain.stablecoinAddress)?.id;
 
   return { baseTokenId, quoteTokenId, stablecoinId };
 };
