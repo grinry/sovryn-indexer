@@ -13,7 +13,9 @@ import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 import { networks } from 'loader/networks';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
+import { ceilDate, floorDate } from 'utils/date';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
+import { logger } from 'utils/logger';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
@@ -107,26 +109,38 @@ router.get(
         chainId: Joi.number().required(),
         base: Joi.string().required(),
         quote: Joi.string().required(),
-        start: Joi.number().required(),
-        end: Joi.number().required(),
-        timeframe: Joi.number().required(),
+        start: Joi.number()
+          .optional()
+          .default((parent) =>
+            dayjs
+              .unix(parent.end ?? dayjs().unix())
+              .subtract(Math.min((parent.timeframe ?? 1) * 30, 11520), 'minutes')
+              .unix(),
+          ),
+        end: Joi.number()
+          .optional()
+          .default(() => dayjs().unix()),
+        // todo: change it to 1m, 5m, 15m, 30m, 1h, 4h, 12h, 1d, 1w etc.
+        timeframe: Joi.number().optional().valid(1, 5, 10, 15, 30, 60, 240, 720, 1440).default(1),
       }),
       req.query,
     );
 
+    const start = ceilDate(dayjs.unix(startTimestamp).toDate(), timeframe);
+    const end = ceilDate(dayjs.unix(endTimestamp).toDate(), timeframe);
+
+    // todo: limit range to x days and y candles
+
     return maybeCacheResponse(
       res,
-      `chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${startTimestamp}/${endTimestamp}/${timeframe}`,
+      `_chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${start.getTime()}/${end.getTime()}/${timeframe}`,
       async () => {
-        const startDate = dayjs.unix(startTimestamp).toDate();
-        const endDate = dayjs.unix(endTimestamp).toDate();
-
-        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, startDate, endDate);
+        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end);
         const candlesticks = await constructCandlesticks(intervals, timeframe);
 
         return candlesticks;
       },
-      DEFAULT_CACHE_TTL,
+      1,
     ).then((data) => res.json(toResponse(data)));
   }),
 );

@@ -26,6 +26,7 @@ export const constructCandlesticks = async (intervals: Interval[], timeframe: nu
       }, []);
 
       return {
+        date: dayjs(endTime).unix(),
         start: startTime,
         end: endTime,
         open,

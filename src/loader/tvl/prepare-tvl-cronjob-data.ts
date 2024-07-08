@@ -302,11 +302,10 @@ export async function getSdexTvl(chain: SdexChain) {
     }
 
     if (items) {
-      logger.info({ items }, 'Sdex TVL data processed');
       await tvlRepository.create(items);
     }
 
-    logger.info({ items }, 'Sdex TVL data processed');
+    logger.info('Sdex TVL data processed');
   } catch (e) {
     logger.error({ error: e.message }, 'Error while processing Sdex TVL');
   }
