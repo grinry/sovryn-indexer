@@ -11,13 +11,13 @@ const transport = pino.transport({
         colorize: true,
       },
     },
-    {
-      target: 'pino/file',
-      level: config.logLevel,
-      options: {
-        destination: `${process.cwd()}/app.log`,
-      },
-    },
+    // {
+    //   target: 'pino/file',
+    //   level: config.logLevel,
+    //   options: {
+    //     destination: `${process.cwd()}/app.log`,
+    //   },
+    // },
   ],
 });
 
