@@ -9,17 +9,17 @@ describe('routes', () => {
   beforeAll(() => {
     app = express();
     app.use(express.json());
-    app.use('/api', router);
+    app.use('/', router);
   });
 
   it('GET /legacy/cmc/tvl should return TVL data', async () => {
-    const response = await request(app).get('/api/legacy/cmc/tvl').query({ chainId: 60808 });
+    const response = await request(app).get('/legacy/cmc/tvl').query({ chainId: 60808 });
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('data');
   });
 
   it('GET /legacy/cmc/summary should return SUMMARY data', async () => {
-    const response = await request(app).get('/api/legacy/cmc/summary').query({ chainId: 60808 });
+    const response = await request(app).get('/legacy/cmc/summary').query({ chainId: 60808 });
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('data');
   });

@@ -9,11 +9,11 @@ describe('GET /tokens', () => {
   beforeAll(() => {
     app = express();
     app.use(express.json());
-    app.use('/api', router);
+    app.use('/', router);
   });
 
   it('should return tokens data', async () => {
-    const response = await request(app).get('/api/tokens');
+    const response = await request(app).get('/tokens');
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('data');
   });
