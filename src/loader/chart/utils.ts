@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { sql, and, eq, between, lte, desc } from 'drizzle-orm';
 import _ from 'lodash';
-import { bignumber } from 'mathjs';
+import { bignumber, max, min } from 'mathjs';
 
 import { db } from 'database/client';
 import { prices } from 'database/schema';
@@ -34,8 +34,8 @@ export const constructCandlesticks = async (intervals: Interval[], timeframe: nu
         end: endTime,
         open,
         close,
-        high: Math.max(...values),
-        low: Math.min(...values),
+        high: max(...values).toString(),
+        low: min(...values).toString(),
       };
     })
     .sort((a, b) => dayjs(b.start).unix() - dayjs(a.start).unix());
