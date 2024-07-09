@@ -13,9 +13,8 @@ import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 import { networks } from 'loader/networks';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
-import { ceilDate, floorDate } from 'utils/date';
+import { ceilDate } from 'utils/date';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
-import { logger } from 'utils/logger';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
@@ -133,14 +132,14 @@ router.get(
 
     return maybeCacheResponse(
       res,
-      `_chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${start.getTime()}/${end.getTime()}/${timeframe}`,
+      `chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${start.getTime()}/${end.getTime()}/${timeframe}`,
       async () => {
         const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end);
         const candlesticks = await constructCandlesticks(intervals, timeframe);
 
         return candlesticks;
       },
-      1,
+      DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
 );

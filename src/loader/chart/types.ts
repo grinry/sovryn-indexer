@@ -4,5 +4,5 @@ export type Interval = {
   baseId: number;
   quoteId: number;
   date: Dayjs;
-  value: number;
+  value: string;
 };

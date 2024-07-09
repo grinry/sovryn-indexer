@@ -238,15 +238,12 @@ export async function getMyntTvl(chain: LegacyChain) {
     const zusdToken = await tokenRepository.getBySymbol('ZUSD', chain.context.chainId).execute();
     const docToken = await tokenRepository.getBySymbol('DOC', chain.context.chainId).execute();
 
-    logger.info({ zusdToken, docToken }, 'tokens?');
-
     const myntTokens = [docToken, zusdToken].filter((item) => item) as NewToken[];
 
     const items: NewTvlItem[] = [];
 
     for (const token of myntTokens) {
       const balance = await getErc20Balance(chain.context.rpc, token.address, myntAggregator);
-      logger.info({ balance, token, myntAggregator }, 'balance?');
       if (!isNil(balance)) {
         items.push({
           chainId: chain.context.chainId,
@@ -265,7 +262,7 @@ export async function getMyntTvl(chain: LegacyChain) {
       await tvlRepository.create(items);
     }
 
-    logger.info({ items }, 'Mynt TVL data processed');
+    logger.info('Mynt TVL data processed');
   } catch (e) {
     logger.error({ error: e.message }, 'Error while processing Mynt TVL');
   }
