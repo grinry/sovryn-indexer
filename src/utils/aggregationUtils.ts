@@ -7,6 +7,8 @@ import {
   PositionType,
 } from 'typings/subgraph/liquidity';
 
+import { areAddressesEqual } from './compare';
+
 const MIN_NUMERIC_STABLE_FLOW = 1e-9;
 
 export function netCumulativeLiquidity(hist: LiquidityChanges[]): number {
@@ -139,9 +141,9 @@ export function filterPositions(
   return liquidityChanges
     .filter(
       (position) =>
-        position.pool.poolIdx === poolIdx.toString() &&
-        position.pool.base === base &&
-        position.pool.quote === quote &&
+        parseInt(position.pool.poolIdx) === parseInt(poolIdx.toString()) &&
+        areAddressesEqual(position.pool.base, base) &&
+        areAddressesEqual(position.pool.quote, quote) &&
         position.positionType === positionType,
     )
     .map((position) => ({

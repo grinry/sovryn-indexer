@@ -9,6 +9,7 @@
   "dockerfile_path": ".",
   "APP_ENV_VARS": {
     "APP_NAME": "sovryn-indexer",
+    "NODE_ENV": "production",
     "LOG_LEVEL": "debug",
     "PORT": "3000",
     "POSTGRES_PORT": "5432"

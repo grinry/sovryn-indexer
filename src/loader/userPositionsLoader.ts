@@ -31,7 +31,7 @@ export async function getUserPositions(
   const ambientPositions = filterPositions(liquidityChanges, poolIdx, base, quote, PositionType.ambient);
 
   if (concentratedPositions.length === 0 && ambientPositions.length === 0) {
-    return null;
+    return [];
   }
 
   const ambientMulticallData = ambientPositions.flatMap(() => [

@@ -48,11 +48,9 @@ async function queryFromSubgraphTry<T = unknown>(
     variables,
   };
 
-  logger.info({ subgraph, request }, 'Querying subgraph');
+  logger.debug({ subgraph, request }, 'Querying subgraph');
 
   const response = await http.post<SubgraphResponse<T>>(subgraph, request);
-
-  logger.info({ subgraph, response }, 'Subgraph query response');
 
   if (response.ok) {
     if (response.data.errors) {

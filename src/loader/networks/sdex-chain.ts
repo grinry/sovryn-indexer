@@ -4,11 +4,11 @@ import { SdexQuery, SdexQuery__factory, SdexSwapDex, SdexSwapDex__factory } from
 import { queryFromSubgraph } from 'loader/subgraph';
 import { getUserPositions } from 'loader/userPositionsLoader';
 import { LiquidityChangesResponse } from 'typings/subgraph/liquidity';
+import { logger } from 'utils/logger';
 import { loadGqlFromArtifacts } from 'utils/subgraph';
 
 import type { Chain } from './chain-config';
 import type { SdexChainConfig } from './types';
-import { logger } from 'utils/logger';
 
 const gqlPools = loadGqlFromArtifacts('graphQueries/sdex/pools.graphql');
 const gqlLiquidityChanges = loadGqlFromArtifacts('graphQueries/sdex/liqchanges.graphql');
@@ -41,9 +41,7 @@ export class SdexChain {
   }
 
   public async getUpdatedLiquidity(user: string, base: string, quote: string, poolIdx: number) {
-    logger.info('getUpdatedLiquidity', { user, base, quote, poolIdx });
     const { liquidityChanges } = await this.queryUserPositions(user);
-    logger.info('liquidityChanges', { liquidityChanges });
     return getUserPositions(this.query, this.context.rpc, user, base, quote, poolIdx, liquidityChanges, this.context);
   }
 
