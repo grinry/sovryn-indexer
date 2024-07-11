@@ -20,7 +20,7 @@ const config = convict({
   logLevel: {
     doc: 'The log level.',
     format: ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'],
-    default: 'info',
+    default: 'debug',
     env: 'LOG_LEVEL',
   },
   networks: {
