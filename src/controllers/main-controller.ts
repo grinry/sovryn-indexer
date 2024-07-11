@@ -93,6 +93,7 @@ router.get(
             return {
               ...item,
               usdPrice: lastUsdPrice,
+              id: undefined,
               stablecoinId: undefined,
             };
           }),
