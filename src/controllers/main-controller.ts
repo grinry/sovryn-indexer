@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { eq, and, sql, desc } from 'drizzle-orm';
+import { eq, and, sql, desc, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { Router, Request, Response } from 'express';
 import Joi from 'joi';
@@ -53,40 +53,50 @@ router.get(
         const quoteToken = alias(tokens, 'quote_token');
         const chain = alias(chains, 'chain');
 
-        const sb = db
-          .selectDistinctOn([prices.baseId, prices.quoteId], {
-            baseId: prices.baseId,
-            quoteId: prices.quoteId,
-            value: prices.value,
-            // tickAt: prices.tickAt,
-          })
-          .from(prices)
-          .orderBy(desc(prices.baseId), desc(prices.quoteId), desc(prices.tickAt))
-          .as('sb');
-
         const tokenQuery = db
           .select({
+            id: tokens.id,
             symbol: tokens.symbol,
             name: tokens.name,
             decimals: tokens.decimals,
             chainId: tokens.chainId,
             address: tokens.address,
-            usdPrice: sql`${sb.value}`.as('last_usd_price'),
-            ignored: tokens.ignored,
-            // usdPriceTime: sb.tickAt,
+            stablecoinId: sql<number>`${quoteToken.id}`.as('stablecoinId'),
           })
           .from(tokens)
           .where(eq(tokens.ignored, false))
           .innerJoin(chain, eq(tokens.chainId, chain.id))
           .innerJoin(quoteToken, and(eq(quoteToken.chainId, chain.id), eq(quoteToken.address, chain.stablecoinAddress)))
-          .innerJoin(sb, and(eq(sb.baseId, tokens.id), eq(sb.quoteId, quoteToken.id)))
           .$dynamic();
 
         const api = createApiQuery('address', OrderBy.asc, (key) => tokens[key], p);
         const items = await api
           .applyPagination(!chainId ? tokenQuery : tokenQuery.where(eq(tokens.chainId, chainId)))
           .execute();
-        return api.getMetadata(items);
+
+        const pairs = items.map((item) => ({ base: item.id, quote: item.stablecoinId }));
+
+        const lastPrices = await db
+          .select({ baseId: prices.baseId, quoteId: prices.quoteId, value: prices.value, date: prices.tickAt })
+          .from(prices)
+          .where(
+            and(
+              eq(prices.tickAt, sql`(select max(${prices.tickAt}) from ${prices})`),
+              or(...pairs.map((pair) => and(eq(prices.baseId, pair.base), eq(prices.quoteId, pair.quote)))),
+            ),
+          );
+
+        return api.getMetadata(
+          items.map((item) => {
+            const lastUsdPrice =
+              lastPrices.find((price) => price.baseId === item.id && price.quoteId === item.stablecoinId)?.value ?? '0';
+            return {
+              ...item,
+              usdPrice: lastUsdPrice,
+              stablecoinId: undefined,
+            };
+          }),
+        );
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toPaginatedResponse(data)));
