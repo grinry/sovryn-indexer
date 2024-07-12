@@ -4,7 +4,6 @@ import { SdexQuery, SdexQuery__factory, SdexSwapDex, SdexSwapDex__factory } from
 import { queryFromSubgraph } from 'loader/subgraph';
 import { getUserPositions } from 'loader/userPositionsLoader';
 import { LiquidityChangesResponse } from 'typings/subgraph/liquidity';
-import { logger } from 'utils/logger';
 import { loadGqlFromArtifacts } from 'utils/subgraph';
 
 import type { Chain } from './chain-config';

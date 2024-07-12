@@ -33,6 +33,8 @@ export type LiquidityChangesResponse = {
 };
 
 export type LiquidityPosition = {
+  base: string;
+  quote: string;
   ambientLiq: string;
   time: string;
   transactionHash: string;

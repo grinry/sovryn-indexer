@@ -65,6 +65,8 @@ export async function getUserPositions(
 
         const ambientLiq = bignumber(ambientTokens.liq).plus(bignumber(lpTokenBalance)).toFixed(0);
         return {
+          base: base,
+          quote: quote,
           ambientLiq,
           time: userLiquidity.time,
           transactionHash: userLiquidity.transactionHash,
@@ -146,6 +148,8 @@ export async function getUserPositions(
           );
 
           return {
+            base: base,
+            quote: quote,
             ambientLiq: '0',
             time: userLiquidity.time,
             transactionHash: userLiquidity.transactionHash,
