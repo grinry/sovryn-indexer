@@ -82,12 +82,13 @@ export function parseRangeTokensResult(result) {
 }
 
 export function aggregatePositions(positions: LiquidityPosition[]) {
-  const firstDepositTxHash = positions.reduce((acc, curr) => {
-    if (!acc || new Date(curr.time) < new Date(acc.time)) {
-      return curr;
-    }
-    return acc;
-  }, positions[0]).transactionHash;
+  const firstDepositTxHash =
+    positions.reduce((acc, curr) => {
+      if (!acc || new Date(curr.time) < new Date(acc.time)) {
+        return curr;
+      }
+      return acc;
+    }, positions[0])?.transactionHash || '';
 
   return positions.reduce(
     (acc, curr) => ({
@@ -116,7 +117,7 @@ export function aggregatePositions(positions: LiquidityPosition[]) {
       quote: '',
       ambientLiq: '0',
       time: '0',
-      transactionHash: '0',
+      transactionHash: '',
       concLiq: '0',
       rewardLiq: '0',
       baseQty: '0',
