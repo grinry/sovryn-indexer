@@ -1,5 +1,5 @@
 import { CronJob } from 'cron';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { ZeroAddress } from 'ethers';
 import _ from 'lodash';
 
@@ -23,22 +23,26 @@ export const retrieveUsdPrices = async (ctx: CronJob) => {
   const tickAt = floorDate(ctx.lastDate());
   childLogger.info({ tickAt }, 'Retrieving USD prices of tokens...');
 
-  const tokens = await db.query.tokens.findMany({
+  const items = await db.query.tokens.findMany({
     columns: {
       id: true,
       chainId: true,
       address: true,
       decimals: true,
     },
+    where: inArray(
+      tokens.chainId,
+      networks.listChains().map((item) => item.chainId),
+    ),
   });
 
-  if (tokens.length === 0) {
+  if (items.length === 0) {
     childLogger.info('No tokens to retrieve USD prices for');
     ctx.start();
     return;
   }
 
-  const tokensByChain = _.groupBy(tokens, (item) => item.chainId);
+  const tokensByChain = _.groupBy(items, (item) => item.chainId);
   const chains = Object.keys(tokensByChain).map((item) => networks.getByChainId(Number(item))!);
 
   for (const chain of chains) {
