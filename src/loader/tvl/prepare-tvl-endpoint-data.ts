@@ -9,6 +9,7 @@ import { Chain } from 'loader/networks/chain-config';
 import { NetworkFeature } from 'loader/networks/types';
 import { findEndPrice } from 'loader/price';
 import { logger } from 'utils/logger';
+import { fixBnValue } from 'utils/price';
 
 function makeGroups(chain: Chain) {
   if (chain.hasFeature(NetworkFeature.legacy) && chain.hasFeature(NetworkFeature.sdex)) {
@@ -57,23 +58,31 @@ export async function prepareTvlEndpoint(chain: Chain) {
         contract: item.contract,
         asset: item.asset,
         balance: String(item.balance),
-        balanceBtc: bignumber(item.balance).mul(findEndPrice(item.tokenId, bitcoinId, priceList)).toString(),
-        balanceUsd: bignumber(item.balance).mul(findEndPrice(item.tokenId, stablecoinId, priceList)).toString(),
+        balanceBtc: fixBnValue(
+          bignumber(item.balance).mul(findEndPrice(item.tokenId, bitcoinId, priceList)),
+        ).toString(),
+        balanceUsd: fixBnValue(
+          bignumber(item.balance).mul(findEndPrice(item.tokenId, stablecoinId, priceList)),
+        ).toString(),
       };
       output[item.group][item.name] = entry;
 
       /** Increment tvl btc group */
       if (!isNaN(output[item.group].totalBtc)) {
-        output[item.group].totalBtc = bignumber(output[item.group].totalBtc).add(entry.balanceBtc).toString();
+        output[item.group].totalBtc = fixBnValue(
+          bignumber(output[item.group].totalBtc).add(entry.balanceBtc),
+        ).toString();
       }
       /** Increment tvl btc total */
-      if (output.total_btc) output.total_btc = bignumber(output.total_btc).add(entry.balanceBtc).toString();
+      if (output.total_btc) output.total_btc = fixBnValue(bignumber(output.total_btc).add(entry.balanceBtc)).toString();
       /** Increment tvl usd group */
       if (!isNaN(output[item.group].totalUsd)) {
-        output[item.group].totalUsd = bignumber(output[item.group].totalUsd).add(entry.balanceUsd).toString();
+        output[item.group].totalUsd = fixBnValue(
+          bignumber(output[item.group].totalUsd).add(entry.balanceUsd),
+        ).toString();
       }
       /** Increment tvl usd total */
-      if (output.total_usd) output.total_usd = bignumber(output.total_usd).add(entry.balanceUsd).toString();
+      if (output.total_usd) output.total_usd = fixBnValue(bignumber(output.total_usd).add(entry.balanceUsd)).toString();
     }
   });
 
@@ -109,16 +118,16 @@ export async function prepareTvlSummaryEndpoint(chains: Chain[]) {
     logger.info({ item, index }, 'Tvl data');
     groups.forEach((group) => {
       if (!isNil(item[group])) {
-        output.features[group].totalBtc = bignumber(output.features[group].totalBtc)
-          .add(item[group].totalBtc)
-          .toString();
-        output.features[group].totalUsd = bignumber(output.features[group].totalUsd)
-          .add(item[group].totalUsd)
-          .toString();
+        output.features[group].totalBtc = fixBnValue(
+          bignumber(output.features[group].totalBtc).add(item[group].totalBtc),
+        ).toString();
+        output.features[group].totalUsd = fixBnValue(
+          bignumber(output.features[group].totalUsd).add(item[group].totalUsd),
+        ).toString();
       }
     });
-    output.totalBtc = bignumber(output.totalBtc).add(item.total_btc).toString();
-    output.totalUsd = bignumber(output.totalUsd).add(item.total_usd).toString();
+    output.totalBtc = fixBnValue(bignumber(output.totalBtc).add(item.total_btc)).toString();
+    output.totalUsd = fixBnValue(bignumber(output.totalUsd).add(item.total_usd)).toString();
 
     output.chains[index].totalBtc = item.total_btc;
     output.chains[index].totalUsd = item.total_usd;
