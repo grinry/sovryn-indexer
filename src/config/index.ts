@@ -50,6 +50,24 @@ const config = convict({
     env: 'READ_ONLY_MODE',
     arg: 'readOnly',
   },
+  redisHost: {
+    doc: 'Redis host',
+    format: String,
+    default: '127.0.0.1',
+    env: 'REDIS_HOST',
+  },
+  redisPort: {
+    doc: 'Redis port',
+    format: 'port',
+    default: 6379,
+    env: 'REDIS_PORT',
+  },
+  redisDb: {
+    doc: 'Redis database',
+    format: 'int',
+    default: 0,
+    env: 'REDIS_DB',
+  },
 });
 
 config.validate({ allowed: 'strict' });
