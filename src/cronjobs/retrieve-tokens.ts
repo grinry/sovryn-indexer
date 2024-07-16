@@ -115,7 +115,7 @@ async function prepareSdexTokens(chain: SdexChain) {
       });
     }
 
-    logger.info({ newTokens }, 'New tokens');
+    logger.info({ newTokens: newTokens.length }, 'New tokens');
 
     if (newTokens.length > 0) {
       const result = await db

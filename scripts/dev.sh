@@ -22,5 +22,6 @@ fi
 
 COMPOSE_HTTP_TIMEOUT=120 docker-compose -f docker-compose.dev.yml up -d
 
+pnpm migrate
 pnpm db:push
 pnpm dev

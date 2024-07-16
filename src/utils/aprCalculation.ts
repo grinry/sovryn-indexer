@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { bignumber } from 'mathjs';
+import { BigNumber, bignumber, pow } from 'mathjs';
 
 interface APRCalcResult {
   aprDuration: string;
@@ -40,36 +40,36 @@ function aprNumerator(
   ambientLiq: string,
   bidTick: number,
   askTick: number,
-): number {
+): BigNumber {
   if (isConcentrated) {
     const amplFactor = estLiqAmplification(bidTick, askTick);
-    return amplFactor * castBigToFloat(rewardLiq) + castBigToFloat(concLiq);
+    return amplFactor.mul(castBigToFloat(rewardLiq).add(castBigToFloat(concLiq)));
   } else {
     return castBigToFloat(ambientLiq);
   }
 }
 
-function aprDenominator(isConcentrated: boolean, concLiq: string, netCumulativeLiquidity: number): number {
+function aprDenominator(isConcentrated: boolean, concLiq: string, netCumulativeLiquidity: number): BigNumber {
   if (isConcentrated) {
     return castBigToFloat(concLiq);
   } else {
     if (isNaN(netCumulativeLiquidity) || !isFinite(netCumulativeLiquidity)) {
-      return 0;
+      return bignumber(0);
     }
-    return netCumulativeLiquidity;
+    return bignumber(netCumulativeLiquidity);
   }
 }
 
 const MAX_APR_CAP = 10.0;
 
-function normalizeApr(num: number, denom: number, time: number): number {
-  if (denom === 0 || time === 0) {
+function normalizeApr(num: BigNumber, denom: BigNumber, time: number) {
+  if (denom.eq(0) || time === 0) {
     return 0.0;
   }
 
-  const growth = num / denom;
+  const growth = num.div(denom);
   const timeInYears = time / (3600 * 24 * 365);
-  const compounded = Math.pow(1 + growth, 1 / timeInYears) - 1;
+  const compounded = Math.pow(1 + growth.toNumber(), 1 / timeInYears) - 1;
 
   if (compounded < 0.0) {
     return 0.0;
@@ -79,15 +79,14 @@ function normalizeApr(num: number, denom: number, time: number): number {
   return compounded;
 }
 
-function castBigToFloat(liq: string): number {
+function castBigToFloat(liq: string): BigNumber {
   const bigNumber = bignumber(liq).toString();
-  const floatVal = ethers.formatUnits(bigNumber, 18);
-  return parseFloat(floatVal);
+  return bignumber(bigNumber).div(10 ** 18);
 }
 
-function convertFloatToIntString(value: number): string {
+function convertFloatToIntString(value: BigNumber): string {
   const multiplier = Math.pow(10, 18);
-  const intValue = Math.floor(value * multiplier);
+  const intValue = value.mul(multiplier);
   return intValue.toString();
 }
 
@@ -95,9 +94,9 @@ function tickToPrice(tick: number): number {
   return Math.pow(1.0001, tick);
 }
 
-function estLiqAmplification(bidTick: number, askTick: number): number {
+function estLiqAmplification(bidTick: number, askTick: number): BigNumber {
   const midTick = (bidTick + askTick) / 2;
   const bidPrice = Math.sqrt(tickToPrice(bidTick));
   const midPrice = Math.sqrt(tickToPrice(midTick));
-  return midPrice / (midPrice - bidPrice);
+  return bignumber(midPrice).div(bignumber(midPrice).minus(bidPrice));
 }

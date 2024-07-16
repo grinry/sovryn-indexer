@@ -60,7 +60,7 @@ export async function getAmmPoolTvl(chain: LegacyChain) {
           });
         }
       } catch (e) {
-        logger.error({ contract, tokens }, 'Error while processing AMM pool');
+        logger.error({ contract, error: e.message }, 'Error while processing AMM pool');
       }
 
       // todo: old service updates summary table, but we don't have it yet

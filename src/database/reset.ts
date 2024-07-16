@@ -25,5 +25,7 @@ import config from 'config';
   } catch (error) {
     console.error(error);
   }
+  await db.execute(sql`DROP TABLE IF EXISTS "public"."__drizzle_migrations";`);
+  await db.execute(sql`DROP TABLE IF EXISTS "drizzle"."__drizzle_migrations";`);
   await migrationClient.end();
 })();
