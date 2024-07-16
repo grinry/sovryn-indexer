@@ -3,7 +3,7 @@ import Redis from 'ioredis';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 
 import config from 'config';
-import { logger } from 'utils/logger';
+import { HttpError } from 'utils/custom-error';
 
 interface RateLimiterOptions {
   keyPrefix: string;
@@ -11,17 +11,12 @@ interface RateLimiterOptions {
   duration: number;
 }
 
-const redisClient = new Redis({
-  host: config.redisHost || 'node-api-redis',
-  port: config.redisPort || 6379,
-  db: config.redisDb || 0,
-  enableOfflineQueue: false,
-});
+const redisClient = new Redis(config.redisCacheUrl);
 
 const createRateLimiterMiddleware = (options: RateLimiterOptions) => {
   const rateLimiter = new RateLimiterRedis({
     storeClient: redisClient,
-    keyPrefix: options.keyPrefix,
+    keyPrefix: `rm--${options.keyPrefix}`,
     points: options.points,
     duration: options.duration,
   });
@@ -32,7 +27,7 @@ const createRateLimiterMiddleware = (options: RateLimiterOptions) => {
       await rateLimiter.consume(clientIp);
       next();
     } catch (err) {
-      res.status(429).send('Too Many Requests');
+      throw new HttpError(429, 'Too Many Requests');
     }
   };
 };
