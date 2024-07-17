@@ -6,6 +6,7 @@ import { SdexChain } from 'loader/networks/sdex-chain';
 import { NetworkFeature } from 'loader/networks/types';
 import {
   getAmmPoolTvl,
+  getFishTvl,
   getLendingPoolTvl,
   getMyntTvl,
   getProtocolTvl,
@@ -47,6 +48,7 @@ const processLegacyChain = (chain: LegacyChain) =>
     getZeroTvl(chain),
     getMyntTvl(chain),
     getStakingTvl(chain.context),
+    getFishTvl(chain.context),
   ]);
 
 const processSdexChain = (chain: SdexChain) =>

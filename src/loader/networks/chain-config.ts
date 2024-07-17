@@ -19,6 +19,8 @@ export class Chain {
   readonly stablecoinAddress: string;
   readonly bitcoinAddress: string;
   readonly sovAddress: string;
+  readonly babelFishMultisig: string;
+  readonly babelFishStaking: string;
 
   readonly features: NetworkFeature[];
   readonly sdex: SdexChain;
@@ -38,6 +40,8 @@ export class Chain {
     this.bitcoinAddress = config.bitcoin.toLowerCase();
     this.sovAddress = config.sov.toLowerCase();
     this.stakingAddress = config.staking.toLowerCase();
+    this.babelFishMultisig = (config.babelFishMultisig || '').toLowerCase();
+    this.babelFishStaking = (config.babelFishStaking || '').toLowerCase();
 
     if (this.supportsMulticall) {
       this.multicall = Multicall__factory.connect(config.multicall, this.rpc);

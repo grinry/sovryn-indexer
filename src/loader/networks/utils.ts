@@ -11,6 +11,8 @@ export function validateConfig(name: string, config: NetworkConfig) {
     stablecoin: Joi.string().required(),
     bitcoin: Joi.string().required(),
     sov: Joi.string().required(),
+    babelFishMultisig: Joi.string().optional(),
+    babelFishStaking: Joi.string().optional(),
     features: Joi.array().items(Joi.valid(NetworkFeature.sdex, NetworkFeature.legacy)).required(),
     token: Joi.object({
       symbol: Joi.string().required(),

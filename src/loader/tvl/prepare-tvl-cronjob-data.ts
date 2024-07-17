@@ -11,7 +11,7 @@ import { NewToken, tokens, TvlGroup } from 'database/schema';
 import { Chain } from 'loader/networks/chain-config';
 import { LegacyChain } from 'loader/networks/legacy-chain';
 import { SdexChain } from 'loader/networks/sdex-chain';
-import { findTokenByAddress, getErc20Balance } from 'loader/token';
+import { findTokenByAddress, getErc20Balance, getErc20TotalSupply } from 'loader/token';
 import { logger } from 'utils/logger';
 import { fixBnValue } from 'utils/price';
 
@@ -172,6 +172,31 @@ export async function getStakingTvl(chain: Chain) {
       });
     }
   }
+}
+
+export async function getFishTvl(chain: Chain) {
+  const fish = await tokenRepository.getBySymbol('fish', chain.chainId).execute();
+
+  const fishTotalSupply = await getErc20TotalSupply(chain.rpc, fish.address);
+
+  const multisigBalance = chain.babelFishMultisig
+    ? await getErc20Balance(chain.rpc, fish.address, chain.babelFishMultisig)
+    : BigInt(0);
+
+  const stakingBalance = chain.babelFishStaking
+    ? await getErc20Balance(chain.rpc, fish.address, chain.babelFishStaking)
+    : BigInt(0);
+
+  await tvlRepository.create({
+    chainId: chain.chainId,
+    contract: fish.address,
+    tokenId: fish.id,
+    name: 'FISH_TVL',
+    balance: fixBnValue(
+      bignumber(fishTotalSupply).minus(multisigBalance.toString()).minus(stakingBalance.toString()),
+    ).toString(),
+    group: TvlGroup.fish,
+  });
 }
 
 export async function getSubprotocolTvl(chain: LegacyChain) {

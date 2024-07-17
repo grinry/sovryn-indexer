@@ -29,6 +29,8 @@
     "stablecoin": "0xb5999795be0ebb5bab23144aa5fd6a02d080299f",
     "bitcoin": "0x0000000000000000000000000000000000000000",
     "sov": "0xEFc78fc7d48b64958315949279Ba181c2114ABBd",
+    "babelFishMultisig ": "0x26712A09D40f11F34e6c14633ED2c7C34c903Ef0",
+    "babelFishStaking": "0xfd8ea2E5e8591fA791d44731499CDf2e81Cd6A41",
     "token": {
       "symbol": "RBTC",
       "name": "Rootstock Smart Bitcoin",

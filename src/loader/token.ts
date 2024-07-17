@@ -8,5 +8,8 @@ export const getErc20Balance = (provider: Provider, tokenAddress: string, userAd
     ? provider.getBalance(userAddress)
     : ERC20__factory.connect(tokenAddress, provider).balanceOf(userAddress);
 
+export const getErc20TotalSupply = (provider: Provider, tokenAddress: string) =>
+  ERC20__factory.connect(tokenAddress, provider).totalSupply();
+
 export const findTokenByAddress = (address: string, list: (typeof tokens.$inferSelect)[]) =>
   list.find((item) => item.address === address);

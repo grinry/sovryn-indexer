@@ -27,6 +27,7 @@ function makeGroups(chain: Chain) {
       TvlGroup.zero,
       TvlGroup.mynt,
       TvlGroup.staking,
+      TvlGroup.fish,
     ];
   }
   return [];

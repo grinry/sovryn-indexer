@@ -19,6 +19,8 @@ export type NetworkConfig = {
   stablecoin: string;
   bitcoin: string;
   sov: string;
+  babelFishMultisig?: string;
+  babelFishStaking?: string;
   features: NetworkFeature[];
   token: NativeNetworkToken;
   sdex?: SdexChainConfig;
