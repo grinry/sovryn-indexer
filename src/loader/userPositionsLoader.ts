@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { bignumber } from 'mathjs';
 
 import { SdexQuery } from 'artifacts/abis/types';
-import { LiquidityChangesResponse, PositionType } from 'typings/subgraph/liquidity';
+import { LiquidityChanges, LiquidityChangesResponse, PositionType } from 'typings/subgraph/liquidity';
 import {
   aggregatePositions,
   filterPositions,
@@ -92,8 +92,21 @@ export async function getUserPositions(
 
   const aggregatedAmbientPosition = aggregatePositions(ambientPositionResults.filter(Boolean));
 
-  const multicallData = concentratedPositions.flatMap((userLiquidity) => {
-    const { bidTick, askTick } = userLiquidity;
+  // Group concentrated positions by (base, quote, poolIdx, bidTick, askTick)
+  const groupedConcentratedPositions: { [key: string]: LiquidityChanges[] } = concentratedPositions.reduce(
+    (acc: { [key: string]: LiquidityChanges[] }, pos) => {
+      const key = `${pos.pool.base}-${pos.pool.quote}-${pos.pool.poolIdx}-${pos.bidTick}-${pos.askTick}`;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(pos);
+      return acc;
+    },
+    {},
+  );
+
+  const multicallData = Object.values(groupedConcentratedPositions).flatMap((positions) => {
+    const { bidTick, askTick } = positions[0];
     return [
       {
         target: queryContract.getAddress(),
@@ -123,7 +136,8 @@ export async function getUserPositions(
   const multicallResults = await chain.multicall.tryAggregate.staticCall(true, multicallData);
 
   const concentratedPositionsResults = await Promise.all(
-    concentratedPositions.map(async (userLiquidity, index) => {
+    Object.values(groupedConcentratedPositions).map(async (positions, index) => {
+      const latestPosition = positions[positions.length - 1];
       const rangeTokensResult = multicallResults[index * 2];
       const rewardLiqResult = multicallResults[index * 2 + 1];
 
@@ -141,8 +155,8 @@ export async function getUserPositions(
             rewardLiq.liqRewards, // rewardLiq
             rangeTokens.liq, // concLiq
             '0', // ambientLiq
-            userLiquidity.bidTick, // bidTick
-            userLiquidity.askTick, // askTick
+            latestPosition.bidTick, // bidTick
+            latestPosition.askTick, // askTick
             weightedAverageDuration(liquidityChanges), // weightedAverageDuration
             netCumulativeLiquidity(liquidityChanges), // netCumulativeLiquidity
           );
@@ -151,18 +165,18 @@ export async function getUserPositions(
             base: base,
             quote: quote,
             ambientLiq: '0',
-            time: userLiquidity.time,
-            transactionHash: userLiquidity.transactionHash,
+            time: latestPosition.time,
+            transactionHash: latestPosition.transactionHash,
             concLiq: rangeTokens.liq.toString(),
             rewardLiq: rewardLiq.liqRewards.toString(),
             baseQty: rangeTokens.baseQty.toString(),
             quoteQty: rangeTokens.quoteQty.toString(),
-            aggregatedLiquidity: userLiquidity.liq.toString(),
-            aggregatedBaseFlow: userLiquidity.baseFlow.toString(),
-            aggregatedQuoteFlow: userLiquidity.quoteFlow.toString(),
-            positionType: userLiquidity.positionType,
-            bidTick: userLiquidity.bidTick,
-            askTick: userLiquidity.askTick,
+            aggregatedLiquidity: latestPosition.liq.toString(),
+            aggregatedBaseFlow: latestPosition.baseFlow.toString(),
+            aggregatedQuoteFlow: latestPosition.quoteFlow.toString(),
+            positionType: latestPosition.positionType,
+            bidTick: latestPosition.bidTick,
+            askTick: latestPosition.askTick,
             aprDuration: apr.aprDuration,
             aprPostLiq: apr.aprPostLiq,
             aprContributedLiq: apr.aprContributedLiq,
