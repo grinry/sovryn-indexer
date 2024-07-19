@@ -23,7 +23,7 @@
   "rootstock": {
     "chainId": 31,
     "rpc": "https://public-node.testnet.rsk.co",
-    "features": ["legacy"],    
+    "features": ["legacy"],
     "multicall": "0x9e469e1fc7fb4c5d17897b68eaf1afc9df39f103",
     "staking": "0xc37A85e35d7eECC82c4544dcba84CF7E61e1F1a3",
     "stablecoin": "0xa9262cc3fb54ea55b1b0af00efca9416b8d59570",
@@ -41,7 +41,8 @@
       "troveManager": "0xd8aB7EC3bd20A0Ce3084e124bFBC9Aa96a6D7FdD",
       "stabilityPool": "0x176D218CaB70002CEF08e15271476187c37ed25f",
       "zusdToken": "0x6b41566353d6c7b8c2a7931d498f11489dacac29",
-      "myntAggregator": "0xAc2D05a148Ab512EDEdc7280C00292ed33D31F1a"
+      "myntAggregator": "0xAc2D05a148Ab512EDEdc7280C00292ed33D31F1a",
+      "babelFishStaking": "0xc1fc98FEFA2130fC1CE352ec85f7aa61021eFE97"
     }
   }
 }
