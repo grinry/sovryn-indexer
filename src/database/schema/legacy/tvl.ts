@@ -12,6 +12,7 @@ export enum TvlGroup {
   zero = 'tvlZero',
   mynt = 'tvlMynt',
   sdex = 'tvlSdex',
+  fish = 'tvlFish',
 }
 
 export const tvlTable = pgTable(

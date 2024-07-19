@@ -54,6 +54,8 @@ export type QueryAmmApyDataForBlock = {
 export class LegacyChain {
   readonly nativeTokenWrapper: string;
   readonly protocolAddress: string;
+  readonly babelFishMultisig: string;
+  readonly babelFishStaking: string;
 
   readonly troveManager: TroveManager;
   readonly stabilityPool: StabilityPool;
@@ -62,6 +64,8 @@ export class LegacyChain {
   constructor(readonly context: Chain, readonly config: LegacyChainConfig) {
     this.nativeTokenWrapper = config.native.toLowerCase();
     this.protocolAddress = config.protocol.toLowerCase();
+    this.babelFishMultisig = (config.babelFishMultisig || '').toLowerCase();
+    this.babelFishStaking = (config.babelFishStaking || '').toLowerCase();
 
     this.troveManager = TroveManager__factory.connect(this.config.troveManager, context.rpc);
     this.stabilityPool = StabilityPool__factory.connect(this.config.stabilityPool, context.rpc);

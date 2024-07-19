@@ -56,6 +56,8 @@ function validateLegacyConfig(name: string, config: LegacyChainConfig) {
     stabilityPool: Joi.string().required(),
     myntAggregator: Joi.string().default(null),
     zusdToken: Joi.string().default(null),
+    babelFishMultisig: Joi.string().default(null),
+    babelFishStaking: Joi.string().default(null),
   }).validate(config ?? {});
 
   if (result.error) {

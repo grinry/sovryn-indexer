@@ -19,7 +19,7 @@ export class Chain {
   readonly stablecoinAddress: string;
   readonly bitcoinAddress: string;
   readonly sovAddress: string;
-
+  
   readonly features: NetworkFeature[];
   readonly sdex: SdexChain;
   readonly legacy: LegacyChain;

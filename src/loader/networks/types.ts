@@ -40,5 +40,7 @@ export type LegacyChainConfig = {
   stabilityPool: string;
   myntAggregator?: string;
   zusdToken?: string;
+  babelFishMultisig?: string;
+  babelFishStaking?: string;
   // todo: add contract addresses as needed such as staking, pool registries, etc.
 };
