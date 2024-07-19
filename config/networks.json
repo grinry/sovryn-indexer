@@ -29,8 +29,6 @@
     "stablecoin": "0xb5999795be0ebb5bab23144aa5fd6a02d080299f",
     "bitcoin": "0x0000000000000000000000000000000000000000",
     "sov": "0xEFc78fc7d48b64958315949279Ba181c2114ABBd",
-    "babelFishMultisig ": "0x26712A09D40f11F34e6c14633ED2c7C34c903Ef0",
-    "babelFishStaking": "0xfd8ea2E5e8591fA791d44731499CDf2e81Cd6A41",
     "token": {
       "symbol": "RBTC",
       "name": "Rootstock Smart Bitcoin",
@@ -43,7 +41,9 @@
       "troveManager": "0x82B09695ee4F214f3A0803683C4AaEc332E4E0a3",
       "stabilityPool": "0xd46C0225D1331B46700d64fF8c906709D15C9202",
       "zusdToken": "0xdB107FA69E33f05180a4C2cE9c2E7CB481645C2d",
-      "myntAggregator": "0x5f777270259E32F79589Fe82269db6209F7B7582"
+      "myntAggregator": "0x5f777270259E32F79589Fe82269db6209F7B7582",
+      "babelFishMultisig ": "0x26712A09D40f11F34e6c14633ED2c7C34c903Ef0",
+      "babelFishStaking": "0xfd8ea2E5e8591fA791d44731499CDf2e81Cd6A41"
     }
   }
 }

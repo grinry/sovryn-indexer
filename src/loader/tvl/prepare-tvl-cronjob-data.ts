@@ -179,12 +179,12 @@ export async function getFishTvl(chain: Chain) {
 
   const fishTotalSupply = await getErc20TotalSupply(chain.rpc, fish.address);
 
-  const multisigBalance = chain.babelFishMultisig
-    ? await getErc20Balance(chain.rpc, fish.address, chain.babelFishMultisig)
+  const multisigBalance = chain.legacy.babelFishMultisig
+    ? await getErc20Balance(chain.rpc, fish.address, chain.legacy.babelFishMultisig)
     : BigInt(0);
 
-  const stakingBalance = chain.babelFishStaking
-    ? await getErc20Balance(chain.rpc, fish.address, chain.babelFishStaking)
+  const stakingBalance = chain.legacy.babelFishStaking
+    ? await getErc20Balance(chain.rpc, fish.address, chain.legacy.babelFishStaking)
     : BigInt(0);
 
   await tvlRepository.create({

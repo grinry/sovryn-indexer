@@ -11,8 +11,6 @@ export function validateConfig(name: string, config: NetworkConfig) {
     stablecoin: Joi.string().required(),
     bitcoin: Joi.string().required(),
     sov: Joi.string().required(),
-    babelFishMultisig: Joi.string().optional(),
-    babelFishStaking: Joi.string().optional(),
     features: Joi.array().items(Joi.valid(NetworkFeature.sdex, NetworkFeature.legacy)).required(),
     token: Joi.object({
       symbol: Joi.string().required(),
@@ -58,6 +56,8 @@ function validateLegacyConfig(name: string, config: LegacyChainConfig) {
     stabilityPool: Joi.string().required(),
     myntAggregator: Joi.string().default(null),
     zusdToken: Joi.string().default(null),
+    babelFishMultisig: Joi.string().default(null),
+    babelFishStaking: Joi.string().default(null),
   }).validate(config ?? {});
 
   if (result.error) {

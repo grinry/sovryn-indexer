@@ -19,8 +19,6 @@ export type NetworkConfig = {
   stablecoin: string;
   bitcoin: string;
   sov: string;
-  babelFishMultisig?: string;
-  babelFishStaking?: string;
   features: NetworkFeature[];
   token: NativeNetworkToken;
   sdex?: SdexChainConfig;
@@ -42,5 +40,7 @@ export type LegacyChainConfig = {
   stabilityPool: string;
   myntAggregator?: string;
   zusdToken?: string;
+  babelFishMultisig?: string;
+  babelFishStaking?: string;
   // todo: add contract addresses as needed such as staking, pool registries, etc.
 };
