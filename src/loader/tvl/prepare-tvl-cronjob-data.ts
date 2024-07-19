@@ -197,6 +197,8 @@ export async function getFishTvl(chain: Chain) {
     ).toString(),
     group: TvlGroup.fish,
   });
+
+  logger.info('Fish TVL data processed');
 }
 
 export async function getSubprotocolTvl(chain: LegacyChain) {
