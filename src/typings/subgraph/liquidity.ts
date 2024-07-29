@@ -58,3 +58,27 @@ export enum PositionType {
   ambient = 'ambient',
   concentrated = 'concentrated',
 }
+
+export type Swap = {
+  id: string;
+  transactionHash: string;
+  callIndex: number;
+  user: string;
+  pool: {
+    base: string;
+    quote: string;
+    poolIdx: string;
+  };
+  block: string;
+  time: string;
+  isBuy: boolean;
+  inBaseQty: boolean;
+  qty: string;
+  limitPrice: string;
+  minOut: string;
+  baseFlow: string;
+  quoteFlow: string;
+};
+export type SwapsResponse = {
+  swaps: Swap[];
+};
