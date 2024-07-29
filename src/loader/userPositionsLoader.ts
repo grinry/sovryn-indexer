@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { ethers } from 'ethers';
 import { bignumber } from 'mathjs';
 
@@ -13,6 +14,7 @@ import {
   weightedAverageDuration,
 } from 'utils/aggregationUtils';
 import { calculateAPR } from 'utils/aprCalculation';
+import { logger } from 'utils/logger';
 
 import { Chain } from './networks/chain-config';
 import { getErc20Balance } from './token';
@@ -29,6 +31,44 @@ export async function getUserPositions(
 ) {
   const concentratedPositions = filterPositions(liquidityChanges, poolIdx, base, quote, PositionType.concentrated);
   const ambientPositions = filterPositions(liquidityChanges, poolIdx, base, quote, PositionType.ambient);
+
+  if (!ambientPositions.length || ambientPositions[0].liq === '0') {
+    // If there are no ambient positions, try checking for LP tokens...
+    const lpTokenAddress = await queryContract.queryPoolLpTokenAddress(base, quote, poolIdx);
+    const lpTokenBalance = await getErc20Balance(rpc, lpTokenAddress, user).then((balance) => balance.toString());
+
+    if (bignumber(lpTokenBalance).gt(0)) {
+      ambientPositions.push({
+        id: '',
+        changeType: 'mint',
+        transactionHash: '',
+        callIndex: 0,
+        user,
+        pool: {
+          base,
+          quote,
+          poolIdx: poolIdx.toString(),
+        },
+        block: '',
+        time: dayjs().unix().toString(),
+        positionType: PositionType.ambient,
+        liqChange: lpTokenBalance,
+        resetRewards: '',
+        timeFirstMint: '',
+        bidTick: 0,
+        askTick: 0,
+        isBid: false,
+        liq: lpTokenBalance,
+        baseFlow: '0',
+        quoteFlow: '0',
+        pivotTime: null,
+        aprDuration: '0',
+        aprPostLiq: '0',
+        aprContributedLiq: '0',
+        aprEst: '0',
+      });
+    }
+  }
 
   if (concentratedPositions.length === 0 && ambientPositions.length === 0) {
     return [];

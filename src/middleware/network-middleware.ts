@@ -5,6 +5,7 @@ import { networks } from 'loader/networks';
 import { Chain } from 'loader/networks/chain-config';
 import { NetworkFeature } from 'loader/networks/types';
 import { BadRequestError } from 'utils/custom-error';
+import { logger } from 'utils/logger';
 import { validate } from 'utils/validation';
 
 export const validateChainId = (req: Request, optional = false) =>
@@ -33,9 +34,10 @@ export const networkAwareMiddleware =
     const network = networks.getByChainId(chainId);
 
     if (
-      !network || flag === NetworkFeatureFlag.all
+      !network ||
+      (network && flag === NetworkFeatureFlag.all
         ? !features.every((feature) => network.hasFeature(feature))
-        : !features.some((feature) => network.hasFeature(feature))
+        : !features.some((feature) => network.hasFeature(feature)))
     ) {
       throw new BadRequestError('Unsupported network: ' + chainId);
     }
