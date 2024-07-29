@@ -30,7 +30,7 @@ export const swapsTable = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => ({
-    swaps: unique('swaps_comb_pkey').on(t.baseId, t.quoteId, t.transactionHash),
+    swaps: unique('swaps_comb_pkey').on(t.baseId, t.quoteId, t.transactionHash, t.callIndex),
   }),
 );
 

@@ -38,7 +38,6 @@ export const startCrontab = async () => {
   CronJob.from({
     cronTime: '*/1 * * * *',
     onTick: tickWrapper(retrieveSwaps),
-    runOnInit: true,
   }).start();
 
   // LEGACY JOBS

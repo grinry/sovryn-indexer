@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { eq, and, sql, gte } from 'drizzle-orm';
+import { eq, and, sql, gte, desc } from 'drizzle-orm';
 
 import { db } from 'database/client';
 import { NewSwap, swapsTable } from 'database/schema';
@@ -7,17 +7,7 @@ import { NewSwap, swapsTable } from 'database/schema';
 export type NewSwapItem = Omit<NewSwap, 'createdAt' | 'updatedAt'>;
 
 export const swapRepository = {
-  create: (data: NewSwapItem[]) =>
-    db
-      .insert(swapsTable)
-      .values(data)
-      .onConflictDoUpdate({
-        target: [swapsTable.baseId, swapsTable.quoteId, swapsTable.transactionHash],
-        set: {
-          baseFlow: sql`excluded.base_flow`,
-          quoteFlow: sql`excluded.quote_flow`,
-        },
-      }),
+  create: (data: NewSwapItem[]) => db.insert(swapsTable).values(data).onConflictDoNothing(),
 
   loadAll: (chainId?: number) =>
     db
@@ -41,16 +31,10 @@ export const swapRepository = {
       .where(and(chainId ? eq(swapsTable.chainId, chainId) : undefined)),
 
   loadLastSwap: (chainId?: number) =>
-    db
-      .select()
-      .from(swapsTable)
-      .where(
-        and(
-          chainId ? eq(swapsTable.chainId, chainId) : undefined,
-          eq(swapsTable.block, sql`(select max(${swapsTable.block}) from ${swapsTable})`),
-        ),
-      ),
-
+    db.query.swapsTable.findFirst({
+      where: and(chainId ? eq(swapsTable.chainId, chainId) : undefined),
+      orderBy: desc(swapsTable.block),
+    }),
   loadSwaps: (days = 1, chainId?: number) =>
     db
       .select()

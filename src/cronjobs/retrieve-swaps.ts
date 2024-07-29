@@ -33,8 +33,8 @@ async function prepareSdexSwaps(chain: SdexChain, chainId: number) {
     const blockNumber = await chain.queryBlockNumber();
     const lastSwap = await swapRepository.loadLastSwap();
 
-    if (!lastSwap[0] || lastSwap[0].block < blockNumber) {
-      const items = await chain.querySwaps(lastSwap[0]?.block || 0, blockNumber);
+    if (!lastSwap || lastSwap.block < blockNumber) {
+      const items = await chain.querySwaps(lastSwap?.block || 0, blockNumber);
 
       const values = items.swaps.map((swap) => ({
         tickAt: new Date(Number(swap.time) * 1000),
