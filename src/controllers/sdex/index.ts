@@ -48,7 +48,7 @@ router.get(
       res,
       `sdex/volume/${req.network.chainId}`,
       async () => prepareSdexVolume(req.network.chainId),
-      1,
+      DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
 );
