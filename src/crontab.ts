@@ -5,6 +5,7 @@ import { ammApyDailyDataTask } from 'cronjobs/legacy/amm/amm-apy-daily-data-task
 import { ammCleanUpTask } from 'cronjobs/legacy/amm/amm-cleanup-task';
 import { ammPoolsTask } from 'cronjobs/legacy/amm/amm-pools-task';
 import { tvlTask } from 'cronjobs/legacy/tvl-task';
+import { retrieveSwaps } from 'cronjobs/retrieve-swaps';
 import { retrieveTokens } from 'cronjobs/retrieve-tokens';
 import { retrieveUsdPrices } from 'cronjobs/retrieve-usd-prices';
 import { updateChains } from 'loader/networks';
@@ -19,7 +20,7 @@ export const startCrontab = async () => {
   // populate chain config on startup before running other tasks
   await updateChains();
 
-  // // Check and populate supported token list every 2 minutes
+  // Check and populate supported token list every 2 minutes
   CronJob.from({
     // cronTime: '*/10 * * * * *',
     cronTime: '*/2 * * * *',
@@ -31,6 +32,12 @@ export const startCrontab = async () => {
   CronJob.from({
     cronTime: '*/1 * * * *',
     onTick: tickWrapper(retrieveUsdPrices),
+  }).start();
+
+  // Stores sdex Swaps every minute
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(retrieveSwaps),
   }).start();
 
   // LEGACY JOBS

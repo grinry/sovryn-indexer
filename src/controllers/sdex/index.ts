@@ -8,6 +8,8 @@ import { validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
 
+import { prepareSdexVolume } from './volume.utils';
+
 const router = Router();
 
 const querySchema = Joi.object({
@@ -34,6 +36,18 @@ router.get(
             poolIdx: Number(item.poolIdx),
           })),
         ),
+      DEFAULT_CACHE_TTL,
+    ).then((data) => res.json(toResponse(data)));
+  }),
+);
+
+router.get(
+  '/volume',
+  asyncRoute(async (req, res) => {
+    return maybeCacheResponse(
+      res,
+      `sdex/volume/${req.network.chainId}`,
+      async () => prepareSdexVolume(req.network.chainId),
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
