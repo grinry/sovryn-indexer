@@ -55,6 +55,12 @@ export class CustomError extends Error {
   }
 }
 
+export class HttpError extends CustomError {
+  constructor(status: number, error: string) {
+    super(status, 'General', error);
+  }
+}
+
 export class ValidationError extends CustomError {
   constructor(error: string | string[], fields: string[] | null = null) {
     const errors = Array.isArray(error) ? error : [error];
@@ -80,8 +86,8 @@ export class ForbiddenError extends CustomError {
   }
 }
 
-export class HttpError extends CustomError {
-  constructor(status: number, error: string) {
-    super(status, 'General', error);
+export class NotFoundError extends HttpError {
+  constructor(error?: string) {
+    super(404, error ?? 'Resource does not exist');
   }
 }
