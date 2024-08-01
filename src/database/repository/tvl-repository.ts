@@ -36,6 +36,7 @@ export const tvlRepository = {
         and(
           chainId ? eq(tvlTable.chainId, chainId) : undefined,
           inArray(tvlTable.date, sql`(select MAX(${tvlTable.date}) from ${tvlTable})`),
+          eq(tokens.ignored, false),
         ),
       ),
 };
