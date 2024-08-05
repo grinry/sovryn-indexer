@@ -21,6 +21,8 @@ import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/paginat
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
 
+import { TIMEFRAMES } from './main-controller.constants';
+
 const router = Router();
 
 router.get(
@@ -189,7 +191,7 @@ router.get(
       start: startTimestamp,
       end: endTimestamp,
       timeframe,
-    } = validate<{ chainId: number; base: string; quote: string; start: number; end: number; timeframe: number }>(
+    } = validate<{ chainId: number; base: string; quote: string; start: number; end: number; timeframe: string }>(
       Joi.object({
         chainId: Joi.number().required(),
         base: Joi.string().required(),
@@ -199,29 +201,30 @@ router.get(
           .default((parent) =>
             dayjs
               .unix(parent.end ?? dayjs().unix())
-              .subtract(Math.min((parent.timeframe ?? 1) * 30, 11520), 'minutes')
+              .subtract(Math.min(TIMEFRAMES[parent.timeframe ?? '1m'] * 30, 11520), 'minutes')
               .unix(),
           ),
         end: Joi.number()
           .optional()
           .default(() => dayjs().unix()),
-        // todo: change it to 1m, 5m, 15m, 30m, 1h, 4h, 12h, 1d, 1w etc.
-        timeframe: Joi.number().optional().valid(1, 5, 10, 15, 30, 60, 240, 720, 1440).default(1),
+        timeframe: Joi.string()
+          .optional()
+          .valid(...Object.keys(TIMEFRAMES))
+          .default('1m'),
       }),
       req.query,
     );
 
-    const start = ceilDate(dayjs.unix(startTimestamp).toDate(), timeframe);
-    const end = ceilDate(dayjs.unix(endTimestamp).toDate(), timeframe);
-
-    // todo: limit range to x days and y candles
+    const timeframeMinutes = TIMEFRAMES[timeframe];
+    const start = ceilDate(dayjs.unix(startTimestamp).toDate(), timeframeMinutes);
+    const end = ceilDate(dayjs.unix(endTimestamp).toDate(), timeframeMinutes);
 
     return maybeCacheResponse(
       res,
       `chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${start.getTime()}/${end.getTime()}/${timeframe}`,
       async () => {
         const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end);
-        const candlesticks = await constructCandlesticks(intervals, timeframe);
+        const candlesticks = await constructCandlesticks(intervals, timeframeMinutes);
 
         return candlesticks;
       },

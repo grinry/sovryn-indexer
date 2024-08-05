@@ -212,17 +212,23 @@ const getTokenIds = async (chainId: number, baseTokenAddress: string, quoteToken
 const groupIntervals = (intervals: Interval[], timeframe: number) => {
   const result: Interval[][] = [];
   let currentGroup: Interval[] = [];
-  let groupStartTime = intervals[intervals.length - 1].date;
+  let groupStartTime = intervals.length > 0 ? intervals[intervals.length - 1].date : null;
 
   intervals.forEach((item) => {
-    if (Math.abs(item.date.diff(groupStartTime, 'minute')) <= timeframe) {
+    if (item?.date && Math.abs(item.date.diff(groupStartTime, 'minute')) <= timeframe) {
       currentGroup.push(item);
     } else {
+      if (currentGroup.length > 0) {
+        result.push(currentGroup);
+      }
       currentGroup = [item];
-      result.push(currentGroup);
-      groupStartTime = item.date;
+      groupStartTime = item?.date;
     }
   });
+
+  if (currentGroup.length > 0) {
+    result.push(currentGroup);
+  }
 
   return result;
 };
