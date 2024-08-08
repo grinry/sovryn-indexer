@@ -201,7 +201,7 @@ router.get(
           .default((parent) =>
             dayjs
               .unix(parent.end ?? dayjs().unix())
-              .subtract(Math.min(TIMEFRAMES[parent.timeframe ?? '1m'] * 30, 11520), 'minutes')
+              .subtract(Math.min(TIMEFRAMES[parent.timeframe ?? '1m'] * 30, 43200), 'minutes')
               .unix(),
           ),
         end: Joi.number()
