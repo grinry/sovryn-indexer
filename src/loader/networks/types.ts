@@ -30,6 +30,7 @@ export type SdexChainConfig = {
   dex: string;
   query: string;
   impact: string;
+  liquidityBook: string;
 };
 
 export type LegacyChainConfig = {
