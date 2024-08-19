@@ -4,6 +4,7 @@ import { Multicall, Multicall__factory } from 'artifacts/abis/types';
 import { getProvider } from 'utils/rpc/rpc';
 
 import { LegacyChain } from './legacy-chain';
+import { LiquidityChain } from './liquidity-chain';
 import { SdexChain } from './sdex-chain';
 import { NativeNetworkToken, NetworkConfig, NetworkFeature } from './types';
 import { validateConfig } from './utils';
@@ -19,9 +20,10 @@ export class Chain {
   readonly stablecoinAddress: string;
   readonly bitcoinAddress: string;
   readonly sovAddress: string;
-  
+
   readonly features: NetworkFeature[];
   readonly sdex: SdexChain;
+  readonly liquidity: LiquidityChain;
   readonly legacy: LegacyChain;
   readonly token: NativeNetworkToken;
 
@@ -45,6 +47,9 @@ export class Chain {
 
     if (config.features.includes(NetworkFeature.sdex)) {
       this.sdex = new SdexChain(this, config.sdex);
+    }
+    if (config.features.includes(NetworkFeature.liquidity)) {
+      this.liquidity = new LiquidityChain(this, config.liquidity);
     }
     if (config.features.includes(NetworkFeature.legacy)) {
       this.legacy = new LegacyChain(this, config.legacy);

@@ -3,6 +3,7 @@ export type NetworkConfigFile = Record<string, NetworkConfig>;
 export enum NetworkFeature {
   sdex = 'sdex',
   legacy = 'legacy',
+  liquidity = 'liquidity',
 }
 
 export type NativeNetworkToken = {
@@ -22,6 +23,7 @@ export type NetworkConfig = {
   features: NetworkFeature[];
   token: NativeNetworkToken;
   sdex?: SdexChainConfig;
+  liquidity?: LiquidityChainConfig;
   legacy?: LegacyChainConfig;
 };
 
@@ -30,7 +32,10 @@ export type SdexChainConfig = {
   dex: string;
   query: string;
   impact: string;
-  liquidityBook: string;
+};
+
+export type LiquidityChainConfig = {
+  subgraph: string;
 };
 
 export type LegacyChainConfig = {

@@ -1,7 +1,6 @@
 import { CronJob } from 'cron';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { ZeroAddress } from 'ethers';
-import gql from 'graphql-tag';
 import _, { difference, uniq } from 'lodash';
 
 import { ERC20__factory } from 'artifacts/abis/types';
@@ -10,11 +9,10 @@ import { NewToken, tokens } from 'database/schema';
 import { networks } from 'loader/networks';
 import { Chain } from 'loader/networks/chain-config';
 import { LegacyChain } from 'loader/networks/legacy-chain';
+import { LiquidityChain } from 'loader/networks/liquidity-chain';
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { NetworkFeature } from 'loader/networks/types';
-import { queryFromSubgraph } from 'loader/subgraph';
 import { logger } from 'utils/logger';
-import { loadGqlFromArtifacts } from 'utils/subgraph';
 
 const childLogger = logger.child({ module: 'crontab:retrieve-tokens' });
 
@@ -27,7 +25,9 @@ export const retrieveTokens = async (ctx: CronJob) => {
   for (const item of items) {
     if (item.hasFeature(NetworkFeature.sdex)) {
       await prepareSdexTokens(item.sdex);
-      await prepareLiquidityBookTokens(item.sdex);
+    }
+    if (item.hasFeature(NetworkFeature.liquidity)) {
+      await prepareLiquidityTokens(item.liquidity);
     }
     if (item.hasFeature(NetworkFeature.legacy)) {
       await prepareLegacyTokens(item.legacy);
@@ -154,29 +154,31 @@ async function getTokensToAdd(tokenAddresses: string[], chainId: number) {
   );
 }
 
-async function prepareLiquidityBookTokens(chain: SdexChain) {
+async function prepareLiquidityTokens(chain: LiquidityChain) {
   try {
-    childLogger.info(`Preparing LiquidityBook tokens for chain ${chain.context.chainId}`);
+    childLogger.info(`Preparing Liquidity tokens for chain ${chain.context.chainId}`);
 
-    const liquidityBookTokens = await queryLiquidityBookTokens(chain.config.liquidityBook);
+    const { tokens: liquidityTokens } = await chain.queryLiquidityTokens();
 
-    if (liquidityBookTokens.length === 0) {
-      childLogger.info('No LiquidityBook tokens to add');
+    logger.info({ liquidityTokens: liquidityTokens.length }, 'Liquidity tokens');
+
+    if (liquidityTokens.length === 0) {
+      childLogger.info('No Liquidity tokens to add');
       return;
     }
 
-    const tokenAddresses = liquidityBookTokens.map((token) => token.id);
+    const tokenAddresses = liquidityTokens.map((token) => token.id);
     const toAddAddresses = await getTokensToAdd(tokenAddresses, chain.context.chainId);
 
     if (toAddAddresses.length === 0) {
-      childLogger.info(`No new LiquidityBook tokens to add for ${chain.context.chainId} chain`);
+      childLogger.info(`No new Liquidity tokens to add for ${chain.context.chainId} chain`);
       return;
     }
 
     const newTokens: NewToken[] = [];
 
     for (const address of toAddAddresses) {
-      const tokenInfo = liquidityBookTokens.find((token) => token.id === address);
+      const tokenInfo = liquidityTokens.find((token) => token.id === address);
       if (tokenInfo) {
         newTokens.push({
           chainId: chain.context.chainId,
@@ -189,7 +191,7 @@ async function prepareLiquidityBookTokens(chain: SdexChain) {
       }
     }
 
-    logger.info({ newTokens: newTokens.length }, 'New LiquidityBook tokens');
+    logger.info({ newTokens: newTokens.length }, 'New Liquidity tokens');
 
     if (newTokens.length > 0) {
       const result = await db
@@ -201,27 +203,11 @@ async function prepareLiquidityBookTokens(chain: SdexChain) {
         .returning({ id: tokens.id })
         .execute();
 
-      childLogger.info(`Added ${result.length} new LiquidityBook tokens for chain ${chain.context.chainId}`);
+      childLogger.info(`Added ${result.length} new Liquidity tokens for chain ${chain.context.chainId}`);
     }
   } catch (error) {
-    childLogger.error(error, 'Error while preparing LiquidityBook tokens');
+    childLogger.error(error, 'Error while preparing Liquidity tokens');
   }
-}
-
-async function queryLiquidityBookTokens(
-  subgraphUrl: string,
-): Promise<{ id: string; symbol: string; name: string; decimals: number }[]> {
-  const query = loadGqlFromArtifacts('graphQueries/sdex/liquidityBookTokens.graphql');
-
-  const response = await queryFromSubgraph<{
-    tokens: { id: string; symbol: string; name: string; decimals: number }[];
-  }>(subgraphUrl, query);
-
-  if (!response || !response.tokens) {
-    throw new Error('Failed to fetch LiquidityBook tokens');
-  }
-
-  return response.tokens;
 }
 
 const tokenInterface = ERC20__factory.createInterface();
