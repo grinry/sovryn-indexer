@@ -1,5 +1,5 @@
 import { CronJob } from 'cron';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { ZeroAddress } from 'ethers';
 import _, { difference, uniq } from 'lodash';
 
@@ -9,6 +9,7 @@ import { NewToken, tokens } from 'database/schema';
 import { networks } from 'loader/networks';
 import { Chain } from 'loader/networks/chain-config';
 import { LegacyChain } from 'loader/networks/legacy-chain';
+import { LiquidityChain } from 'loader/networks/liquidity-chain';
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { NetworkFeature } from 'loader/networks/types';
 import { logger } from 'utils/logger';
@@ -24,6 +25,9 @@ export const retrieveTokens = async (ctx: CronJob) => {
   for (const item of items) {
     if (item.hasFeature(NetworkFeature.sdex)) {
       await prepareSdexTokens(item.sdex);
+    }
+    if (item.hasFeature(NetworkFeature.liquidity)) {
+      await prepareLiquidityTokens(item.liquidity);
     }
     if (item.hasFeature(NetworkFeature.legacy)) {
       await prepareLegacyTokens(item.legacy);
@@ -148,6 +152,62 @@ async function getTokensToAdd(tokenAddresses: string[], chainId: number) {
     items,
     existingTokens.map((item) => item.address),
   );
+}
+
+async function prepareLiquidityTokens(chain: LiquidityChain) {
+  try {
+    childLogger.info(`Preparing Liquidity tokens for chain ${chain.context.chainId}`);
+
+    const { tokens: liquidityTokens } = await chain.queryLiquidityTokens();
+
+    logger.info({ liquidityTokens: liquidityTokens.length }, 'Liquidity tokens');
+
+    if (liquidityTokens.length === 0) {
+      childLogger.info('No Liquidity tokens to add');
+      return;
+    }
+
+    const tokenAddresses = liquidityTokens.map((token) => token.id);
+    const toAddAddresses = await getTokensToAdd(tokenAddresses, chain.context.chainId);
+
+    if (toAddAddresses.length === 0) {
+      childLogger.info(`No new Liquidity tokens to add for ${chain.context.chainId} chain`);
+      return;
+    }
+
+    const newTokens: NewToken[] = [];
+
+    for (const address of toAddAddresses) {
+      const tokenInfo = liquidityTokens.find((token) => token.id === address);
+      if (tokenInfo) {
+        newTokens.push({
+          chainId: chain.context.chainId,
+          address: tokenInfo.id,
+          symbol: tokenInfo.symbol,
+          name: tokenInfo.name,
+          decimals: tokenInfo.decimals,
+          ignored: tokenInfo.name.startsWith('MOCK') && tokenInfo.symbol.startsWith('m'),
+        });
+      }
+    }
+
+    logger.info({ newTokens: newTokens.length }, 'New Liquidity tokens');
+
+    if (newTokens.length > 0) {
+      const result = await db
+        .insert(tokens)
+        .values(newTokens)
+        .onConflictDoNothing({
+          target: [tokens.chainId, tokens.address],
+        })
+        .returning({ id: tokens.id })
+        .execute();
+
+      childLogger.info(`Added ${result.length} new Liquidity tokens for chain ${chain.context.chainId}`);
+    }
+  } catch (error) {
+    childLogger.error(error, 'Error while preparing Liquidity tokens');
+  }
 }
 
 const tokenInterface = ERC20__factory.createInterface();

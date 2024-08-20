@@ -1,6 +1,6 @@
 import Joi from 'joi';
 
-import { LegacyChainConfig, NetworkConfig, NetworkFeature, SdexChainConfig } from './types';
+import { LegacyChainConfig, LiquidityChainConfig, NetworkConfig, NetworkFeature, SdexChainConfig } from './types';
 
 export function validateConfig(name: string, config: NetworkConfig) {
   const result = Joi.object({
@@ -11,13 +11,16 @@ export function validateConfig(name: string, config: NetworkConfig) {
     stablecoin: Joi.string().required(),
     bitcoin: Joi.string().required(),
     sov: Joi.string().required(),
-    features: Joi.array().items(Joi.valid(NetworkFeature.sdex, NetworkFeature.legacy)).required(),
+    features: Joi.array()
+      .items(Joi.valid(NetworkFeature.sdex, NetworkFeature.legacy, NetworkFeature.liquidity))
+      .required(),
     token: Joi.object({
       symbol: Joi.string().required(),
       name: Joi.string().required(),
       decimals: Joi.number().min(0).required(),
     }).required(),
     sdex: Joi.optional(),
+    liquidity: Joi.optional(),
     legacy: Joi.optional(),
   }).validate(config ?? {});
 
@@ -27,6 +30,10 @@ export function validateConfig(name: string, config: NetworkConfig) {
 
   if (config.features.includes(NetworkFeature.sdex)) {
     validateSdexConfig(name, config.sdex);
+  }
+
+  if (config.features.includes(NetworkFeature.liquidity)) {
+    validateLiquidityConfig(name, config.liquidity);
   }
 
   if (config.features.includes(NetworkFeature.legacy)) {
@@ -44,6 +51,16 @@ function validateSdexConfig(name: string, config: SdexChainConfig) {
 
   if (result.error) {
     throw new Error(`Invalid Sdex config for ${name}: ${result.error.message}`);
+  }
+}
+
+function validateLiquidityConfig(name: string, config: LiquidityChainConfig) {
+  const result = Joi.object({
+    subgraph: Joi.string().required(),
+  }).validate(config ?? {});
+
+  if (result.error) {
+    throw new Error(`Invalid Liquidity config for ${name}: ${result.error.message}`);
   }
 }
 
