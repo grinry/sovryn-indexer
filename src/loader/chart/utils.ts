@@ -1,11 +1,14 @@
 import dayjs from 'dayjs';
-import { sql, and, eq, between, lte, desc } from 'drizzle-orm';
+import { sql, and, eq, between, lte, desc, or, inArray } from 'drizzle-orm';
 import _ from 'lodash';
 import { bignumber, max, min } from 'mathjs';
 
+import { LONG_CACHE_TTL } from 'config/constants';
+import { Timeframe } from 'controllers/main-controller.constants';
 import { db } from 'database/client';
-import { prices } from 'database/schema';
+import { prices, tokens } from 'database/schema';
 import { networks } from 'loader/networks';
+import { maybeCache } from 'utils/cache';
 import { ValidationError } from 'utils/custom-error';
 import { logger } from 'utils/logger';
 
@@ -55,8 +58,13 @@ export const getPrices = async (
   quoteTokenAddress: string,
   startTimestamp: Date,
   endTimestamp: Date,
+  timeframe: Timeframe,
 ) => {
-  const { baseTokenId, quoteTokenId, stablecoinId } = await getTokenIds(chainId, baseTokenAddress, quoteTokenAddress);
+  const { baseTokenId, quoteTokenId, stablecoinId } = await maybeCache(
+    `/chart/q/${chainId}/${baseTokenAddress}/${quoteTokenAddress}`,
+    () => getTokenIds(chainId, baseTokenAddress, quoteTokenAddress),
+    LONG_CACHE_TTL,
+  ).then((data) => data.data);
 
   if (!baseTokenId) {
     throw new ValidationError('Unsupported base token');
@@ -74,8 +82,16 @@ export const getPrices = async (
     throw new ValidationError('Unsupported stablecoin');
   }
 
-  const baseTokenData = await queryTokenData(baseTokenId, stablecoinId, startTimestamp, endTimestamp);
-  const quoteTokenData = await queryTokenData(quoteTokenId, stablecoinId, startTimestamp, endTimestamp);
+  const tokenData = await queryTokenStablecoins(
+    baseTokenId,
+    quoteTokenId,
+    stablecoinId,
+    startTimestamp,
+    endTimestamp,
+    timeframe,
+  );
+  const baseTokenData = tokenData.filter((item) => item.baseId === baseTokenId);
+  const quoteTokenData = tokenData.filter((item) => item.baseId === quoteTokenId);
 
   const result = baseTokenData
     .map((item) => {
@@ -164,18 +180,53 @@ export const getPrices = async (
   return items.sort((a, b) => b.date.unix() - a.date.unix());
 };
 
-const queryTokenData = async (baseId: number, quoteId: number, startTimestamp: Date, endTimestamp: Date) =>
+const timeframeToSql = (timeframe: Timeframe) => {
+  switch (timeframe) {
+    case '1m':
+    case '5m':
+    case '10m':
+    case '15m':
+    case '30m':
+      return sql`date_trunc('minute', ${prices.tickAt}, 'UTC')`;
+    case '1h':
+    case '4h':
+    case '12h':
+    default:
+      return sql`date_trunc('hour', ${prices.tickAt}, 'UTC')`;
+    case '1d':
+    case '3d':
+      return sql`date_trunc('day', ${prices.tickAt}, 'UTC')`;
+    case '1w':
+      return sql`date_trunc('week', ${prices.tickAt}, 'UTC')`;
+    case '30d':
+      return sql`date_trunc('month', ${prices.tickAt}, 'UTC')`;
+  }
+};
+
+const queryTokenStablecoins = async (
+  baseId: number,
+  quoteId: number,
+  stablecoinId: number,
+  startTimestamp: Date,
+  endTimestamp: Date,
+  timeframe: Timeframe,
+) =>
   db
     .select({
       baseId: prices.baseId,
       quoteId: prices.quoteId,
-      date: sql`date_trunc('minute', ${prices.tickAt}, 'UTC')`.mapWith(String).as('date'),
+      date: timeframeToSql(timeframe).mapWith(String).as('date'),
       value: prices.value,
     })
     .from(prices)
     .where(
-      and(eq(prices.baseId, baseId), eq(prices.quoteId, quoteId), between(prices.tickAt, startTimestamp, endTimestamp)),
-    );
+      and(
+        inArray(prices.baseId, [baseId, quoteId]),
+        eq(prices.quoteId, stablecoinId),
+        between(prices.tickAt, startTimestamp, endTimestamp),
+      ),
+    )
+    .groupBy(prices.baseId, prices.quoteId, sql`date`, prices.value);
 
 const queryTokenStartPrice = async (baseId: number, quoteId: number, startTimestamp: Date) =>
   db.query.prices.findFirst({
@@ -189,22 +240,25 @@ const queryTokenStartPrice = async (baseId: number, quoteId: number, startTimest
   });
 
 const getTokenIds = async (chainId: number, baseTokenAddress: string, quoteTokenAddress: string) => {
-  const tokens = await db.query.tokens.findMany({
+  const stablecoinAddress = networks.getByChainId(chainId)?.stablecoinAddress.toLowerCase();
+
+  const items = await db.query.tokens.findMany({
     columns: {
       id: true,
       chainId: true,
       address: true,
       decimals: true,
     },
+    where: and(
+      eq(tokens.chainId, chainId),
+      inArray(tokens.address, [baseTokenAddress.toLowerCase(), quoteTokenAddress.toLowerCase(), stablecoinAddress]),
+    ),
+    limit: 3,
   });
 
-  const tokensByChain = _.groupBy(tokens, (item) => item.chainId);
-  const chains = Object.keys(tokensByChain).map((item) => networks.getByChainId(Number(item))!);
-  const chain = chains.find((item) => item.chainId === chainId);
-
-  const baseTokenId = tokens.find((token) => token.address === baseTokenAddress.toLowerCase())?.id;
-  const quoteTokenId = tokens.find((token) => token.address === quoteTokenAddress.toLowerCase())?.id;
-  const stablecoinId = tokens.find((token) => token.address === chain.stablecoinAddress)?.id;
+  const baseTokenId = items.find((token) => token.address === baseTokenAddress.toLowerCase())?.id;
+  const quoteTokenId = items.find((token) => token.address === quoteTokenAddress.toLowerCase())?.id;
+  const stablecoinId = items.find((token) => token.address === stablecoinAddress)?.id;
 
   return { baseTokenId, quoteTokenId, stablecoinId };
 };

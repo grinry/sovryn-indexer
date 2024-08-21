@@ -21,7 +21,7 @@ import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/paginat
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
 
-import { TIMEFRAMES } from './main-controller.constants';
+import { Timeframe, TIMEFRAMES } from './main-controller.constants';
 
 const router = Router();
 
@@ -191,7 +191,7 @@ router.get(
       start: startTimestamp,
       end: endTimestamp,
       timeframe,
-    } = validate<{ chainId: number; base: string; quote: string; start: number; end: number; timeframe: string }>(
+    } = validate<{ chainId: number; base: string; quote: string; start: number; end: number; timeframe: Timeframe }>(
       Joi.object({
         chainId: Joi.number().required(),
         base: Joi.string().required(),
@@ -223,7 +223,7 @@ router.get(
       res,
       `chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${start.getTime()}/${end.getTime()}/${timeframe}`,
       async () => {
-        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end);
+        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe);
         const candlesticks = await constructCandlesticks(intervals, timeframeMinutes);
 
         return candlesticks;
