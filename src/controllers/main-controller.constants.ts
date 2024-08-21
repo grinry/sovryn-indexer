@@ -12,3 +12,5 @@ export const TIMEFRAMES = {
   '1w': 10080,
   '30d': 43200, // 1 month
 };
+
+export type Timeframe = keyof typeof TIMEFRAMES;
