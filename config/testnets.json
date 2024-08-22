@@ -38,6 +38,7 @@
       "decimals": 18
     },
     "legacy": {
+      "block": 1218686,
       "subgraph": "https://subgraph.test.sovryn.app/subgraphs/name/DistributedCollective/sovryn-subgraph",
       "native": "0x69FE5cEC81D5eF92600c1A0dB1F11986AB3758Ab",
       "protocol": "0x25380305f223B32FDB844152abD2E82BC5Ad99c3",

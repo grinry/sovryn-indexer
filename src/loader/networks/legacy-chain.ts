@@ -60,8 +60,12 @@ export class LegacyChain {
   readonly troveManager: TroveManager;
   readonly stabilityPool: StabilityPool;
 
+  readonly startBlock: number;
+
   // todo: add contract addresses as needed such as staking, pool registries, etc.
   constructor(readonly context: Chain, readonly config: LegacyChainConfig) {
+    this.startBlock = config.block;
+
     this.nativeTokenWrapper = config.native.toLowerCase();
     this.protocolAddress = config.protocol.toLowerCase();
     this.babelFishMultisig = (config.babelFishMultisig || '').toLowerCase();
