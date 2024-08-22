@@ -75,6 +75,7 @@ function validateLegacyConfig(name: string, config: LegacyChainConfig) {
     zusdToken: Joi.string().default(null),
     babelFishMultisig: Joi.string().default(null),
     babelFishStaking: Joi.string().default(null),
+    block: Joi.number().default(0),
   }).validate(config ?? {});
 
   if (result.error) {

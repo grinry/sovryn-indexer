@@ -39,6 +39,7 @@ export type LiquidityChainConfig = {
 };
 
 export type LegacyChainConfig = {
+  block: number;
   subgraph: string;
   native: string;
   protocol: string;
