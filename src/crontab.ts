@@ -45,7 +45,12 @@ export const startCrontab = async () => {
   ammApyJobs();
   graphWrapperJobs();
 
-  backgroundTasks();
+  // run as background job
+  CronJob.from({
+    cronTime: '*/5 * * * *',
+    onTick: tickWrapper(priceFeedTask),
+    runOnInit: true,
+  });
 };
 
 function ammApyJobs() {
@@ -80,8 +85,4 @@ function graphWrapperJobs() {
     onTick: tickWrapper(tvlTask),
     runOnInit: true,
   }).start();
-}
-
-function backgroundTasks() {
-  priceFeedTask();
 }

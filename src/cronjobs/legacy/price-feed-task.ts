@@ -1,3 +1,4 @@
+import { CronJob } from 'cron';
 import { and, eq, inArray } from 'drizzle-orm';
 import gql from 'graphql-tag';
 
@@ -14,18 +15,25 @@ const childLogger = logger.child({ module: 'price-feed-task' });
 
 const BLOCKS = 5;
 
-export const priceFeedTask = async () => {
+export const priceFeedTask = async (ctx: CronJob) => {
+  ctx.stop();
   childLogger.info('Price feed task start.');
 
-  const items = networks.listChains();
+  try {
+    const items = networks.listChains();
 
-  for (const item of items) {
-    if (item.hasFeature(NetworkFeature.legacy)) {
-      await processLegacyChain(item.legacy);
+    for (const item of items) {
+      if (item.hasFeature(NetworkFeature.legacy)) {
+        await processLegacyChain(item.legacy);
+      }
     }
-  }
 
-  childLogger.info('Price feed task ended.');
+    childLogger.info('Price feed task ended.');
+    ctx.start();
+  } catch (error) {
+    childLogger.error({ error }, 'Price feed task failed.');
+    ctx.start();
+  }
 };
 
 const processLegacyChain = async (chain: LegacyChain) => {
