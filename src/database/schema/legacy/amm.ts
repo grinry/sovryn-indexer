@@ -43,11 +43,17 @@ export const ammApyBlocks = pgTable(
     pool: char('pool', { length: 42 }).notNull(),
     block: integer('block').notNull(),
     blockTimestamp: timestamp('block_timestamp').notNull(),
-    balanceBtc: decimal('balance_btc', { scale: 18, precision: 25 }).notNull(),
-    conversionFeeBtc: decimal('conversion_fee_btc', { scale: 18, precision: 25 }).notNull(),
+    /** @deprecated */
+    balanceBtc: decimal('balance_btc', { scale: 18, precision: 25 }).notNull().default('0'),
+    balanceUsd: decimal('balance_usd', { scale: 18, precision: 25 }).notNull().default('0'),
+    /** @deprecated */
+    conversionFeeBtc: decimal('conversion_fee_btc', { scale: 18, precision: 25 }).notNull().default('0'),
+    conversionFeeUsd: decimal('conversion_fee_usd', { scale: 18, precision: 25 }).notNull().default('0'),
     rewards: decimal('rewards', { scale: 18, precision: 25 }).notNull(),
     rewardsCurrency: varchar('rewards_currency', { length: 64 }).notNull(),
-    rewardsBtc: decimal('rewards_btc', { scale: 18, precision: 25 }).notNull(),
+    /** @deprecated */
+    rewardsBtc: decimal('rewards_btc', { scale: 18, precision: 25 }).notNull().default('0'),
+    rewardsUsd: decimal('rewards_usd', { scale: 18, precision: 25 }).notNull().default('0'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -71,11 +77,15 @@ export const ammApyDays = pgTable(
     date: timestamp('date').notNull(),
     poolToken: char('pool_token', { length: 42 }).notNull(),
     pool: char('pool', { length: 42 }).notNull(),
-    balanceBtc: decimal('balance_btc', { scale: 18, precision: 25 }).notNull(),
+    /** @deprecated */
+    balanceBtc: decimal('balance_btc', { scale: 18, precision: 25 }).notNull().default('0'),
+    balanceUsd: decimal('balance_usd', { scale: 18, precision: 25 }).notNull().default('0'),
     feeApy: decimal('fee_apy', { scale: 18, precision: 25 }).notNull(),
     rewardsApy: decimal('rewards_apy', { scale: 18, precision: 25 }).notNull(),
     totalApy: decimal('total_apy', { scale: 18, precision: 25 }).notNull(),
-    btcVolume: decimal('btc_volume', { scale: 18, precision: 25 }).notNull(),
+    /** @deprecated */
+    btcVolume: decimal('btc_volume', { scale: 18, precision: 25 }).notNull().default('0'),
+    usdVolume: decimal('usd_volume', { scale: 18, precision: 25 }).notNull().default('0'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at')
       .defaultNow()

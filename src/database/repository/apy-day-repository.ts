@@ -14,11 +14,14 @@ export const apyDayRepository = {
       .onConflictDoUpdate({
         target: [ammApyDays.chainId, ammApyDays.date, ammApyDays.poolToken],
         set: {
-          balanceBtc: sql`excluded.balance_btc`,
           feeApy: sql`excluded.fee_apy`,
           rewardsApy: sql`excluded.rewards_apy`,
           totalApy: sql`excluded.total_apy`,
+          balanceUsd: sql`excluded.balance_usd`,
+          usdVolume: sql`excluded.usd_volume`,
+          // todo: remove sometime in the future
           btcVolume: sql`excluded.btc_volume`,
+          balanceBtc: sql`excluded.balance_btc`,
         },
       }),
   getAllPoolData: (chainId: number, days = DEFAULT_DATA_RANGE) =>
@@ -27,10 +30,13 @@ export const apyDayRepository = {
         pool: ammApyDays.pool,
         poolToken: ammApyDays.poolToken,
         date: ammApyDays.date,
-        balanceBtc: ammApyDays.balanceBtc,
+        balanceUsd: ammApyDays.balanceUsd,
         rewardsApy: ammApyDays.rewardsApy,
         feeApy: ammApyDays.feeApy,
         totalApy: ammApyDays.totalApy,
+        usdVolume: ammApyDays.usdVolume,
+        // todo: remove
+        balanceBtc: ammApyDays.balanceBtc,
         btcVolume: ammApyDays.btcVolume,
       })
       .from(ammApyDays)
@@ -42,11 +48,14 @@ export const apyDayRepository = {
         pool: ammApyDays.pool,
         poolToken: ammApyDays.poolToken,
         date: ammApyDays.date,
-        balanceBtc: ammApyDays.balanceBtc,
+        balanceUsd: ammApyDays.balanceUsd,
         rewardsApy: ammApyDays.rewardsApy,
         feeApy: ammApyDays.feeApy,
         totalApy: ammApyDays.totalApy,
+        usdVolume: ammApyDays.usdVolume,
+        // todo: remove
         btcVolume: ammApyDays.btcVolume,
+        balanceBtc: ammApyDays.balanceBtc,
       })
       .from(ammApyDays)
       .limit(2)
@@ -64,11 +73,14 @@ export const apyDayRepository = {
         pool: ammApyDays.pool,
         poolToken: ammApyDays.poolToken,
         date: ammApyDays.date,
-        balanceBtc: ammApyDays.balanceBtc,
         rewardsApy: ammApyDays.rewardsApy,
         feeApy: ammApyDays.feeApy,
         totalApy: ammApyDays.totalApy,
+        usdVolume: ammApyDays.usdVolume,
+        balanceUsd: ammApyDays.balanceUsd,
+        // todo: remove
         btcVolume: ammApyDays.btcVolume,
+        balanceBtc: ammApyDays.balanceBtc,
       })
       .from(ammApyDays)
       .where(and(eq(ammApyDays.chainId, chainId), eq(ammApyDays.pool, pool)))

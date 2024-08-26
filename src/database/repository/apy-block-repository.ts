@@ -1,8 +1,7 @@
-import dayjs from 'dayjs';
 import { and, desc, eq, gte, sql } from 'drizzle-orm';
 
 import { db } from 'database/client';
-import { ammApyBlocks, NewAmmApyBlock, tokens } from 'database/schema';
+import { ammApyBlocks, NewAmmApyBlock } from 'database/schema';
 
 export type DailyAggregatedApyResult = {
   pool: string;

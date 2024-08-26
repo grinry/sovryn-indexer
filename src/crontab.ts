@@ -83,6 +83,5 @@ function graphWrapperJobs() {
   CronJob.from({
     cronTime: '*/30 * * * *',
     onTick: tickWrapper(tvlTask),
-    runOnInit: true,
   }).start();
 }
