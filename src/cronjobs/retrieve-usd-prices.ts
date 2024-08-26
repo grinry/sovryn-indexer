@@ -8,6 +8,7 @@ import { tokens } from 'database/schema';
 import { NewPrice, prices } from 'database/schema/prices';
 import { networks } from 'loader/networks';
 import { LegacyChain } from 'loader/networks/legacy-chain';
+import { LiquidityChain } from 'loader/networks/liquidity-chain';
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { NetworkFeature } from 'loader/networks/types';
 import { areAddressesEqual } from 'utils/compare';
@@ -49,6 +50,9 @@ export const retrieveUsdPrices = async (ctx: CronJob) => {
     // if legacy supported, process all tokens through it, because we can get prices of all tokens with single subgraph query.
     if (chain.hasFeature(NetworkFeature.legacy)) {
       await prepareLegacyTokens(chain.legacy, tickAt, tokensByChain[chain.chainId]);
+    }
+    if (chain.hasFeature(NetworkFeature.liquidity)) {
+      await prepareLiquidityTokens(chain.liquidity, tickAt, tokensByChain[chain.chainId]);
     } else if (chain.hasFeature(NetworkFeature.sdex)) {
       await prepareSdexTokens(chain.sdex, tickAt, tokensByChain[chain.chainId]);
     }
@@ -146,6 +150,82 @@ async function prepareLegacyTokens(chain: LegacyChain, date: Date, tokensToQuery
     }
   } catch (error) {
     childLogger.error(error, 'Error while retrieving USD prices for legacy chain');
+  }
+}
+
+async function prepareLiquidityTokens(
+  chain: LiquidityChain,
+  date: Date,
+  tokensToQuery: { id: number; address: string }[],
+) {
+  console.log('prepareLiquidityTokens', tokensToQuery);
+  try {
+    childLogger.info(`Preparing ${tokensToQuery.length} liquidity tokens for chain ${chain.context.chainId}`);
+    const { lbpairs } = await chain.queryTokenPrices();
+
+    const items: { id: string; symbol: string; name: string; decimals: number; lastPriceUsd: string }[] = [];
+
+    lbpairs.forEach((pair) => {
+      items.push({
+        id: pair.tokenX.id,
+        symbol: pair.tokenX.symbol,
+        name: pair.tokenX.name,
+        decimals: pair.tokenX.decimals,
+        lastPriceUsd: pair.tokenXPriceUSD,
+      });
+
+      items.push({
+        id: pair.tokenY.id,
+        symbol: pair.tokenY.symbol,
+        name: pair.tokenY.name,
+        decimals: pair.tokenY.decimals,
+        lastPriceUsd: pair.tokenYPriceUSD,
+      });
+    });
+
+    if (items.length === 0) {
+      childLogger.info('No tokens to add for liquidity chain');
+      return;
+    }
+
+    const toAdd: NewPrice[] = [];
+
+    for (const item of items) {
+      const token = tokensToQuery.find((t) => areAddressesEqual(t.address, item.id));
+      if (!token) {
+        childLogger.error({ address: item.id }, 'Token not found in tokens list');
+        continue;
+      }
+
+      const stablecoin = await db.query.tokens.findFirst({
+        columns: {
+          id: true,
+        },
+        where: and(eq(tokens.chainId, chain.context.chainId), eq(tokens.address, chain.context.stablecoinAddress)),
+      });
+
+      toAdd.push({
+        baseId: token.id,
+        quoteId: stablecoin.id,
+        tickAt: date,
+        value: item.lastPriceUsd,
+      });
+    }
+
+    if (toAdd.length) {
+      const result = await db
+        .insert(prices)
+        .values(toAdd)
+        .onConflictDoNothing({ target: [prices.baseId, prices.quoteId, prices.tickAt] })
+        .returning({ id: prices.id })
+        .execute();
+
+      childLogger.info(`Added ${result.length} new prices for chain ${chain.context.chainId} (Liquidity)`);
+    } else {
+      childLogger.info('No prices to add for liquidity chain');
+    }
+  } catch (error) {
+    childLogger.error(error, 'Error while retrieving USD prices for liquidity chain');
   }
 }
 

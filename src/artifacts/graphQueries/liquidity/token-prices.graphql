@@ -1,0 +1,18 @@
+query {
+  lbpairs {
+    tokenX {
+      id
+      symbol
+      name
+      decimals
+    }
+    tokenY {
+      id
+      symbol
+      name
+      decimals
+    }
+    tokenXPriceUSD
+    tokenYPriceUSD
+  }
+}
