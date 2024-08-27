@@ -1,0 +1,26 @@
+query ($minTime: Int, $maxTime: Int) {
+  userBinLiquidities(
+    first: 1000
+    where: { block_gte: $minTime, block_lte: $maxTime }
+    orderBy: block
+    orderDirection: desc
+  ) {
+    id
+    liquidity
+    timestamp
+    block
+    user {
+      id
+    }
+    binId
+    lbPairBinId {
+      id
+      priceX
+      priceY
+      totalSupply
+      reserveX
+      reserveY
+      liquidityProviders
+    }
+  }
+}
