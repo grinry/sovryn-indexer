@@ -21,7 +21,7 @@ export const retrieveSwaps = async (ctx: CronJob) => {
 
   for (const item of items) {
     if (item.hasFeature(NetworkFeature.sdex)) {
-      // await prepareSdexSwaps(item.sdex, item.chainId);
+      await prepareSdexSwaps(item.sdex, item.chainId);
     }
     if (item.hasFeature(NetworkFeature.liquidity)) {
       await prepareLiquidityBins(item.liquidity, item.chainId);
