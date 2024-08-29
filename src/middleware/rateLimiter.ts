@@ -27,7 +27,7 @@ const createRateLimiterMiddleware = (options: RateLimiterOptions) => {
       await rateLimiter.consume(clientIp);
       next();
     } catch (err) {
-      throw new HttpError(429, 'Too Many Requests');
+      return next(new HttpError(429, 'Too Many Requests'));
     }
   };
 };

@@ -33,8 +33,8 @@ export const constructCandlesticks = async (intervals: Interval[], timeframe: nu
 
       return {
         date: dayjs(endTime).unix(),
-        start: startTime,
-        end: endTime,
+        start: startTime.toISOString(),
+        end: endTime.toISOString(),
         open,
         close,
         high: max(...values).toString(),
@@ -60,6 +60,7 @@ export const getPrices = async (
   endTimestamp: Date,
   timeframe: Timeframe,
 ) => {
+  const _start = Date.now();
   const { baseTokenId, quoteTokenId, stablecoinId } = await maybeCache(
     `/chart/q/${chainId}/${baseTokenAddress}/${quoteTokenAddress}`,
     () => getTokenIds(chainId, baseTokenAddress, quoteTokenAddress),
@@ -82,6 +83,7 @@ export const getPrices = async (
     throw new ValidationError('Unsupported stablecoin');
   }
 
+  const a = Date.now();
   const tokenData = await queryTokenStablecoins(
     baseTokenId,
     quoteTokenId,
@@ -90,6 +92,7 @@ export const getPrices = async (
     endTimestamp,
     timeframe,
   );
+
   const baseTokenData = tokenData.filter((item) => item.baseId === baseTokenId);
   const quoteTokenData = tokenData.filter((item) => item.baseId === quoteTokenId);
 
