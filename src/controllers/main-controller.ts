@@ -1,3 +1,5 @@
+import w, { Worker } from 'node:worker_threads';
+
 import dayjs from 'dayjs';
 import { eq, and, sql, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
@@ -21,6 +23,7 @@ import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
+import { testAsyncWorker } from 'workers/chart-worker';
 
 import { Timeframe, TIMEFRAMES } from './main-controller.constants';
 
@@ -53,7 +56,7 @@ router.get(
     const p = validatePaginatedRequest(req);
     return maybeCacheResponse(
       res,
-      `tokens/${chainId ?? 0}/${p.limit}/${p.cursor}`,
+      `tokens/${chainId ?? 0}/${p.limit}/${p.cursor}/${Boolean(req.query.spam) ? 'spam' : 'no-spam'}`,
       async () => {
         const quoteToken = alias(tokens, 'quote_token');
         const chain = alias(chains, 'chain');
@@ -69,7 +72,12 @@ router.get(
             stablecoinId: sql<number>`${quoteToken.id}`.as('stablecoinId'),
           })
           .from(tokens)
-          .where(and(eq(tokens.ignored, false), chainId ? eq(tokens.chainId, chainId) : undefined))
+          .where(
+            and(
+              chainId ? eq(tokens.chainId, chainId) : undefined,
+              Boolean(req.query.spam) ? undefined : eq(tokens.ignored, false),
+            ),
+          )
           .innerJoin(chain, eq(tokens.chainId, chain.id))
           .innerJoin(quoteToken, and(eq(quoteToken.chainId, chain.id), eq(quoteToken.address, chain.stablecoinAddress)))
           .$dynamic();
@@ -139,17 +147,7 @@ router.get(
           .limit(1)
           .execute();
 
-        const pairs = items.map((item) => ({ base: item.id, quote: item.stablecoinId }));
-
-        const lastPrices = await db
-          .select({ baseId: prices.baseId, quoteId: prices.quoteId, value: prices.value, date: prices.tickAt })
-          .from(prices)
-          .where(
-            and(
-              eq(prices.tickAt, sql`(select max(${prices.tickAt}) from ${prices})`),
-              or(...pairs.map((pair) => and(eq(prices.baseId, pair.base), eq(prices.quoteId, pair.quote)))),
-            ),
-          );
+        const lastPrices = await getLastPrices();
 
         const item =
           items.map((item) => {
@@ -177,16 +175,16 @@ router.get(
 router.get(
   '/chart',
   asyncRoute(async (req: Request, res: Response) => {
+    const chainId = validateChainId(req);
     const {
-      chainId,
       base: baseTokenAddress,
       quote: quoteTokenAddress,
       start: startTimestamp,
       end: endTimestamp,
       timeframe,
-    } = validate<{ chainId: number; base: string; quote: string; start: number; end: number; timeframe: Timeframe }>(
+    } = validate<{ base: string; quote: string; start: number; end: number; timeframe: Timeframe }>(
       Joi.object({
-        chainId: Joi.number().required(),
+        chainId: Joi.required(),
         base: Joi.string().required(),
         quote: Joi.string().required(),
         start: Joi.number()
@@ -212,18 +210,31 @@ router.get(
     const start = ceilDate(dayjs.unix(startTimestamp).toDate(), timeframeMinutes);
     const end = ceilDate(dayjs.unix(endTimestamp).toDate(), timeframeMinutes);
 
-    return maybeCacheResponse(
+    return await maybeCacheResponse(
       res,
       `chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${start.getTime()}/${end.getTime()}/${timeframe}`,
       async () => {
         const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe);
         const candlesticks = await constructCandlesticks(intervals, timeframeMinutes);
-
         return candlesticks;
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
 );
+
+router.get('/blocker', async (req, res) => {
+  const start = Date.now();
+
+  const result = await testAsyncWorker('hello');
+  console.log('result', result);
+
+  // await new Promise((resolve) => setTimeout(resolve, 10_000));
+  return res.json({ finished: true, ts: Date.now() - start });
+});
+
+router.get('/not-blocked', (req, res) => {
+  return res.json({ success: true });
+});
 
 export default router;

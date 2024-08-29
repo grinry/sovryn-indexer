@@ -5,14 +5,21 @@ import { networks } from 'loader/networks';
 import { Chain } from 'loader/networks/chain-config';
 import { NetworkFeature } from 'loader/networks/types';
 import { BadRequestError } from 'utils/custom-error';
-import { logger } from 'utils/logger';
 import { validate } from 'utils/validation';
 
 export const validateChainId = (req: Request, optional = false) =>
   Number(
     validate<{ chainId: number }>(
       Joi.object({
-        chainId: optional ? Joi.string().optional().empty('').default(0) : Joi.string().required(),
+        chainId: optional
+          ? Joi.string()
+              .optional()
+              .empty('')
+              .valid(...networks.listChains().flatMap((chain) => [chain.chainId.toString(), chain.chainIdHex]))
+              .default('0')
+          : Joi.string()
+              .required()
+              .valid(...networks.listChains().flatMap((chain) => [chain.chainId.toString(), chain.chainIdHex])),
       }),
       req.query,
       { allowUnknown: true },

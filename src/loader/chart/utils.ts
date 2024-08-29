@@ -10,6 +10,7 @@ import { prices, tokens } from 'database/schema';
 import { networks } from 'loader/networks';
 import { maybeCache } from 'utils/cache';
 import { ValidationError } from 'utils/custom-error';
+import { analyzeSelectQuery } from 'utils/dev';
 import { logger } from 'utils/logger';
 
 import { Interval } from './types';
@@ -60,11 +61,14 @@ export const getPrices = async (
   endTimestamp: Date,
   timeframe: Timeframe,
 ) => {
+  const _start = Date.now();
   const { baseTokenId, quoteTokenId, stablecoinId } = await maybeCache(
     `/chart/q/${chainId}/${baseTokenAddress}/${quoteTokenAddress}`,
     () => getTokenIds(chainId, baseTokenAddress, quoteTokenAddress),
     LONG_CACHE_TTL,
   ).then((data) => data.data);
+
+  console.log('[GET TOKEN IDS] Time ', Date.now() - _start);
 
   if (!baseTokenId) {
     throw new ValidationError('Unsupported base token');
@@ -90,6 +94,8 @@ export const getPrices = async (
     endTimestamp,
     timeframe,
   );
+
+  console.log('[QUERY TOKEN STABLECOINS] Time ', Date.now() - _start);
   const baseTokenData = tokenData.filter((item) => item.baseId === baseTokenId);
   const quoteTokenData = tokenData.filter((item) => item.baseId === quoteTokenId);
 
@@ -110,7 +116,10 @@ export const getPrices = async (
     })
     .sort((a, b) => dayjs(b.date).unix() - dayjs(a.date).unix());
 
+  console.log('[RESULT] Time ', Date.now() - _start);
+
   if (result.length === 0) {
+    console.log('Time #1', Date.now() - _start);
     return [];
   }
 
@@ -143,6 +152,8 @@ export const getPrices = async (
     }
   }
 
+  console.log('[RESULT 1] Time ', Date.now() - _start);
+
   // fill missing dates
   const existingDates = result.map((i) => i.date.unix());
 
@@ -161,6 +172,8 @@ export const getPrices = async (
     start = start.clone().add(1, unit);
   }
 
+  console.log('[WHILE] Time ', Date.now() - _start);
+
   // loop through the items and if value is with the filled flag, fill it with the previous value
   const items: PriceItem[] = [...filled, ...result].sort((a, b) => a.date.unix() - b.date.unix());
 
@@ -175,6 +188,8 @@ export const getPrices = async (
       };
     }
   }
+
+  console.log('[ITEMS] Time ', Date.now() - _start);
 
   // sort items from newest to oldest
   return items.sort((a, b) => b.date.unix() - a.date.unix());
@@ -210,8 +225,8 @@ const queryTokenStablecoins = async (
   startTimestamp: Date,
   endTimestamp: Date,
   timeframe: Timeframe,
-) =>
-  db
+) => {
+  const sb = db
     .select({
       baseId: prices.baseId,
       quoteId: prices.quoteId,
@@ -227,6 +242,9 @@ const queryTokenStablecoins = async (
       ),
     )
     .groupBy(prices.baseId, prices.quoteId, sql`date`, prices.value);
+  await analyzeSelectQuery(sb, 'queryTokenStablecoins');
+  return sb.execute();
+};
 
 const queryTokenStartPrice = async (baseId: number, quoteId: number, startTimestamp: Date) =>
   db.query.prices.findFirst({
