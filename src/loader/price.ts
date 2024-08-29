@@ -1,7 +1,11 @@
+import { and, eq, sql } from 'drizzle-orm';
 import { bignumber } from 'mathjs';
 
-import { NewPrice } from 'database/schema';
+import { DEFAULT_CACHE_TTL } from 'config/constants';
+import { db } from 'database/client';
+import { NewPrice, prices } from 'database/schema';
 import { bfsShortestPath, constructGraph } from 'utils/bfs';
+import { maybeCache } from 'utils/cache';
 
 export function groupItemsInPairs<T>(items: T[]): T[][] {
   const groupedItems: T[][] = [];
@@ -41,3 +45,35 @@ export function findEndPrice(entry: number, destination: number, prices: NewPric
 
   return price;
 }
+
+// todo: add possibility to update cache data outside current thread if TTL is almost expired
+export const getLastPrices = () =>
+  maybeCache(
+    'lastPrices',
+    async () => {
+      const dateMap = db
+        .select({
+          baseId: prices.baseId,
+          quoteId: prices.quoteId,
+          date: sql<string>`max(${prices.tickAt})`.as('date'),
+        })
+        .from(prices)
+        .groupBy(prices.baseId, prices.quoteId)
+        .as('sq_dates');
+
+      const values = await db
+        .select({
+          baseId: prices.baseId,
+          quoteId: prices.quoteId,
+          value: prices.value,
+          tickAt: dateMap.date,
+        })
+        .from(prices)
+        .innerJoin(
+          dateMap,
+          and(eq(prices.baseId, dateMap.baseId), eq(prices.quoteId, dateMap.quoteId), eq(prices.tickAt, dateMap.date)),
+        );
+      return values;
+    },
+    DEFAULT_CACHE_TTL,
+  ).then((result) => result.data);

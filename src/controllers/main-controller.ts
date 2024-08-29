@@ -12,6 +12,7 @@ import { prices, tokens } from 'database/schema';
 import { chains } from 'database/schema/chains';
 import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 import { networks } from 'loader/networks';
+import { getLastPrices } from 'loader/price';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
 import { NotFoundError } from 'utils/custom-error';
@@ -76,25 +77,17 @@ router.get(
         const api = createApiQuery('address', OrderBy.asc, (key) => tokens[key], p);
         const items = await api.applyPagination(tokenQuery).execute();
 
-        const pairs = items.map((item) => ({ base: item.id, quote: item.stablecoinId }));
-
-        const lastPrices = await db
-          .select({ baseId: prices.baseId, quoteId: prices.quoteId, value: prices.value, date: prices.tickAt })
-          .from(prices)
-          .where(
-            and(
-              eq(prices.tickAt, sql`(select max(${prices.tickAt}) from ${prices})`),
-              or(...pairs.map((pair) => and(eq(prices.baseId, pair.base), eq(prices.quoteId, pair.quote)))),
-            ),
-          );
+        const lastPrices = await getLastPrices();
 
         return api.getMetadata(
           items.map((item) => {
-            const lastUsdPrice =
-              lastPrices.find((price) => price.baseId === item.id && price.quoteId === item.stablecoinId)?.value ?? '0';
+            const lastUsdPrice = lastPrices.find(
+              (price) => price.baseId === item.id && price.quoteId === item.stablecoinId,
+            );
             return {
               ...item,
-              usdPrice: lastUsdPrice,
+              usdPrice: lastUsdPrice?.value ?? '0',
+              usdPriceDate: lastUsdPrice?.tickAt ?? null,
               id: undefined,
               stablecoinId: undefined,
             };

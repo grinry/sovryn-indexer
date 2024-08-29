@@ -7,7 +7,7 @@ import { onShutdown } from 'utils/shutdown';
 
 import * as schemas from './schema';
 
-export const queryClient = postgres(config.databaseUrl);
+export const queryClient = postgres(config.databaseUrl, { max: 100 });
 
 export const db = drizzle(queryClient, {
   logger: {
