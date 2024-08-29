@@ -6,9 +6,10 @@ import { db } from 'database/client';
 export async function analyzeSelectQuery(q: any, label?: string) {
   console.warn('[EXPLAIN]-------------------:', label);
   const explain = await db
-    .execute(sql`EXPLAIN (ANALYZE, BUFFERS, COSTS, SETTINGS, SUMMARY, TIMING, WAL, VERBOSE) ${q}`)
+    .execute(sql`EXPLAIN (ANALYZE TRUE, BUFFERS, COSTS, SETTINGS, SUMMARY, TIMING FALSE, WAL, VERBOSE) ${q}`)
     .then((result) => result.map((r) => r['QUERY PLAN']).join('\n'));
   console.log(explain);
   console.log('[QUERY]-------------------:', label);
   console.log(q.toSQL().sql);
+  console.log(q.toSQL().params);
 }

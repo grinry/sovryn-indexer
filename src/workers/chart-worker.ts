@@ -1,46 +1,29 @@
-// @ts-ignore
-import { postMessageToThread, threadId, workerData, Worker, isMainThread, parentPort } from 'node:worker_threads';
+import { workerData, Worker, isMainThread, parentPort, threadId } from 'node:worker_threads';
 
-import { db } from 'database/client';
+import { Timeframe, TIMEFRAMES } from 'controllers/main-controller.constants';
+import { constructCandlesticks, getPrices } from 'loader/chart/utils';
+import { logger } from 'utils/logger';
 
-// const channel = new BroadcastChannel('sync');
-// const level = workerData?.level ?? 0;
-
-// if (level < 10) {
-//   const worker = new Worker(__filename, {
-//     workerData: { level: level + 1 },
-//   });
-// }
-
-// if (level === 0) {
-//   process.on('workerMessage', (value, source) => {
-//     console.log(`${source} -> ${threadId}:`, value);
-//     postMessageToThread(source, { message: 'pong' });
-//   });
-// } else if (level === 10) {
-//   process.on('workerMessage', (value, source) => {
-//     console.log(`${source} -> ${threadId}:`, value);
-//     channel.postMessage('done');
-//     channel.close();
-//   });
-
-//   postMessageToThread(0, { message: 'ping' });
-// }
-
-// channel.onmessage = channel.close;
-
-export function testAsyncWorker(input) {
+export function buildCandlesticksOnWorker(
+  chainId: number,
+  baseTokenAddress: string,
+  quoteTokenAddress: string,
+  start: Date,
+  end: Date,
+  timeframe: Timeframe,
+) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(__filename, {
-      workerData: input,
+      workerData: [chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe],
     });
     worker.on('message', (e) => {
-      console.log('message from worker', e);
       resolve(e);
+      worker.terminate();
     });
     worker.on('error', reject);
+    worker.on('online', () => logger.info('worker online'));
     worker.on('exit', (code) => {
-      console.log('worker exited', code);
+      logger.info('worker exited', code);
       if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`));
     });
   });
@@ -48,15 +31,10 @@ export function testAsyncWorker(input) {
 
 if (!isMainThread) {
   (async () => {
-    const input = workerData;
-    const start = Date.now();
-    while (Date.now() - start < 3_000) {
-      // blocking everything for 3 seconds
-    }
-
-    // has access to db
-    const token = await db.query.tokens.findFirst();
-
-    parentPort.postMessage([input, token.symbol]);
+    logger.info({ threadId }, 'running worker process');
+    const [chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe] = workerData;
+    const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe);
+    const candlesticks = await constructCandlesticks(intervals, TIMEFRAMES[timeframe]);
+    parentPort.postMessage(candlesticks);
   })();
 }

@@ -1,7 +1,5 @@
-import w, { Worker } from 'node:worker_threads';
-
 import dayjs from 'dayjs';
-import { eq, and, sql, or } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { Router, Request, Response } from 'express';
 import Joi from 'joi';
@@ -10,9 +8,8 @@ import _ from 'lodash';
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
 import { lower } from 'database/helpers';
-import { prices, tokens } from 'database/schema';
+import { tokens } from 'database/schema';
 import { chains } from 'database/schema/chains';
-import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 import { networks } from 'loader/networks';
 import { getLastPrices } from 'loader/price';
 import { validateChainId } from 'middleware/network-middleware';
@@ -23,7 +20,7 @@ import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
-import { testAsyncWorker } from 'workers/chart-worker';
+import { buildCandlesticksOnWorker } from 'workers/chart-worker';
 
 import { Timeframe, TIMEFRAMES } from './main-controller.constants';
 
@@ -214,24 +211,20 @@ router.get(
       res,
       `chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${start.getTime()}/${end.getTime()}/${timeframe}`,
       async () => {
-        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe);
-        const candlesticks = await constructCandlesticks(intervals, timeframeMinutes);
+        const candlesticks = await buildCandlesticksOnWorker(
+          chainId,
+          baseTokenAddress,
+          quoteTokenAddress,
+          start,
+          end,
+          timeframe,
+        );
         return candlesticks;
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
   }),
 );
-
-router.get('/blocker', async (req, res) => {
-  const start = Date.now();
-
-  const result = await testAsyncWorker('hello');
-  console.log('result', result);
-
-  // await new Promise((resolve) => setTimeout(resolve, 10_000));
-  return res.json({ finished: true, ts: Date.now() - start });
-});
 
 router.get('/not-blocked', (req, res) => {
   return res.json({ success: true });
