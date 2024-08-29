@@ -35,7 +35,7 @@ export const startCrontab = async () => {
     onTick: tickWrapper(retrieveUsdPrices),
   }).start();
 
-  // Stores sdex Swaps every minute
+  // Stores Swaps every minute
   CronJob.from({
     cronTime: '*/1 * * * *',
     onTick: tickWrapper(retrieveSwaps),

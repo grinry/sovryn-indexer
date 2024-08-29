@@ -82,3 +82,25 @@ export type Swap = {
 export type SwapsResponse = {
   swaps: Swap[];
 };
+
+export type Bin = {
+  id: string;
+  liquidity: string;
+  user: {
+    id: string;
+  };
+  block: number;
+  timestamp: number;
+  binId: string;
+  lbPairBinId: {
+    id: string;
+    priceX: string;
+    priceY: string;
+    totalSupply: string;
+    reserveX: string;
+    reserveY: string;
+  };
+};
+export type BinsResponse = {
+  userBinLiquidities: Bin[];
+};
