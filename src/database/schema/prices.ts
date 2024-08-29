@@ -1,4 +1,3 @@
-import { relations, sql } from 'drizzle-orm';
 import { pgTable, timestamp, varchar, integer, unique, serial } from 'drizzle-orm/pg-core';
 
 import { tokens } from './tokens';

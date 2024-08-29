@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { bignumber } from 'mathjs';
 
-import { DEFAULT_CACHE_TTL } from 'config/constants';
+import { LONG_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
 import { NewPrice, prices } from 'database/schema';
 import { bfsShortestPath, constructGraph } from 'utils/bfs';
@@ -47,7 +47,7 @@ export function findEndPrice(entry: number, destination: number, prices: NewPric
 }
 
 // todo: add possibility to update cache data outside current thread if TTL is almost expired
-export const getLastPrices = () =>
+export const getLastPrices = (forceUpdate = false) =>
   maybeCache(
     'lastPrices',
     async () => {
@@ -61,7 +61,7 @@ export const getLastPrices = () =>
         .groupBy(prices.baseId, prices.quoteId)
         .as('sq_dates');
 
-      const values = await db
+      return db
         .select({
           baseId: prices.baseId,
           quoteId: prices.quoteId,
@@ -73,7 +73,17 @@ export const getLastPrices = () =>
           dateMap,
           and(eq(prices.baseId, dateMap.baseId), eq(prices.quoteId, dateMap.quoteId), eq(prices.tickAt, dateMap.date)),
         );
-      return values;
     },
-    DEFAULT_CACHE_TTL,
+    LONG_CACHE_TTL,
+    forceUpdate,
   ).then((result) => result.data);
+
+export const getLastPrice = async (base: number, quote: number) => {
+  const lastPrices = await getLastPrices();
+  return lastPrices.find((item) => item.baseId === base && item.quoteId === quote);
+};
+
+export const getLastEndPrice = async (entry: number, destination: number) => {
+  const lastPrices = await getLastPrices();
+  return findEndPrice(entry, destination, lastPrices as unknown as NewPrice[]);
+};

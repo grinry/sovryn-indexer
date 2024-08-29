@@ -15,12 +15,13 @@ export async function maybeCache<T>(
   key: string,
   fn: () => Promise<T>,
   cacheDurationInSeconds: number,
+  forceUpdate = false,
 ): Promise<CacheResponse<T>> {
   const cacheKey = `maybe:${key}`;
 
   const cached = await cache.get(cacheKey);
 
-  if (cached) {
+  if (cached && !forceUpdate) {
     logger.debug({ key }, 'Cache hit');
     return {
       data: JSON.parse(cached),
@@ -28,7 +29,9 @@ export async function maybeCache<T>(
     };
   }
 
-  logger.debug({ key }, 'Cache miss');
+  const forced = cache && forceUpdate;
+
+  logger.debug({ key }, forced ? 'Force update' : 'Cache miss');
   const result = await fn();
 
   await cache.put(cacheKey, JSON.stringify(result), cacheDurationInSeconds);

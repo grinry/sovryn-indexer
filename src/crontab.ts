@@ -10,6 +10,7 @@ import { retrieveSwaps } from 'cronjobs/retrieve-swaps';
 import { retrieveTokens } from 'cronjobs/retrieve-tokens';
 import { retrieveUsdPrices } from 'cronjobs/retrieve-usd-prices';
 import { updateChains } from 'loader/networks';
+import { getLastPrices } from 'loader/price';
 
 export const tickWrapper = (fn: (context: CronJob) => Promise<void>) => {
   return async function () {
@@ -50,6 +51,20 @@ export const startCrontab = async () => {
     cronTime: '*/5 * * * *',
     onTick: tickWrapper(priceFeedTask),
     runOnInit: true,
+  });
+
+  // update cached prices every minute
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: async function () {
+      this.stop();
+      try {
+        await getLastPrices(true);
+      } catch (e) {
+        console.error(e);
+      }
+      this.start();
+    },
   });
 };
 
