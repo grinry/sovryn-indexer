@@ -6,5 +6,6 @@ declare namespace NodeJS {
     REDIS_CACHE_URL: string;
     LOG_LEVEL: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
     NETWORKS: string;
+    BYPASS_RATE_LIMIT: string;
   }
 }

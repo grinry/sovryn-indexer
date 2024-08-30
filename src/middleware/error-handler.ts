@@ -21,6 +21,9 @@ export const errorHandler = (err: CustomError, req: Request, res: Response, next
       ? {
           message: (err as Error).message,
           stack: (err as Error).stack,
+          // temp
+          env: config.env,
+          p: process.env.NODE_ENV,
         }
       : undefined;
 

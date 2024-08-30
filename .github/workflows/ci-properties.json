@@ -15,5 +15,8 @@
     "POSTGRES_PORT": "5432"
   },
   "DEV_ENV_VARS": {},
-  "PROD_ENV_VARS": {}
+  "PROD_ENV_VARS": {
+    "NODE_ENV": "production",
+    "BYPASS_RATE_LIMIT": "true"
+  }
 }

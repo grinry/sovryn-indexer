@@ -26,7 +26,12 @@ const createRateLimiterMiddleware = (options: RateLimiterOptions) => {
     res.setHeader('X-RateLimit-Limit', String(options.points));
     res.setHeader('X-User', String(clientIp));
     try {
-      await rateLimiter.consume(clientIp);
+      // temporary bypass rate limit for testing
+      if (!process.env.BYPASS_RATE_LIMIT) {
+        await rateLimiter.consume(clientIp);
+      } else {
+        res.setHeader('X-RateLimit-Disabled', 'true');
+      }
       next();
     } catch (err) {
       return next(new HttpError(429, 'Too Many Requests'));
