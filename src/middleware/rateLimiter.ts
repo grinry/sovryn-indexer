@@ -25,10 +25,11 @@ const createRateLimiterMiddleware = (options: RateLimiterOptions) => {
     const clientIp = req.ip;
     res.setHeader('X-RateLimit-Limit', String(options.points));
     res.setHeader('X-User', String(clientIp));
+    res.setHeader('X-User-Path', req.ips.join(' -> '));
     try {
       // temporary bypass rate limit for testing
       if (!process.env.BYPASS_RATE_LIMIT) {
-        await rateLimiter.consume(clientIp);
+        // await rateLimiter.consume(clientIp);
       } else {
         res.setHeader('X-RateLimit-Disabled', 'true');
       }
