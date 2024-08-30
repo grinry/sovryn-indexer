@@ -23,6 +23,8 @@ const createRateLimiterMiddleware = (options: RateLimiterOptions) => {
 
   return async (req: Request, res: Response, next: NextFunction) => {
     const clientIp = req.ip;
+    res.setHeader('X-RateLimit-Limit', String(options.points));
+    res.setHeader('X-User', String(clientIp));
     try {
       await rateLimiter.consume(clientIp);
       next();
