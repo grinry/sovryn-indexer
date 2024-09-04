@@ -14,7 +14,7 @@ import { networks } from 'loader/networks';
 import { getLastPrices } from 'loader/price';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
-import { NotFoundError } from 'utils/custom-error';
+import { BadRequestError, HttpError, NotFoundError } from 'utils/custom-error';
 import { ceilDate } from 'utils/date';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
@@ -228,6 +228,10 @@ router.get(
 
 router.get('/not-blocked', (req, res) => {
   return res.json({ success: true });
+});
+
+router.get('/err', (req, res) => {
+  throw new BadRequestError('This is a test error');
 });
 
 export default router;
