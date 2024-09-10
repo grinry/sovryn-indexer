@@ -10,7 +10,7 @@
 
 #### GET /chains
 
-Returns a list of supported chains and features. `chainId` is the unique identifier for each chain and is used in other endpoints. While chain id returned is a number, endpoints can also accept chain id as hex string (e.g. `0x1e` instead of `30` for Rootstock).
+Returns a list of supported chains and features (currently supported are `legacy` and `sdex`). `chainId` is the unique identifier for each chain and is used in other endpoints. While chain id returned is a number, endpoints can also accept chain id as hex string (e.g. `0x1e` instead of `30` for Rootstock).
 
 Example response:
 ```json
@@ -58,6 +58,56 @@ Example response:
 }
 ```
 
+#### GET /tokens/:address
+
+Returns details of a token. `address` is required.
+
+`GET /tokens/0x0000000000000000000000000000000000000000`
+
+Example response:
+```json
+{
+  "data": {
+    "symbol": "RBTC",
+    "name": "Rootstock Smart Bitcoin",
+    "decimals": 18,
+    "chainId": 30,
+    "address": "0x
+    "usdPrice": "64499.13340664030853125",
+    "usdPriceDate": "2024-08-26 08:17:00"
+  },
+  "timestamp": 1630000000
+}
+```
+
+
+#### GET /chart
+
+Returns candlestick chart data for a token pair.
+
+`chainId`, `base` and `quote` are required.
+
+optional `timeframe` query parameter can be used to specify the timeframe of the chart. Default is `1m` (supports `1m`, `5m`, `10m`, `15m`, `30m`, `1h`, `4h`, `12h`, `1d`, `3d`, `1w` and `30d`).
+
+`start` and `end` query parameters can be used to specify the time range of the chart (unix timestamp). Default is last 24 hours.
+
+`GET /chart?chainId=30&base=0x0000000000000000000000000000000000000000&quote=0xc1411567d2670e24d9c4daaa7cda95686e1250aa&start=1724050475&timeframe=1w`
+
+Example response:
+```json
+{
+  "data": [{
+    "date": 1725949500,
+    "start": "2024-09-10T06:24:00.000Z",
+    "end": "2024-09-10T06:25:00.000Z",
+    "open": "57375.87501732587844911901097462014797879414924838120836186079301",
+    "close": "57375.87501732587844911901097462014797879414924838120836186079301",
+    "high": "57375.87501732588",
+    "low": "57375.87501732588"
+  }],
+  "timestamp": 1630000000
+}
+``` 
 
 ### Legacy endpoints
 
@@ -65,45 +115,45 @@ Legacy endpoints are endpoints moved from the old API and are mostly used for ro
 
 #### GET /legacy/amm
 
-Returns list of rootstock AMM pools. `chainId` is required.
+Returns list of Rootstock AMM pools. `chainId` is required.
 
 `GET /legacy/amm?chainId=30`
 
 
 #### GET /legacy/amm/pool/:poolId
 
-Returns details of a rootstock AMM pool. `chainId` and `poolId` are required.
+Returns details of a Rootstock AMM pool. `chainId` and `poolId` are required.
 
 `GET /legacy/amm/pool/0xe76ea314b32fcf641c6c57f14110c5baa1e45ff4?chainId=30`
 
 #### GET /legacy/amm/today/:poolId
 
-Returns daily data of a rootstock AMM pool. `chainId` and `poolId` are required.
+Returns daily data of a Rootstock AMM pool. `chainId` and `poolId` are required.
 
 `GET /legacy/amm/today/0xe76ea314b32fcf641c6c57f14110c5baa1e45ff4?chainId=30`
 
 #### GET /legacy/amm/volume
 
-Returns daily volume of rootstock AMM pools. `chainId` is required.
+Returns daily volume of Rootstock AMM pools. `chainId` is required.
 
 `GET /legacy/amm/volume?chainId=30`
 
 #### GET /legacy/amm/volume/pool/:poolId
 
-Returns daily volume of a rootstock AMM pool. `chainId` and `poolId` are required.
+Returns daily volume of a Rootstock AMM pool. `chainId` and `poolId` are required.
 
 `GET /legacy/amm/volume/pool/0xe76ea314b32fcf641c6c57f14110c5baa1e45ff4?chainId=30`
 
 #### GET /legacy/amm/pool-balance/:poolId
 
-Returns balance of a rootstock AMM pool. `chainId` and `poolId` are required.
+Returns balance of a Rootstock AMM pool. `chainId` and `poolId` are required.
 
 `GET /legacy/amm/pool-balance/0xe76ea314b32fcf641c6c57f14110c5baa1e45ff4?chainId=30`
 
 
 #### GET /legacy/cmc/summary
 
-Returns summary of all rootstock trading pairs.
+Returns summary of all Rootstock trading pairs.
 
 `GET /legacy/cmc/summary`
 
@@ -146,7 +196,7 @@ Example response:
 
 #### GET /sdex/volume
 
-Returns volume of each token on sdex supported chain. `chainId` is required.
+Returns volume of each token on a sdex supported chain. `chainId` is required.
 
 `GET /sdex/volume?chainId=60808`
 
