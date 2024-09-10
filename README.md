@@ -14,7 +14,7 @@ pnpm install
 pnpm docker:dev
 ```
 
-## Migrations
+### Migrations
 
 `pnpm studio` - serves web interface for drizzle studio on https://local.drizzle.studio
 
@@ -28,7 +28,7 @@ pnpm docker:dev
 
 `pnpm db:reset` - deletes all data and tables from the database
 
-## Docker
+### Docker
 
 Build image
 
@@ -37,4 +37,8 @@ Build image
 Run image
 
 `docker run -p 8000:8000 -it sovryn/indexer`
+
+## API Usage
+
+Refer to the [API documentation](docs/README.md) for more information on how to use the API.
 
