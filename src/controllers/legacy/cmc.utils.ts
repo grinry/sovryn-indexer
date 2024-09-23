@@ -1,12 +1,10 @@
 import dayjs from 'dayjs';
 import { desc, eq, sql, and, or, gte, avg, max, min } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { isNil } from 'lodash';
 import { bignumber, max as bnMax, min as bnMin } from 'mathjs';
 
 import { db } from 'database/client';
-import { tvlRepository } from 'database/repository/tvl-repository';
-import { chains, prices, tAmmPools, tokens, TvlGroup } from 'database/schema';
+import { chains, prices, tAmmPools, tokens } from 'database/schema';
 
 export async function prepareSummary() {
   const base = alias(tokens, 'base');

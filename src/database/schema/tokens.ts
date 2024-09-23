@@ -1,4 +1,3 @@
-import { sql } from 'drizzle-orm';
 import { pgTable, timestamp, varchar, integer, unique, serial, char, boolean } from 'drizzle-orm/pg-core';
 
 import { chains } from './chains';
