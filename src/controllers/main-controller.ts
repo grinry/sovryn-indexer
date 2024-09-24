@@ -4,6 +4,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { Router, Request, Response } from 'express';
 import Joi from 'joi';
 import _ from 'lodash';
+import { bignumber } from 'mathjs';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
@@ -14,7 +15,7 @@ import { networks } from 'loader/networks';
 import { getLastPrices } from 'loader/price';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
-import { BadRequestError, HttpError, NotFoundError } from 'utils/custom-error';
+import { BadRequestError, NotFoundError } from 'utils/custom-error';
 import { ceilDate } from 'utils/date';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
@@ -218,7 +219,7 @@ router.get(
           ticker_id: `${baseToken[0].symbol}_${quoteToken[0].symbol}`,
           base_currency: baseToken[0].address,
           target_currency: quoteToken[0].address,
-          last_price: Number(pool.quoteVolume) / Number(pool.baseVolume),
+          last_price: bignumber(pool.quoteVolume).div(pool.baseVolume).toString(),
           base_volume: pool.baseVolume,
           target_volume: pool.quoteVolume,
           pool_id: pool.poolId,
