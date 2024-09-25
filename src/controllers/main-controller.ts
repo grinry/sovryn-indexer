@@ -9,7 +9,7 @@ import { bignumber } from 'mathjs';
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
 import { lower } from 'database/helpers';
-import { tAmmPools, tokens } from 'database/schema';
+import { tokens } from 'database/schema';
 import { chains } from 'database/schema/chains';
 import { networks } from 'loader/networks';
 import { getLastPrices } from 'loader/price';
@@ -167,68 +167,6 @@ router.get(
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
-  }),
-);
-
-router.get(
-  '/tickers',
-  asyncRoute(async (req: Request, res: Response) => {
-    const chainId = validateChainId(req, true);
-
-    const ammPools = await db
-      .select({
-        poolId: tAmmPools.pool,
-        baseTokenId: tAmmPools.token1Id,
-        quoteTokenId: tAmmPools.token2Id,
-        baseVolume: tAmmPools.token1Volume,
-        quoteVolume: tAmmPools.token2Volume,
-        liquidityInUsd: tAmmPools.token1Volume,
-      })
-      .from(tAmmPools)
-      .where(chainId ? eq(tAmmPools.chainId, chainId) : undefined)
-      .execute();
-
-    if (!ammPools.length) {
-      throw new BadRequestError('No pools found for the given chain.');
-    }
-
-    const tickers = await Promise.all(
-      ammPools.map(async (pool) => {
-        const baseToken = await db
-          .select({
-            symbol: tokens.symbol,
-            address: tokens.address,
-          })
-          .from(tokens)
-          .where(eq(tokens.id, pool.baseTokenId))
-          .limit(1)
-          .execute();
-
-        const quoteToken = await db
-          .select({
-            symbol: tokens.symbol,
-            address: tokens.address,
-          })
-          .from(tokens)
-          .where(eq(tokens.id, pool.quoteTokenId))
-          .limit(1)
-          .execute();
-
-        // Construct the ticker object as per CoinGecko spec
-        return {
-          ticker_id: `${baseToken[0].symbol}_${quoteToken[0].symbol}`,
-          base_currency: baseToken[0].address,
-          target_currency: quoteToken[0].address,
-          last_price: bignumber(pool.quoteVolume).div(pool.baseVolume).toString(),
-          base_volume: pool.baseVolume,
-          target_volume: pool.quoteVolume,
-          pool_id: pool.poolId,
-          liquidity_in_usd: pool.liquidityInUsd,
-        };
-      }),
-    );
-
-    res.json({ tickers });
   }),
 );
 

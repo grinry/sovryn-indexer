@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import Joi from 'joi';
+import { bignumber } from 'mathjs';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { maybeCacheResponse } from 'utils/cache';
@@ -69,6 +70,48 @@ router.get(
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data.liquidity)));
+  }),
+);
+
+router.get(
+  '/tickers',
+  asyncRoute(async (req, res) => {
+    const { chainId } = req.query;
+
+    const poolsResponse = await req.network.sdex.queryPools(1e3);
+    const volumeResponse = await prepareSdexVolume(req.network.chainId);
+
+    const volumeMap = new Map();
+    volumeResponse.forEach(({ token, volume }) => {
+      volumeMap.set(token.toLowerCase(), volume);
+    });
+
+    const tickers = poolsResponse.pools.map((pool) => {
+      const baseToken = pool.base.toLowerCase();
+      const quoteToken = pool.quote.toLowerCase();
+      const baseVolume = bignumber(volumeMap.get(baseToken) || '0');
+      const quoteVolume = bignumber(volumeMap.get(quoteToken) || '0');
+
+      const lastPrice = baseVolume.isZero() ? '0' : quoteVolume.div(baseVolume).toFixed(18);
+
+      const liquidityInUsd =
+        baseVolume.isZero() || lastPrice === '0' ? '0' : baseVolume.times(bignumber(lastPrice)).toFixed(18);
+
+      return {
+        ticker_id: `${pool.base}_${pool.quote}`,
+        base_currency: pool.base,
+        target_currency: pool.quote,
+        last_price: lastPrice,
+        base_volume: baseVolume.toString(),
+        target_volume: quoteVolume.toString(),
+        pool_id: pool.poolIdx.toString(),
+        liquidity_in_usd: liquidityInUsd,
+      };
+    });
+
+    return maybeCacheResponse(res, `tickers/${chainId}`, async () => tickers, DEFAULT_CACHE_TTL).then((data) =>
+      res.json(toResponse(data)),
+    );
   }),
 );
 
