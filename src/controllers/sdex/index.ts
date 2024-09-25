@@ -1,9 +1,16 @@
+import { eq } from 'drizzle-orm';
 import { Router } from 'express';
 import Joi from 'joi';
 import { bignumber } from 'mathjs';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
+import { db } from 'database/client';
+import { tAmmPools, tokens } from 'database/schema';
+import { networks } from 'loader/networks';
+import { NetworkFeature } from 'loader/networks/types';
+import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
+import { BadRequestError } from 'utils/custom-error';
 import { toResponse } from 'utils/http-response';
 import { validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
@@ -76,42 +83,120 @@ router.get(
 router.get(
   '/tickers',
   asyncRoute(async (req, res) => {
-    const { chainId } = req.query;
+    const chainId = validateChainId(req, true);
 
-    const poolsResponse = await req.network.sdex.queryPools(1e3);
-    const volumeResponse = await prepareSdexVolume(req.network.chainId);
+    const items = networks.listChains();
 
-    const volumeMap = new Map();
-    volumeResponse.forEach(({ token, volume }) => {
-      volumeMap.set(token.toLowerCase(), volume);
-    });
+    for (const item of items) {
+      if (item.hasFeature(NetworkFeature.legacy)) {
+        return maybeCacheResponse(
+          res,
+          `tickers/${chainId}`,
+          async () => {
+            const ammPools = await db
+              .select({
+                poolId: tAmmPools.pool,
+                baseTokenId: tAmmPools.token1Id,
+                quoteTokenId: tAmmPools.token2Id,
+                baseVolume: tAmmPools.token1Volume,
+                quoteVolume: tAmmPools.token2Volume,
+                liquidityInUsd: tAmmPools.token1Volume,
+              })
+              .from(tAmmPools)
+              .where(chainId ? eq(tAmmPools.chainId, chainId) : undefined)
+              .execute();
 
-    const tickers = poolsResponse.pools.map((pool) => {
-      const baseToken = pool.base.toLowerCase();
-      const quoteToken = pool.quote.toLowerCase();
-      const baseVolume = bignumber(volumeMap.get(baseToken) || '0');
-      const quoteVolume = bignumber(volumeMap.get(quoteToken) || '0');
+            if (!ammPools.length) {
+              throw new BadRequestError('No pools found for the given chain.');
+            }
 
-      const lastPrice = baseVolume.isZero() ? '0' : quoteVolume.div(baseVolume).toFixed(18);
+            const tickers = await Promise.all(
+              ammPools.map(async (pool) => {
+                const baseToken = await db
+                  .select({
+                    symbol: tokens.symbol,
+                    address: tokens.address,
+                  })
+                  .from(tokens)
+                  .where(eq(tokens.id, pool.baseTokenId))
+                  .limit(1)
+                  .execute();
 
-      const liquidityInUsd =
-        baseVolume.isZero() || lastPrice === '0' ? '0' : baseVolume.times(bignumber(lastPrice)).toFixed(18);
+                const quoteToken = await db
+                  .select({
+                    symbol: tokens.symbol,
+                    address: tokens.address,
+                  })
+                  .from(tokens)
+                  .where(eq(tokens.id, pool.quoteTokenId))
+                  .limit(1)
+                  .execute();
 
-      return {
-        ticker_id: `${pool.base}_${pool.quote}`,
-        base_currency: pool.base,
-        target_currency: pool.quote,
-        last_price: lastPrice,
-        base_volume: baseVolume.toString(),
-        target_volume: quoteVolume.toString(),
-        pool_id: pool.poolIdx.toString(),
-        liquidity_in_usd: liquidityInUsd,
-      };
-    });
+                return {
+                  ticker_id: `${baseToken[0].symbol}_${quoteToken[0].symbol}`,
+                  base_currency: baseToken[0].address,
+                  target_currency: quoteToken[0].address,
+                  last_price: bignumber(pool.quoteVolume).div(pool.baseVolume).toString(),
+                  base_volume: pool.baseVolume,
+                  target_volume: pool.quoteVolume,
+                  pool_id: pool.poolId,
+                  liquidity_in_usd: pool.liquidityInUsd,
+                };
+              }),
+            );
 
-    return maybeCacheResponse(res, `tickers/${chainId}`, async () => tickers, DEFAULT_CACHE_TTL).then((data) =>
-      res.json(toResponse(data)),
-    );
+            return tickers;
+          },
+          DEFAULT_CACHE_TTL,
+        ).then((data) => res.json(toResponse(data)));
+      } else if (item.hasFeature(NetworkFeature.sdex)) {
+        return maybeCacheResponse(
+          res,
+          `sdex/tickers/${chainId}`,
+          async () => {
+            if (req.network.hasFeature(NetworkFeature.sdex)) {
+              const poolsResponse = await req.network.sdex.queryPools(1000);
+              const volumeResponse = await prepareSdexVolume(req.network.chainId);
+
+              const volumeMap = new Map();
+              volumeResponse.forEach(({ token, volume }) => {
+                volumeMap.set(token.toLowerCase(), volume);
+              });
+
+              // Process tickers for BOB
+              const tickers = poolsResponse.pools.map((pool) => {
+                const baseToken = pool.base.toLowerCase();
+                const quoteToken = pool.quote.toLowerCase();
+                const baseVolume = bignumber(volumeMap.get(baseToken) || '0');
+                const quoteVolume = bignumber(volumeMap.get(quoteToken) || '0');
+
+                const lastPrice = baseVolume.isZero() ? '0' : quoteVolume.div(baseVolume).toFixed(18);
+                const liquidityInUsd =
+                  baseVolume.isZero() || lastPrice === '0' ? '0' : baseVolume.times(bignumber(lastPrice)).toFixed(18);
+
+                return {
+                  ticker_id: `${pool.base}_${pool.quote}`,
+                  base_currency: pool.base,
+                  target_currency: pool.quote,
+                  last_price: lastPrice,
+                  base_volume: baseVolume.toString(),
+                  target_volume: quoteVolume.toString(),
+                  pool_id: pool.poolIdx.toString(),
+                  liquidity_in_usd: liquidityInUsd,
+                };
+              });
+
+              return tickers;
+            } else {
+              return [];
+            }
+          },
+          DEFAULT_CACHE_TTL,
+        ).then((data) => res.json(toResponse(data)));
+      } else {
+        return res.json({ tickers: [] });
+      }
+    }
   }),
 );
 
