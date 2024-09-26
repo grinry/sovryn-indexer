@@ -4,18 +4,16 @@ import { alias } from 'drizzle-orm/pg-core';
 import { Router, Request, Response } from 'express';
 import Joi from 'joi';
 import _ from 'lodash';
-import { bignumber, re } from 'mathjs';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
 import { lower } from 'database/helpers';
-import { tAmmPools, tokens } from 'database/schema';
+import { tokens } from 'database/schema';
 import { chains } from 'database/schema/chains';
 import { networks } from 'loader/networks';
-import { NetworkFeature } from 'loader/networks/types';
 import { getLastPrices } from 'loader/price';
 import { prepareTickers } from 'loader/tickers-loader';
-import { networkAwareMiddleware, validateChainId } from 'middleware/network-middleware';
+import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
 import { BadRequestError, NotFoundError } from 'utils/custom-error';
 import { ceilDate } from 'utils/date';
@@ -26,7 +24,6 @@ import { validate } from 'utils/validation';
 import { buildCandlesticksOnWorker } from 'workers/chart-worker';
 
 import { Timeframe, TIMEFRAMES } from './main-controller.constants';
-import { prepareSdexVolume } from './sdex/volume.utils';
 
 const router = Router();
 
@@ -235,7 +232,7 @@ router.get(
   asyncRoute(async (req, res) => {
     const chainId = validateChainId(req, true);
     return maybeCacheResponse(res, `tickers/${chainId}`, async () => prepareTickers(networks.listChains()), 1).then(
-      (data) => res.json(toResponse(data)),
+      (data) => res.json(data),
     );
   }),
 );
