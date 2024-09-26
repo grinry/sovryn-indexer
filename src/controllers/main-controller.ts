@@ -4,17 +4,19 @@ import { alias } from 'drizzle-orm/pg-core';
 import { Router, Request, Response } from 'express';
 import Joi from 'joi';
 import _ from 'lodash';
+import { bignumber, re } from 'mathjs';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
 import { lower } from 'database/helpers';
-import { tokens } from 'database/schema';
+import { tAmmPools, tokens } from 'database/schema';
 import { chains } from 'database/schema/chains';
 import { networks } from 'loader/networks';
+import { NetworkFeature } from 'loader/networks/types';
 import { getLastPrices } from 'loader/price';
-import { validateChainId } from 'middleware/network-middleware';
+import { networkAwareMiddleware, validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
-import { BadRequestError, HttpError, NotFoundError } from 'utils/custom-error';
+import { BadRequestError, NotFoundError } from 'utils/custom-error';
 import { ceilDate } from 'utils/date';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
@@ -23,6 +25,7 @@ import { validate } from 'utils/validation';
 import { buildCandlesticksOnWorker } from 'workers/chart-worker';
 
 import { Timeframe, TIMEFRAMES } from './main-controller.constants';
+import { prepareSdexVolume } from './sdex/volume.utils';
 
 const router = Router();
 
@@ -223,6 +226,126 @@ router.get(
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data)));
+  }),
+);
+
+router.get(
+  '/tickers',
+  networkAwareMiddleware([NetworkFeature.legacy, NetworkFeature.sdex]),
+  asyncRoute(async (req, res) => {
+    const chainId = validateChainId(req, true);
+
+    if (req.network.hasFeature(NetworkFeature.sdex)) {
+      return maybeCacheResponse(
+        res,
+        `${chainId}`,
+        async () => {
+          if (req.network.hasFeature(NetworkFeature.sdex)) {
+            const poolsResponse = await req.network.sdex.queryPools(1000);
+            const volumeResponse = await prepareSdexVolume(req.network.chainId);
+
+            const volumeMap = new Map();
+            volumeResponse.forEach(({ token, volume }) => {
+              volumeMap.set(token.toLowerCase(), volume);
+            });
+
+            const tickers = poolsResponse.pools.map((pool) => {
+              const baseToken = pool.base.toLowerCase();
+              const quoteToken = pool.quote.toLowerCase();
+              const baseVolume = bignumber(volumeMap.get(baseToken) || '0');
+              const quoteVolume = bignumber(volumeMap.get(quoteToken) || '0');
+
+              const lastPrice = baseVolume.isZero() ? '0' : quoteVolume.div(baseVolume).toFixed(18);
+              const liquidityInUsd =
+                baseVolume.isZero() || lastPrice === '0' ? '0' : baseVolume.times(bignumber(lastPrice)).toFixed(18);
+
+              return {
+                ticker_id: `${pool.base}_${pool.quote}`,
+                base_currency: pool.base,
+                target_currency: pool.quote,
+                last_price: lastPrice,
+                base_volume: baseVolume.toString(),
+                target_volume: quoteVolume.toString(),
+                pool_id: pool.poolIdx.toString(),
+                liquidity_in_usd: liquidityInUsd,
+              };
+            });
+
+            return tickers;
+          } else {
+            return [];
+          }
+        },
+        DEFAULT_CACHE_TTL,
+      ).then((data) => res.json(toResponse(data)));
+    } else if (req.network.hasFeature(NetworkFeature.legacy)) {
+      return maybeCacheResponse(
+        res,
+        `${chainId}`,
+        async () => {
+          if (req.network?.hasFeature(NetworkFeature.legacy)) {
+            const ammPools = await db
+              .select({
+                poolId: tAmmPools.pool,
+                baseTokenId: tAmmPools.token1Id,
+                quoteTokenId: tAmmPools.token2Id,
+                baseVolume: tAmmPools.token1Volume,
+                quoteVolume: tAmmPools.token2Volume,
+                liquidityInUsd: tAmmPools.token1Volume,
+              })
+              .from(tAmmPools)
+              .where(chainId ? eq(tAmmPools.chainId, chainId) : undefined)
+              .execute();
+
+            if (!ammPools.length) {
+              throw new BadRequestError('No pools found for the given chain.');
+            }
+
+            const tickers = await Promise.all(
+              ammPools.map(async (pool) => {
+                const baseToken = await db
+                  .select({
+                    symbol: tokens.symbol,
+                    address: tokens.address,
+                  })
+                  .from(tokens)
+                  .where(eq(tokens.id, pool.baseTokenId))
+                  .limit(1)
+                  .execute();
+
+                const quoteToken = await db
+                  .select({
+                    symbol: tokens.symbol,
+                    address: tokens.address,
+                  })
+                  .from(tokens)
+                  .where(eq(tokens.id, pool.quoteTokenId))
+                  .limit(1)
+                  .execute();
+
+                return {
+                  ticker_id: `${baseToken[0].symbol}_${quoteToken[0].symbol}`,
+                  base_currency: baseToken[0].address,
+                  target_currency: quoteToken[0].address,
+                  last_price: bignumber(pool.quoteVolume).div(pool.baseVolume).toString(),
+                  base_volume: pool.baseVolume,
+                  target_volume: pool.quoteVolume,
+                  pool_id: pool.poolId,
+                  liquidity_in_usd: pool.liquidityInUsd,
+                };
+              }),
+            );
+
+            return tickers;
+          } else {
+            return [];
+          }
+        },
+        DEFAULT_CACHE_TTL,
+      ).then((data) => res.json(toResponse(data)));
+    } else {
+      return res.json({ tickers: [] });
+    }
   }),
 );
 
