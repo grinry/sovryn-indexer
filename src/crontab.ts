@@ -32,19 +32,20 @@ export const startCrontab = async () => {
 
   // Retrieve USD prices of tokens every minute
   CronJob.from({
-    cronTime: '*/1 * * * *',
+    cronTime: '*/10 * * * *',
     onTick: tickWrapper(retrieveUsdPrices),
+    runOnInit: true,
   }).start();
 
-  // Stores Swaps every minute
-  CronJob.from({
-    cronTime: '*/1 * * * *',
-    onTick: tickWrapper(retrieveSwaps),
-  }).start();
+  // // Stores Swaps every minute
+  // CronJob.from({
+  //   cronTime: '*/1 * * * *',
+  //   onTick: tickWrapper(retrieveSwaps),
+  // }).start();
 
-  // LEGACY JOBS
-  ammApyJobs();
-  graphWrapperJobs();
+  // // LEGACY JOBS
+  // ammApyJobs();
+  // graphWrapperJobs();
 
   // run as background job
   // CronJob.from({
@@ -52,19 +53,19 @@ export const startCrontab = async () => {
   //   onTick: tickWrapper(priceFeedTask),
   // });
 
-  // update cached prices every minute
-  CronJob.from({
-    cronTime: '*/1 * * * *',
-    onTick: async function () {
-      this.stop();
-      try {
-        await getLastPrices(true);
-      } catch (e) {
-        console.error(e);
-      }
-      this.start();
-    },
-  });
+  // // update cached prices every minute
+  // CronJob.from({
+  //   cronTime: '*/1 * * * *',
+  //   onTick: async function () {
+  //     this.stop();
+  //     try {
+  //       await getLastPrices(true);
+  //     } catch (e) {
+  //       console.error(e);
+  //     }
+  //     this.start();
+  //   },
+  // });
 };
 
 function ammApyJobs() {

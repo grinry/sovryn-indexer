@@ -2,6 +2,7 @@ import { pgTable, timestamp, varchar, integer, unique, serial } from 'drizzle-or
 
 import { tokens } from './tokens';
 
+/* @deprecated */
 export const prices = pgTable(
   'prices',
   {

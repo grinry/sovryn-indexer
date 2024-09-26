@@ -11,6 +11,7 @@ import { LegacyChain } from 'loader/networks/legacy-chain';
 import { LiquidityChain } from 'loader/networks/liquidity-chain';
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { NetworkFeature } from 'loader/networks/types';
+import { usdPriceLoader } from 'loader/usd-prices/usd-price-loader';
 import { areAddressesEqual } from 'utils/compare';
 import { floorDate } from 'utils/date';
 import { logger } from 'utils/logger';
@@ -23,6 +24,11 @@ export const retrieveUsdPrices = async (ctx: CronJob) => {
   ctx.stop();
   const tickAt = floorDate(ctx.lastDate());
   childLogger.info({ tickAt }, 'Retrieving USD prices of tokens...');
+
+  const res = await usdPriceLoader(tickAt);
+
+  childLogger.info({ tickAt }, 'Retrieving USD prices of tokens completed.');
+  return;
 
   const items = await db.query.tokens.findMany({
     columns: {
