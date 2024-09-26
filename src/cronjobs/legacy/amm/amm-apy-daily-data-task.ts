@@ -129,6 +129,7 @@ export function calculateDayApr(chain: LegacyChain, data: DailyAggregatedApyResu
     pool: data.pool,
     poolToken: data.poolToken,
     balanceBtc: bignumber(data.avgBalance).toFixed(8),
+    balanceUsd: bignumber(data.avgBalanceUsd).toFixed(8),
     feeApy: feeApy,
     rewardsApy: rewardsApy,
     totalApy: totalApy,

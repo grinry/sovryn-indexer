@@ -19,7 +19,7 @@ const rateLimiterMiddleware = createRateLimiterMiddleware({
 
 const app = express();
 // app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal']);
-app.enable('trust proxy');
+app.set('trust proxy', 2);
 
 app.use((req, res, next) => {
   res.setHeader('Connection', 'close');

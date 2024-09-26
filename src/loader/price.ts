@@ -60,7 +60,6 @@ export const getLastPrices = (forceUpdate = false) =>
         .from(prices)
         .groupBy(prices.baseId, prices.quoteId)
         .as('sq_dates');
-
       return db
         .select({
           baseId: prices.baseId,

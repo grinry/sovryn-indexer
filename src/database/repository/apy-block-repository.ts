@@ -8,6 +8,7 @@ export type DailyAggregatedApyResult = {
   poolToken: string;
   date: string;
   avgBalance: string;
+  avgBalanceUsd: string;
   sumFees: string;
   sumRewards: string;
 };
@@ -31,6 +32,7 @@ export const apyBlockRepository = {
         poolToken: ammApyBlocks.poolToken,
         date: sql<string>`max(date(${ammApyBlocks.blockTimestamp}))`.as('date'),
         avgBalance: sql<string>`avg(${ammApyBlocks.balanceBtc})`.as('avg_balance'),
+        avgBalanceUsd: sql<string>`avg(${ammApyBlocks.balanceUsd})`.as('avg_balance_usd'),
         sumFees: sql<string>`sum(${ammApyBlocks.conversionFeeBtc})`.as('sum_fees'),
         sumRewards: sql<string>`sum(${ammApyBlocks.rewardsBtc})`.as('sum_rewards'),
       })

@@ -27,6 +27,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@sovryn/sdex": "^0.3.14",
     "@typechain/ethers-v6": "^0.5.1",
     "body-parser": "^1.20.1",
     "convict": "^6.2.4",
