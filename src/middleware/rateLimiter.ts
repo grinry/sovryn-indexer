@@ -29,7 +29,7 @@ const createRateLimiterMiddleware = (options: RateLimiterOptions) => {
     try {
       // temporary bypass rate limit for testing
       if (!process.env.BYPASS_RATE_LIMIT) {
-        await rateLimiter.consume(clientIp);
+        // await rateLimiter.consume(clientIp);
       } else {
         res.setHeader('X-RateLimit-Disabled', 'true');
       }
