@@ -32,7 +32,7 @@ export const startCrontab = async () => {
 
   // Retrieve USD prices of tokens every minute
   CronJob.from({
-    cronTime: '*/10 * * * *',
+    cronTime: '*/1 * * * *',
     onTick: tickWrapper(retrieveUsdPrices),
     runOnInit: true,
   }).start();

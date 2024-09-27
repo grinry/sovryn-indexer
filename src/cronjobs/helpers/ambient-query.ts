@@ -1,5 +1,6 @@
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { bfsShortestPath, constructGraph } from 'utils/bfs';
+import { logger } from 'utils/logger';
 import { decodeCrocPrice, toDisplayPrice } from 'utils/price';
 
 export type PoolWithIndex = [string, string, number];
@@ -22,20 +23,27 @@ export function loadPoolPrices(
 ) {
   // todo: implement multicall
   return Promise.all(
-    pools.map(async (path) => {
-      const [base, quote] = path[0] < path[1] ? [path[0], path[1]] : [path[1], path[0]];
-      const baseDecimals = tokensToQuery.find((item) => item.address === base)!.decimals;
-      const quoteDecimals = tokensToQuery.find((item) => item.address === quote)!.decimals;
-      const price = await chain.query.queryPrice(base, quote, path[2]);
-      return {
-        base,
-        quote,
-        index: path[2],
-        spotPrice: price,
-        displayPrice: toDisplayPrice(decodeCrocPrice(price), baseDecimals, quoteDecimals, true),
-        displayPriceInBase: toDisplayPrice(decodeCrocPrice(price), baseDecimals, quoteDecimals, false),
-      };
-    }),
+    pools
+      .filter((path) => {
+        return (
+          tokensToQuery.find((item) => item.address === path[0]) &&
+          tokensToQuery.find((item) => item.address === path[1])
+        );
+      })
+      .map(async (path) => {
+        const [base, quote] = path[0] < path[1] ? [path[0], path[1]] : [path[1], path[0]];
+        const baseDecimals = tokensToQuery.find((item) => item.address === base)!.decimals;
+        const quoteDecimals = tokensToQuery.find((item) => item.address === quote)!.decimals;
+        const price = await chain.query.queryPrice(base, quote, path[2]);
+        return {
+          base,
+          quote,
+          index: path[2],
+          spotPrice: price,
+          displayPrice: toDisplayPrice(decodeCrocPrice(price), baseDecimals, quoteDecimals, true),
+          displayPriceInBase: toDisplayPrice(decodeCrocPrice(price), baseDecimals, quoteDecimals, false),
+        };
+      }),
   );
 }
 
@@ -51,6 +59,11 @@ export function findPrice(
         (item.base.toLowerCase() === quote.toLowerCase() && item.quote) === base) &&
       Number(item.index) === Number(index),
   );
+
+  if (!item) {
+    logger.warn({ base, quote, index }, 'SDEX Price not found');
+    return 0;
+  }
 
   return item.base.toLowerCase() === base.toLowerCase() ? item.displayPrice : item.displayPriceInBase;
 }
