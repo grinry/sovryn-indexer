@@ -4,6 +4,7 @@ import { ammApyBlockTask } from 'cronjobs/legacy/amm/amm-apy-block-task';
 import { ammApyDailyDataTask } from 'cronjobs/legacy/amm/amm-apy-daily-data-task';
 import { ammCleanUpTask } from 'cronjobs/legacy/amm/amm-cleanup-task';
 import { ammPoolsTask } from 'cronjobs/legacy/amm/amm-pools-task';
+import { priceFeedTask } from 'cronjobs/legacy/price-feed-task';
 // import { priceFeedTask } from 'cronjobs/legacy/price-feed-task';
 import { tvlTask } from 'cronjobs/legacy/tvl-task';
 import { retrieveSwaps } from 'cronjobs/retrieve-swaps';
@@ -19,23 +20,23 @@ export const tickWrapper = (fn: (context: CronJob) => Promise<void>) => {
 };
 
 export const startCrontab = async () => {
-  // populate chain config on startup before running other tasks
-  await updateChains();
+  // // populate chain config on startup before running other tasks
+  // await updateChains();
 
-  // Check and populate supported token list every 2 minutes
-  CronJob.from({
-    // cronTime: '*/10 * * * * *',
-    cronTime: '*/2 * * * *',
-    onTick: tickWrapper(retrieveTokens),
-    runOnInit: true,
-  }).start();
+  // // Check and populate supported token list every 2 minutes
+  // CronJob.from({
+  //   // cronTime: '*/10 * * * * *',
+  //   cronTime: '*/2 * * * *',
+  //   onTick: tickWrapper(retrieveTokens),
+  //   runOnInit: true,
+  // }).start();
 
-  // Retrieve USD prices of tokens every minute
-  CronJob.from({
-    cronTime: '*/1 * * * *',
-    onTick: tickWrapper(retrieveUsdPrices),
-    runOnInit: true,
-  }).start();
+  // // Retrieve USD prices of tokens every minute
+  // CronJob.from({
+  //   cronTime: '*/1 * * * *',
+  //   onTick: tickWrapper(retrieveUsdPrices),
+  //   runOnInit: true,
+  // }).start();
 
   // // Stores Swaps every minute
   // CronJob.from({
@@ -51,6 +52,7 @@ export const startCrontab = async () => {
   // CronJob.from({
   //   cronTime: '*/5 * * * *',
   //   onTick: tickWrapper(priceFeedTask),
+  //   runOnInit: true,
   // });
 
   // // update cached prices every minute

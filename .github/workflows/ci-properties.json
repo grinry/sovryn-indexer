@@ -12,7 +12,8 @@
     "NODE_ENV": "production",
     "LOG_LEVEL": "debug",
     "PORT": "3000",
-    "POSTGRES_PORT": "5432"
+    "POSTGRES_PORT": "5432",
+    "TZ": "UTC"
   },
   "DEV_ENV_VARS": {},
   "PROD_ENV_VARS": {

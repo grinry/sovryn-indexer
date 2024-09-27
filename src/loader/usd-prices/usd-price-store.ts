@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { sql, and, eq, inArray } from 'drizzle-orm';
 import { bignumber } from 'mathjs';
 
@@ -52,23 +53,30 @@ export async function loadLastStoredPrices(table: Table): Promise<CurrentPrice[]
 }
 
 export function prepareDataToStore(current: CurrentPrice[], prices: Price[]) {
-  return prices
-    .map((item) => {
-      const last = current.find((price) => price.tokenId === item.id);
-      return { last, item };
-    })
-    .filter(({ last, item }) => last === undefined || last.value !== item.value)
-    .map(
-      ({ item, last }) =>
-        ({
+  return (
+    prices
+      .map((item) => {
+        const last = current.find((price) => price.tokenId === item.id);
+        return { last, item };
+      })
+      // filter out prices that are the same as the last stored or are zero as the first found price
+      .filter(
+        ({ last, item }) =>
+          (last === undefined && bignumber(item.value).gt(0)) ||
+          (last !== undefined && !bignumber(last.value).eq(item.value)),
+      )
+      .map(({ item, last }) => {
+        const isUpdate = last && dayjs(last.tickAt).isSame(dayjs(item.date));
+        return {
           tokenId: item.id,
           value: item.value,
-          high: last?.high !== undefined && bignumber(last.high).gt(item.value) ? last.high : item.value,
-          low: last?.low !== undefined && bignumber(last.low).lt(item.value) ? last.low : item.value,
+          high: isUpdate && last?.high !== undefined && bignumber(last.high).gt(item.value) ? last.high : item.value,
+          low: isUpdate && last?.low !== undefined && bignumber(last.low).lt(item.value) ? last.low : item.value,
           tickAt: item.date,
           last,
-        } satisfies any),
-    );
+        } satisfies any;
+      })
+  );
 }
 
 export const listTokens = (): Promise<Token[]> =>

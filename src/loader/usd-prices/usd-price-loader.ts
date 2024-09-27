@@ -186,7 +186,7 @@ async function processTraderJoeTokens(chain: LiquidityChain, date: Date, tokens:
   }
 
   // remove duplicated tokens, as it looks like we have them in pairs
-  return uniqBy(toAdd, (item) => item.id);
+  return uniqBy(toAdd, 'id');
 }
 
 async function storeLastPrices(prices: Price[]) {
