@@ -20,54 +20,55 @@ export const tickWrapper = (fn: (context: CronJob) => Promise<void>) => {
 };
 
 export const startCrontab = async () => {
-  // // populate chain config on startup before running other tasks
-  // await updateChains();
+  // populate chain config on startup before running other tasks
+  await updateChains();
 
-  // // Check and populate supported token list every 2 minutes
-  // CronJob.from({
-  //   // cronTime: '*/10 * * * * *',
-  //   cronTime: '*/2 * * * *',
-  //   onTick: tickWrapper(retrieveTokens),
-  //   runOnInit: true,
-  // }).start();
+  // Check and populate supported token list every 2 minutes
+  CronJob.from({
+    // cronTime: '*/10 * * * * *',
+    cronTime: '*/2 * * * *',
+    onTick: tickWrapper(retrieveTokens),
+    runOnInit: true,
+  }).start();
 
-  // // Retrieve USD prices of tokens every minute
+  // Retrieve USD prices of tokens every minute
+  // todo: uncomment after testing and syncing
   // CronJob.from({
   //   cronTime: '*/1 * * * *',
   //   onTick: tickWrapper(retrieveUsdPrices),
   //   runOnInit: true,
   // }).start();
 
-  // // Stores Swaps every minute
-  // CronJob.from({
-  //   cronTime: '*/1 * * * *',
-  //   onTick: tickWrapper(retrieveSwaps),
-  // }).start();
+  // Stores Swaps every minute
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(retrieveSwaps),
+  }).start();
 
   // // LEGACY JOBS
-  // ammApyJobs();
-  // graphWrapperJobs();
+  ammApyJobs();
+  graphWrapperJobs();
 
   // run as background job
-  // CronJob.from({
-  //   cronTime: '*/5 * * * *',
-  //   onTick: tickWrapper(priceFeedTask),
-  //   runOnInit: true,
-  // });
+  CronJob.from({
+    cronTime: '*/5 * * * *',
+    onTick: tickWrapper(priceFeedTask),
+    runOnInit: true,
+  });
 
-  // // update cached prices every minute
-  // CronJob.from({
-  //   cronTime: '*/1 * * * *',
-  //   onTick: async function () {
-  //     this.stop();
-  //     try {
-  //       await getLastPrices(true);
-  //     } catch (e) {
-  //       console.error(e);
-  //     }
-  //     this.start();
-  //   },
-  // });
+  // update cached prices every minute
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: async function () {
+      this.stop();
+      try {
+        await getLastPrices(true);
+      } catch (e) {
+        console.error(e);
+      }
+      this.start();
+    },
+  });
 };
 
 function ammApyJobs() {
