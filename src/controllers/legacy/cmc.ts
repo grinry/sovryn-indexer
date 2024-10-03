@@ -16,7 +16,7 @@ const router = Router();
 router.get(
   '/summary',
   asyncRoute(async (req, res) =>
-    maybeCacheResponse(res, 'legacy/cmc/summary', async () => prepareSummary(), LONG_CACHE_TTL).then((data) =>
+    maybeCacheResponse(res, 'lsegacy/cmc/summary', async () => prepareSummary(), 1).then((data) =>
       res.json(toResponse(data)),
     ),
   ),

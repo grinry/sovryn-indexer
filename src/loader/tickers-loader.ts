@@ -143,9 +143,7 @@ async function getAmbientTickers(chain: SdexChain) {
   }
 
   function getUsdPrice(token: string) {
-    const price = lastPrices.find(
-      (item) => item.baseId === getTokenId(token) && item.quoteId === getTokenId(chain.context.stablecoinAddress),
-    );
+    const price = lastPrices.find((item) => item.tokenId === getTokenId(token));
     return bignumber(price?.value ?? 0);
   }
 

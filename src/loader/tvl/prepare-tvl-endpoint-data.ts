@@ -1,13 +1,11 @@
 import { isNil } from 'lodash';
 import { bignumber } from 'mathjs';
 
-import { priceRepository } from 'database/repository/price-repository';
-import { tokenRepository } from 'database/repository/token-repository';
 import { tvlRepository } from 'database/repository/tvl-repository';
 import { TvlGroup } from 'database/schema';
 import { Chain } from 'loader/networks/chain-config';
 import { NetworkFeature } from 'loader/networks/types';
-import { findEndPrice } from 'loader/price';
+import { findUsdPrice, getLastPrices } from 'loader/price';
 import { logger } from 'utils/logger';
 import { fixBnValue } from 'utils/price';
 
@@ -47,11 +45,7 @@ export async function prepareTvlEndpoint(chain: Chain) {
     };
   });
 
-  const priceList = await priceRepository.listLastPrices().execute();
-  const stablecoinId = await tokenRepository
-    .getStablecoin(chain)
-    .execute()
-    .then((item) => item.id);
+  const priceList = await getLastPrices();
 
   data.forEach((item) => {
     if (!isNil(output[item.group])) {
@@ -60,9 +54,7 @@ export async function prepareTvlEndpoint(chain: Chain) {
         contract: item.contract,
         asset: item.asset,
         balance: String(item.balance),
-        balanceUsd: fixBnValue(
-          bignumber(item.balance).mul(findEndPrice(item.tokenId, stablecoinId, priceList)),
-        ).toString(),
+        balanceUsd: fixBnValue(bignumber(item.balance).mul(findUsdPrice(item.tokenId, priceList))).toString(),
       };
       output[item.group][item.name] = entry;
 

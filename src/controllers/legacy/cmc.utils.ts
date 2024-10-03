@@ -1,10 +1,11 @@
 import dayjs from 'dayjs';
-import { desc, eq, sql, and, or, gte, avg, max, min } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { bignumber, max as bnMax, min as bnMin } from 'mathjs';
 
 import { db } from 'database/client';
-import { chains, prices, tAmmPools, tokens } from 'database/schema';
+import { chains, tAmmPools, tokens } from 'database/schema';
+import { getPricesInRange } from 'loader/price';
 
 export async function prepareSummary() {
   const base = alias(tokens, 'base');
@@ -26,77 +27,69 @@ export async function prepareSummary() {
     )
     .execute();
 
-  const tokenPairs = pools
-    .map((pool) => [
-      { baseId: pool.base.id, quoteId: pool.stablecoin.id },
-      { baseId: pool.quote.id, quoteId: pool.stablecoin.id },
-    ])
-    .flat();
+  // const priceItems = await db
+  //   .select({
+  //     baseId: prices.baseId,
+  //     quoteId: prices.quoteId,
+  //     date: sql`date_trunc('hour', ${prices.tickAt})`.mapWith(String).as('date'),
+  //     avg: avg(sql`${prices.value}::numeric`).as('avg'),
+  //     high: max(sql`${prices.value}::numeric`).as('high'),
+  //     low: min(sql`${prices.value}::numeric`).as('low'),
+  //   })
+  //   .from(prices)
+  //   .where(
+  //     and(
+  //       gte(prices.tickAt, dayjs().subtract(1, 'week').toDate()),
+  //       or(...tokenPairs.map((x) => and(eq(prices.baseId, x.baseId), eq(prices.quoteId, x.quoteId)))),
+  //     ),
+  //   )
+  //   .groupBy(prices.baseId, prices.quoteId, sql`date`)
+  //   .orderBy(desc(sql`date`))
+  //   .execute();
 
-  const priceItems = await db
-    .select({
-      baseId: prices.baseId,
-      quoteId: prices.quoteId,
-      date: sql`date_trunc('hour', ${prices.tickAt})`.mapWith(String).as('date'),
-      avg: avg(sql`${prices.value}::numeric`).as('avg'),
-      high: max(sql`${prices.value}::numeric`).as('high'),
-      low: min(sql`${prices.value}::numeric`).as('low'),
-    })
-    .from(prices)
-    .where(
-      and(
-        gte(prices.tickAt, dayjs().subtract(1, 'week').toDate()),
-        or(...tokenPairs.map((x) => and(eq(prices.baseId, x.baseId), eq(prices.quoteId, x.quoteId)))),
-      ),
-    )
-    .groupBy(prices.baseId, prices.quoteId, sql`date`)
-    .orderBy(desc(sql`date`))
-    .execute();
+  const priceItems = await getPricesInRange(dayjs().subtract(1, 'week').toDate(), new Date());
 
   const items = pools.map((pool) => {
-    const basePrices = priceItems.filter((item) => item.baseId === pool.base.id && item.quoteId === pool.stablecoin.id);
-    const quotePrices = priceItems.filter(
-      (item) => item.baseId === pool.quote.id && item.quoteId === pool.stablecoin.id,
-    );
+    const basePrices = priceItems.filter((item) => item.tokenId === pool.base.id);
+    const quotePrices = priceItems.filter((item) => item.tokenId === pool.quote.id);
 
-    const basePrices24h = basePrices.filter((x) => dayjs(x.date).unix() >= dayAgo);
-    const quotePrices24h = quotePrices.filter((x) => dayjs(x.date).unix() >= dayAgo);
+    const basePrices24h = basePrices.filter((x) => dayjs(x.tickAt).unix() >= dayAgo);
+    const quotePrices24h = quotePrices.filter((x) => dayjs(x.tickAt).unix() >= dayAgo);
 
-    const lastUsdPrice = basePrices[0]?.avg || null;
-    const lastPriceQuote = quotePrices[0]?.avg || null;
-    const lastPrice = lastUsdPrice && lastPriceQuote ? bignumber(lastUsdPrice).div(lastPriceQuote).toFixed(18) : null;
-    const baseDayPrice = basePrices.find((x) => dayjs(x.date).unix() <= dayAgo)?.avg || null;
-    const baseWeekPrice = basePrices[basePrices.length - 1]?.avg || null;
+    const lastUsdPrice = basePrices[0]?.avg || '0';
+    const lastPriceQuote = quotePrices[0]?.avg || '0';
+    const lastPrice = lastUsdPrice && lastPriceQuote ? bignumber(lastUsdPrice).div(lastPriceQuote).toFixed(18) : '0';
 
-    const quoteDayPrice = quotePrices.find((x) => dayjs(x.date).unix() <= dayAgo)?.avg || null;
-    const quoteWeekPrice = quotePrices[quotePrices.length - 1]?.avg || null;
+    const baseDayPrice = basePrices.find((x) => dayjs(x.tickAt).unix() <= dayAgo)?.avg || lastUsdPrice;
+    const baseWeekPrice = basePrices[basePrices.length - 1]?.avg || lastUsdPrice;
 
-    const baseHigh24 = basePrices24h.map((x) => bignumber(x.high));
-    const baseHigh25Usd = baseHigh24.length ? bnMax(baseHigh24).toFixed(18) : null;
+    const quoteDayPrice = quotePrices.find((x) => dayjs(x.tickAt).unix() <= dayAgo)?.avg || lastPriceQuote;
+    const quoteWeekPrice = quotePrices[quotePrices.length - 1]?.avg || '0';
+
+    const baseHigh24 = basePrices24h.length > 0 ? basePrices24h.map((x) => bignumber(x.high)) : [bignumber(lastPriceQuote)];
+    const baseHigh25Usd = baseHigh24.length ? bnMax(baseHigh24).toFixed(18) : '0';
 
     const baseLow24 = basePrices24h.map((x) => bignumber(x.low));
-    const baseLow24Usd = baseLow24.length ? bnMin(baseLow24).toFixed(18) : null;
+    const baseLow24Usd = baseLow24.length ? bnMin(baseLow24).toFixed(18) : '0';
 
     const quoteHigh24 = quotePrices24h.map((x) => bignumber(x.high));
-    const quoteHigh24Usd = quoteHigh24.length ? bnMax(quoteHigh24).toFixed(18) : null;
+    const quoteHigh24Usd = quoteHigh24.length ? bnMax(quoteHigh24).toFixed(18) : '0';
 
     const quoteLow24 = quotePrices24h.map((x) => bignumber(x.low));
-    const quoteLow24Usd = quoteLow24.length ? bnMin(quoteLow24).toFixed(18) : null;
+    const quoteLow24Usd = quoteLow24.length ? bnMin(quoteLow24).toFixed(18) : '0';
 
-    const high24 = baseHigh25Usd && quoteHigh24Usd ? bignumber(baseHigh25Usd).div(quoteHigh24Usd).toFixed(18) : null;
-    const low24 = baseLow24Usd && quoteLow24Usd ? bignumber(baseLow24Usd).div(quoteLow24Usd).toFixed(18) : null;
+    const high24 = baseHigh25Usd && quoteHigh24Usd ? bignumber(baseHigh25Usd).div(quoteHigh24Usd).toFixed(18) : '0';
+    const low24 = baseLow24Usd && quoteLow24Usd ? bignumber(baseLow24Usd).div(quoteLow24Usd).toFixed(18) : '0';
 
     const percentChange24Usd =
-      baseDayPrice && lastUsdPrice ? bignumber(lastUsdPrice).div(baseDayPrice).sub(1).mul(100).toFixed(2) : null;
+      baseDayPrice && lastUsdPrice ? bignumber(lastUsdPrice).div(baseDayPrice).sub(1).mul(100).toFixed(2) : '0';
     const percentChangeWeekUsd =
-      baseWeekPrice && lastUsdPrice ? bignumber(lastUsdPrice).div(baseWeekPrice).sub(1).mul(100).toFixed(2) : null;
+      baseWeekPrice && lastUsdPrice ? bignumber(lastUsdPrice).div(baseWeekPrice).sub(1).mul(100).toFixed(2) : '0';
 
     const percentChange24Quote =
-      quoteDayPrice && lastPriceQuote ? bignumber(lastPriceQuote).div(quoteDayPrice).sub(1).mul(100).toFixed(2) : null;
+      quoteDayPrice && lastPriceQuote ? bignumber(lastPriceQuote).div(quoteDayPrice).sub(1).mul(100).toFixed(2) : '0';
     const percentChangeWeekQuote =
-      quoteWeekPrice && lastPriceQuote
-        ? bignumber(lastPriceQuote).div(quoteWeekPrice).sub(1).mul(100).toFixed(2)
-        : null;
+      quoteWeekPrice && lastPriceQuote ? bignumber(lastPriceQuote).div(quoteWeekPrice).sub(1).mul(100).toFixed(2) : '0';
 
     return {
       trading_pairs: `${pool.base.address}_${pool.quote.address}`,

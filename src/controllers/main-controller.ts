@@ -10,6 +10,7 @@ import { db } from 'database/client';
 import { lower } from 'database/helpers';
 import { tokens } from 'database/schema';
 import { chains } from 'database/schema/chains';
+import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 import { networks } from 'loader/networks';
 import { getLastPrices } from 'loader/price';
 import { prepareTickers } from 'loader/tickers-loader';
@@ -21,10 +22,8 @@ import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
-import { buildCandlesticksOnWorker } from 'workers/chart-worker';
 
 import { Timeframe, TIMEFRAMES } from './main-controller.constants';
-import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 
 const router = Router();
 
@@ -88,9 +87,7 @@ router.get(
 
         return api.getMetadata(
           items.map((item) => {
-            const lastUsdPrice = lastPrices.find(
-              (price) => price.baseId === item.id && price.quoteId === item.stablecoinId,
-            );
+            const lastUsdPrice = lastPrices.find((price) => price.tokenId === item.id);
             return {
               ...item,
               usdPrice: lastUsdPrice?.value ?? '0',
@@ -150,8 +147,7 @@ router.get(
 
         const item =
           items.map((item) => {
-            const lastUsdPrice =
-              lastPrices.find((price) => price.baseId === item.id && price.quoteId === item.stablecoinId)?.value ?? '0';
+            const lastUsdPrice = lastPrices.find((price) => price.tokenId === item.id)?.value ?? '0';
             return {
               ...item,
               usdPrice: lastUsdPrice,
