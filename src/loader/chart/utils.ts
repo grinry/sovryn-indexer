@@ -1,16 +1,14 @@
-import dayjs from 'dayjs';
-import { sql, and, eq, between, lte, desc, or, inArray } from 'drizzle-orm';
+import dayjs, { Dayjs, ManipulateType } from 'dayjs';
+import { and, eq, between, lte, desc, or, inArray } from 'drizzle-orm';
 import _ from 'lodash';
 import { bignumber, max, min } from 'mathjs';
 
 import { LONG_CACHE_TTL } from 'config/constants';
 import { Timeframe } from 'controllers/main-controller.constants';
 import { db } from 'database/client';
-import { prices, tokens } from 'database/schema';
-import { networks } from 'loader/networks';
+import { tokens, usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable, UsdPricesTables } from 'database/schema';
 import { maybeCache } from 'utils/cache';
-import { ValidationError } from 'utils/custom-error';
-import { logger } from 'utils/logger';
+import { NotFoundError, ValidationError } from 'utils/custom-error';
 
 import { Interval } from './types';
 
@@ -27,7 +25,7 @@ export const constructCandlesticks = async (intervals: Interval[], timeframe: nu
       const close = item[0].value;
 
       const values = item.reduce((acc, curValue) => {
-        acc.push(curValue.value);
+        acc.push(curValue.value, curValue.low, curValue.high);
         return acc;
       }, []);
 
@@ -35,21 +33,24 @@ export const constructCandlesticks = async (intervals: Interval[], timeframe: nu
         date: dayjs(endTime).unix(),
         start: startTime.toISOString(),
         end: endTime.toISOString(),
-        open,
-        close,
-        high: max(...values).toString(),
-        low: min(...values).toString(),
+        open: bignumber(open).toDecimalPlaces(9).toString(),
+        close: bignumber(close).toDecimalPlaces(9).toString(),
+        high: bignumber(max(...values))
+          .toDecimalPlaces(9)
+          .toString(),
+        low: bignumber(min(...values))
+          .toDecimalPlaces(9)
+          .toString(),
       };
     })
     .sort((a, b) => dayjs(b.start).unix() - dayjs(a.start).unix());
 };
 
 type PriceItem = {
-  baseId: number;
-  quoteId: number;
   date: dayjs.Dayjs;
   value: string;
-  filled?: boolean;
+  low: string;
+  high: string;
 };
 
 export const getPrices = async (
@@ -60,8 +61,7 @@ export const getPrices = async (
   endTimestamp: Date,
   timeframe: Timeframe,
 ) => {
-  const _start = Date.now();
-  const { baseTokenId, quoteTokenId, stablecoinId } = await maybeCache(
+  const { baseTokenId, quoteTokenId } = await maybeCache(
     `/chart/q/${chainId}/${baseTokenAddress}/${quoteTokenAddress}`,
     () => getTokenIds(chainId, baseTokenAddress, quoteTokenAddress),
     LONG_CACHE_TTL,
@@ -75,176 +75,148 @@ export const getPrices = async (
     throw new ValidationError('Unsupported quote token');
   }
 
-  if (!stablecoinId) {
-    logger.error(
-      { chainId, baseTokenAddress, quoteTokenAddress },
-      'Unsupported stablecoin found. It was not supposed to happen...',
-    );
-    throw new ValidationError('Unsupported stablecoin');
-  }
+  const tokenData = await queryTokenPricesInRange(baseTokenId, quoteTokenId, startTimestamp, endTimestamp, timeframe);
 
-  const a = Date.now();
-  const tokenData = await queryTokenStablecoins(
-    baseTokenId,
-    quoteTokenId,
-    stablecoinId,
-    startTimestamp,
-    endTimestamp,
-    timeframe,
-  );
+  const baseTokenData = tokenData.base;
+  const quoteTokenData = tokenData.quote;
 
-  const baseTokenData = tokenData.filter((item) => item.baseId === baseTokenId);
-  const quoteTokenData = tokenData.filter((item) => item.baseId === quoteTokenId);
-
-  const result = baseTokenData
-    .map((item) => {
-      const quoteTokenEquivalent = quoteTokenData.find((price) => price.date === item.date);
-
-      if (quoteTokenEquivalent.value !== '0') {
-        return {
-          baseId: item.baseId,
-          quoteId: quoteTokenEquivalent.baseId,
-          date: dayjs(item.date),
-          value: bignumber(item.value).div(quoteTokenEquivalent.value).toString(),
-        };
-      }
-
-      return null;
-    })
-    .sort((a, b) => dayjs(b.date).unix() - dayjs(a.date).unix());
-
-  if (result.length === 0) {
+  if (baseTokenData.length === 0 || quoteTokenData.length === 0) {
+    // no data to build the chart...
     return [];
   }
 
-  // todo: make use of the timeframe
-  const unit = 'minute';
+  const unit = getTimeStep(timeframe);
 
   let start = dayjs(startTimestamp).startOf(unit);
   const end = dayjs(endTimestamp).startOf(unit).unix();
 
-  // Check if the start date has data, if not, find the closest older value and use it as a start
-  if (!result.find((item) => item.date.unix() === start.unix())) {
-    const baseTokenStartData = await queryTokenStartPrice(baseTokenId, stablecoinId, startTimestamp);
-    const quoteTokenStartData = await queryTokenStartPrice(quoteTokenId, stablecoinId, startTimestamp);
-
-    if (baseTokenStartData && quoteTokenStartData) {
-      const quoteTokenEquivalent =
-        quoteTokenStartData.value !== '0'
-          ? bignumber(baseTokenStartData.value).div(quoteTokenStartData.value).toString()
-          : '0';
-
-      result.push({
-        baseId: baseTokenStartData.baseId,
-        quoteId: quoteTokenStartData.baseId,
-        date: start,
-        value: quoteTokenEquivalent,
-      });
-    } else {
-      // no data found for the start date, set the start to the oldest date in the data
-      start = result[result.length - 1].date;
-    }
-  }
-
-  // fill missing dates
-  const existingDates = result.map((i) => i.date.unix());
-
-  const filled: PriceItem[] = [];
+  const items: PriceItem[] = [];
 
   while (start.unix() <= end) {
-    if (!existingDates.includes(start.unix())) {
-      filled.push({
-        baseId: baseTokenId,
-        quoteId: quoteTokenId,
-        date: start,
-        value: '0',
-        filled: true,
-      });
-    }
+    const { value, low, high } = findNearestPrice(start, baseTokenData, quoteTokenData);
+    items.push({
+      date: start,
+      value,
+      low,
+      high,
+    });
     start = start.clone().add(1, unit);
   }
 
-  // loop through the items and if value is with the filled flag, fill it with the previous value
-  const items: PriceItem[] = [...filled, ...result].sort((a, b) => a.date.unix() - b.date.unix());
-
-  for (let i = 0; i < items.length; i++) {
-    if (items[i]?.filled) {
-      const previousValue = items[i - 1]?.value;
-      items[i] = {
-        ...items[i],
-        value: previousValue,
-        // unset the filled flag
-        filled: undefined,
-      };
-    }
-  }
-
-  // sort items from newest to oldest
-  return items.sort((a, b) => b.date.unix() - a.date.unix());
+  return items.sort((a, b) => a.date.unix() - b.date.unix());
 };
 
-const timeframeToSql = (timeframe: Timeframe) => {
+const getTimeStep = (timeframe: Timeframe): ManipulateType => {
   switch (timeframe) {
     case '1m':
     case '5m':
     case '10m':
     case '15m':
     case '30m':
-      return sql`date_trunc('minute', ${prices.tickAt}, 'UTC')`;
+      return 'minute';
     case '1h':
     case '4h':
     case '12h':
+      return 'hour';
     default:
-      return sql`date_trunc('hour', ${prices.tickAt}, 'UTC')`;
-    case '1d':
-    case '3d':
-      return sql`date_trunc('day', ${prices.tickAt}, 'UTC')`;
-    case '1w':
-      return sql`date_trunc('week', ${prices.tickAt}, 'UTC')`;
-    case '30d':
-      return sql`date_trunc('month', ${prices.tickAt}, 'UTC')`;
+      return 'day';
   }
 };
 
-const queryTokenStablecoins = async (
-  baseId: number,
+const tableByTimeframe = (timeframe: Timeframe): UsdPricesTables => {
+  switch (timeframe) {
+    case '1m':
+    case '5m':
+    case '10m':
+    case '15m':
+    case '30m':
+      return usdPricesTable;
+    case '1h':
+    case '4h':
+    case '12h':
+      return usdHourlyPricesTable;
+    default:
+      return usdDailyPricesTable;
+  }
+};
+
+type PriceData = {
+  tokenId: number;
+  tickAt: Date;
+  value: string;
+  low: string;
+  high: string;
+};
+
+const queryPrices = async (
+  tokenId: number,
   quoteId: number,
-  stablecoinId: number,
   startTimestamp: Date,
   endTimestamp: Date,
   timeframe: Timeframe,
-) =>
-  db
+): Promise<PriceData[]> => {
+  const table = tableByTimeframe(timeframe);
+  return db
     .select({
-      baseId: prices.baseId,
-      quoteId: prices.quoteId,
-      date: timeframeToSql(timeframe).mapWith(String).as('date'),
-      value: prices.value,
+      tokenId: table.tokenId,
+      tickAt: table.tickAt,
+      value: table.value,
+      low: table.low,
+      high: table.high,
     })
-    .from(prices)
+    .from(table)
     .where(
       and(
-        inArray(prices.baseId, [baseId, quoteId]),
-        eq(prices.quoteId, stablecoinId),
-        between(prices.tickAt, startTimestamp, endTimestamp),
+        or(eq(table.tokenId, tokenId), eq(table.tokenId, quoteId)),
+        between(table.tickAt, startTimestamp, endTimestamp),
       ),
-    )
-    .groupBy(prices.baseId, prices.quoteId, sql`date`, prices.value);
+    );
+};
 
-const queryTokenStartPrice = async (baseId: number, quoteId: number, startTimestamp: Date) =>
-  db.query.prices.findFirst({
-    columns: {
-      baseId: true,
-      quoteId: true,
-      value: true,
-    },
-    where: and(eq(prices.baseId, baseId), eq(prices.quoteId, quoteId), lte(prices.tickAt, startTimestamp)),
-    orderBy: desc(prices.tickAt),
-  });
+const getTokenStartPrice = async (
+  tokenId: number,
+  beforeTimestamp: Date,
+  timeframe: Timeframe,
+): Promise<PriceData[]> => {
+  const table = tableByTimeframe(timeframe);
+  return db
+    .select({ tokenId: table.tokenId, tickAt: table.tickAt, value: table.value, low: table.low, high: table.high })
+    .from(table)
+    .where(and(eq(table.tokenId, tokenId), lte(table.tickAt, beforeTimestamp)))
+    .orderBy(desc(table.tickAt))
+    .limit(1);
+};
+
+const validateStartPrice = async (items: PriceData[], tokenId: number, startTimestamp: Date, timeframe: Timeframe) => {
+  if (items.find((item) => item.tokenId === tokenId && dayjs(item.tickAt).isSame(startTimestamp)) === undefined) {
+    const startData = await getTokenStartPrice(tokenId, startTimestamp, timeframe);
+    if (startData.length) {
+      items.unshift(...startData);
+    } else {
+      throw new NotFoundError('No data found for the start date');
+    }
+  }
+};
+
+const queryTokenPricesInRange = async (
+  tokenId: number,
+  quoteId: number,
+  startTimestamp: Date,
+  endTimestamp: Date,
+  timeframe: Timeframe,
+) => {
+  const items = await queryPrices(tokenId, quoteId, startTimestamp, endTimestamp, timeframe);
+  await validateStartPrice(items, tokenId, startTimestamp, timeframe);
+  await validateStartPrice(items, quoteId, startTimestamp, timeframe);
+  // sort from newest to oldest, so we can search for the nearest price faster
+  const result = items.sort((a, b) => dayjs(b.tickAt).unix() - dayjs(a.tickAt).unix());
+  return {
+    base: result.filter((item) => item.tokenId === tokenId),
+    quote: result.filter((item) => item.tokenId === quoteId),
+  };
+};
 
 const getTokenIds = async (chainId: number, baseTokenAddress: string, quoteTokenAddress: string) => {
-  const stablecoinAddress = networks.getByChainId(chainId)?.stablecoinAddress.toLowerCase();
-
   const items = await db.query.tokens.findMany({
     columns: {
       id: true,
@@ -254,16 +226,34 @@ const getTokenIds = async (chainId: number, baseTokenAddress: string, quoteToken
     },
     where: and(
       eq(tokens.chainId, chainId),
-      inArray(tokens.address, [baseTokenAddress.toLowerCase(), quoteTokenAddress.toLowerCase(), stablecoinAddress]),
+      inArray(tokens.address, [baseTokenAddress.toLowerCase(), quoteTokenAddress.toLowerCase()]),
     ),
-    limit: 3,
+    limit: 2,
   });
 
   const baseTokenId = items.find((token) => token.address === baseTokenAddress.toLowerCase())?.id;
   const quoteTokenId = items.find((token) => token.address === quoteTokenAddress.toLowerCase())?.id;
-  const stablecoinId = items.find((token) => token.address === stablecoinAddress)?.id;
 
-  return { baseTokenId, quoteTokenId, stablecoinId };
+  return { baseTokenId, quoteTokenId };
+};
+
+const findNearestPrice = (date: Dayjs, bases: PriceData[], quotes: PriceData[]) => {
+  const base = bases.find((item) => dayjs(item.tickAt).isSame(date) || dayjs(item.tickAt).isBefore(date));
+  const quote = quotes.find((item) => dayjs(item.tickAt).isSame(date) || dayjs(item.tickAt).isBefore(date));
+
+  const value = bignumber(base.value).div(quote.value).toString();
+
+  return {
+    value,
+    low:
+      dayjs(base.tickAt).isSame(quote.tickAt) && date.isSame(base.tickAt)
+        ? bignumber(base.low).div(quote.low).toString()
+        : value,
+    high:
+      dayjs(base.tickAt).isSame(quote.tickAt) && date.isSame(base.tickAt)
+        ? bignumber(base.high).div(quote.high).toString()
+        : value,
+  };
 };
 
 const groupIntervals = (intervals: Interval[], timeframe: number) => {

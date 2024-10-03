@@ -5,7 +5,7 @@ import { uniqBy } from 'lodash';
 
 import { db } from 'database/client';
 import { tokenRepository } from 'database/repository/token-repository';
-import { prices, usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable } from 'database/schema';
+import { prices, usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable, UsdPricesTables } from 'database/schema';
 import { networks } from 'loader/networks';
 import { CurrentPrice, prepareDataToStore, Price } from 'loader/usd-prices/usd-price-store';
 import { floorDate } from 'utils/date';
@@ -144,8 +144,6 @@ const searchBlock = async (date: Date, now: Date, tokens: Token[], stablecoins: 
   await searchBlock(dayjs(date).add(SKIP_MINUTES, 'minute').toDate(), now, tokens, stablecoins);
 };
 
-type Table = typeof usdPricesTable | typeof usdHourlyPricesTable | typeof usdDailyPricesTable;
-
 async function storeLastPrices(prices: Price[], date: Date) {
   // find last stored price for each token and write only if it's different
   const current = await loadLastStoredPrices(usdPricesTable, date);
@@ -224,7 +222,7 @@ async function storeLastDailyPrices(prices: Price[], date: Date) {
   }
 }
 
-async function loadLastStoredPrices(table: Table, date: Date): Promise<CurrentPrice[]> {
+async function loadLastStoredPrices(table: UsdPricesTables, date: Date): Promise<CurrentPrice[]> {
   const dateMap = db
     .select({
       tokenId: table.tokenId,

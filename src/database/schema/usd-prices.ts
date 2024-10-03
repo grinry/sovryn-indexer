@@ -82,3 +82,5 @@ export const usdDailyPricesTable = pgTable(
 
 export type UsdDailyPrice = typeof usdDailyPricesTable.$inferSelect;
 export type NewUsdDailyPrice = typeof usdDailyPricesTable.$inferInsert;
+
+export type UsdPricesTables = typeof usdPricesTable | typeof usdHourlyPricesTable | typeof usdDailyPricesTable;

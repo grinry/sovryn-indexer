@@ -24,6 +24,7 @@ import { validate } from 'utils/validation';
 import { buildCandlesticksOnWorker } from 'workers/chart-worker';
 
 import { Timeframe, TIMEFRAMES } from './main-controller.constants';
+import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 
 const router = Router();
 
@@ -212,14 +213,8 @@ router.get(
       res,
       `chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${start.getTime()}/${end.getTime()}/${timeframe}`,
       async () => {
-        const candlesticks = await buildCandlesticksOnWorker(
-          chainId,
-          baseTokenAddress,
-          quoteTokenAddress,
-          start,
-          end,
-          timeframe,
-        );
+        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe);
+        const candlesticks = await constructCandlesticks(intervals, TIMEFRAMES[timeframe]);
         return candlesticks;
       },
       DEFAULT_CACHE_TTL,
@@ -236,13 +231,5 @@ router.get(
     );
   }),
 );
-
-router.get('/not-blocked', (req, res) => {
-  return res.json({ success: true });
-});
-
-router.get('/err', (req, res) => {
-  throw new BadRequestError('This is a test error');
-});
 
 export default router;
