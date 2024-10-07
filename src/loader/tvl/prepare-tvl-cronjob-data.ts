@@ -13,7 +13,7 @@ import { LegacyChain } from 'loader/networks/legacy-chain';
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { findTokenByAddress, getErc20Balance, getErc20TotalSupply } from 'loader/token';
 import { logger } from 'utils/logger';
-import { fixBnValue } from 'utils/price';
+import { prettyNumber } from 'utils/numbers';
 
 export async function getAmmPoolTvl(chain: LegacyChain) {
   const { liquidityPools } = await chain.queryFromSubgraph<{
@@ -55,7 +55,7 @@ export async function getAmmPoolTvl(chain: LegacyChain) {
             contract: contract.id,
             tokenId: token.id,
             name: `${tokenIteratorSymbol}_${token1Symbol}`,
-            balance: fixBnValue(bignumber(balance).div(10 ** token.decimals)).toString(),
+            balance: prettyNumber(bignumber(balance).div(10 ** token.decimals)),
             group: TvlGroup.amm,
           });
         }
@@ -106,7 +106,7 @@ export async function getLendingPoolTvl(chain: LegacyChain) {
           contract: contract.id,
           tokenId: token.id,
           name: `${!isNil(contract.underlyingAsset.symbol) ? contract.underlyingAsset.symbol : ''}_Lending`,
-          balance: fixBnValue(bignumber(balance).div(10 ** token.decimals)).toString(),
+          balance: prettyNumber(bignumber(balance).div(10 ** token.decimals)),
           group: TvlGroup.lending,
         });
       }
@@ -138,7 +138,7 @@ export async function getProtocolTvl(chain: LegacyChain) {
           contract: chain.protocolAddress,
           tokenId: token.id,
           name: `${!isNil(token.symbol) ? token.symbol : ''}_Protocol`,
-          balance: fixBnValue(bignumber(balance).div(10 ** token.decimals)).toString(),
+          balance: prettyNumber(bignumber(balance).div(10 ** token.decimals)),
           group: TvlGroup.protocol,
         });
       }
@@ -167,7 +167,7 @@ export async function getStakingTvl(chain: Chain) {
         contract: chain.stakingAddress,
         tokenId: sov.id,
         name: 'SOV_Staking',
-        balance: fixBnValue(bignumber(balance).div(10 ** sov.decimals)).toString(),
+        balance: prettyNumber(bignumber(balance).div(10 ** sov.decimals)),
         group: TvlGroup.staking,
       });
     }
@@ -192,9 +192,9 @@ export async function getFishTvl(chain: Chain) {
     contract: fish.address,
     tokenId: fish.id,
     name: 'FISH_TVL',
-    balance: fixBnValue(
+    balance: prettyNumber(
       bignumber(fishTotalSupply).minus(multisigBalance.toString()).minus(stakingBalance.toString()),
-    ).toString(),
+    ),
     group: TvlGroup.fish,
   });
 
@@ -270,7 +270,7 @@ export async function getMyntTvl(chain: LegacyChain) {
           contract: myntAggregator,
           tokenId: token.id,
           name: `${token.symbol}_Mynt`,
-          balance: fixBnValue(bignumber(balance).div(10 ** token.decimals)).toString(),
+          balance: prettyNumber(bignumber(balance).div(10 ** token.decimals)),
           group: TvlGroup.mynt,
         });
       }
@@ -298,7 +298,7 @@ export async function getSdexTvl(chain: SdexChain) {
         // todo: put to multicall
         // todo: create multicall helper with batches
         const balance = await getErc20Balance(chain.context.rpc, token.address, chain.config.dex).then((value) =>
-          fixBnValue(bignumber(value).div(10 ** token.decimals)).toString(),
+          prettyNumber(bignumber(value).div(10 ** token.decimals)),
         );
 
         items.push({

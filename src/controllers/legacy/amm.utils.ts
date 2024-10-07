@@ -6,11 +6,11 @@ import { bignumber } from 'mathjs';
 import { LiquidityPoolV1Converter__factory, LiquidityPoolV2Converter__factory } from 'artifacts/abis/types';
 import { AmmApyDay } from 'database/schema';
 import { LegacyChain, QueryAmmApyDataForBlock } from 'loader/networks/legacy-chain';
-import { logger } from 'utils/logger';
 
 type BalanceHistory = Array<{
   activity_date: Date;
   balance_btc: number | string;
+  balance_usd: number | string;
   pool: string;
 }>;
 
@@ -25,6 +25,7 @@ interface IAmmApyAll {
         APY_rewards_pc: string;
         APY_pc: string;
         btc_volume: string;
+        usd_volume: string;
       }>;
     };
     balanceHistory: BalanceHistory;
@@ -33,7 +34,16 @@ interface IAmmApyAll {
 
 type ParsableAmmApyDay = Pick<
   AmmApyDay,
-  'pool' | 'poolToken' | 'date' | 'balanceBtc' | 'rewardsApy' | 'feeApy' | 'totalApy' | 'btcVolume'
+  | 'pool'
+  | 'poolToken'
+  | 'date'
+  | 'balanceBtc'
+  | 'balanceUsd'
+  | 'rewardsApy'
+  | 'feeApy'
+  | 'totalApy'
+  | 'btcVolume'
+  | 'usdVolume'
 >;
 
 export function parseApyHistoryData(data: ParsableAmmApyDay[]): IAmmApyAll {
@@ -49,6 +59,7 @@ export function parseApyHistoryData(data: ParsableAmmApyDay[]): IAmmApyAll {
       APY_rewards_pc: row.rewardsApy,
       APY_pc: row.totalApy,
       btc_volume: row.btcVolume,
+      usd_volume: row.usdVolume,
     };
 
     if (!poolExists && !poolTokenExists) {
@@ -81,6 +92,7 @@ function updateBalanceHistory(row: ParsableAmmApyDay, balanceHistory: BalanceHis
   const balanceHistoryItem = {
     activity_date: row.date,
     balance_btc: row.balanceBtc,
+    balance_usd: row.balanceUsd,
     pool: row.pool,
   };
   const balanceHistoryIndex = balanceHistory.findIndex(
@@ -91,6 +103,9 @@ function updateBalanceHistory(row: ParsableAmmApyDay, balanceHistory: BalanceHis
   } else {
     balanceHistory[balanceHistoryIndex].balance_btc = bignumber(balanceHistory[balanceHistoryIndex].balance_btc)
       .plus(bignumber(balanceHistoryItem.balance_btc))
+      .valueOf();
+    balanceHistory[balanceHistoryIndex].balance_usd = bignumber(balanceHistory[balanceHistoryIndex].balance_usd)
+      .plus(bignumber(balanceHistoryItem.balance_usd))
       .valueOf();
   }
   return balanceHistory;
@@ -117,12 +132,14 @@ export async function getOnChainData(chain: LegacyChain, pool: string) {
               id
               symbol
               lastPriceBtc
+              lastPriceUsd
               decimals
             }
             token1 {
               id
               symbol
               lastPriceBtc
+              lastPriceUsd
               decimals
             }
             token0Balance

@@ -9,6 +9,7 @@ import { db } from 'database/client';
 import { tokens, usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable, UsdPricesTables } from 'database/schema';
 import { maybeCache } from 'utils/cache';
 import { NotFoundError, ValidationError } from 'utils/custom-error';
+import { prettyNumber } from 'utils/numbers';
 
 import { Interval } from './types';
 
@@ -33,14 +34,10 @@ export const constructCandlesticks = async (intervals: Interval[], timeframe: nu
         date: dayjs(endTime).unix(),
         start: startTime.toISOString(),
         end: endTime.toISOString(),
-        open: bignumber(open).toDecimalPlaces(9).toString(),
-        close: bignumber(close).toDecimalPlaces(9).toString(),
-        high: bignumber(max(...values))
-          .toDecimalPlaces(9)
-          .toString(),
-        low: bignumber(min(...values))
-          .toDecimalPlaces(9)
-          .toString(),
+        open: prettyNumber(open),
+        close: prettyNumber(close),
+        high: prettyNumber(max(...values)),
+        low: prettyNumber(min(...values)),
       };
     })
     .sort((a, b) => dayjs(b.start).unix() - dayjs(a.start).unix());

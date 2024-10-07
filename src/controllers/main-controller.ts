@@ -4,8 +4,9 @@ import { alias } from 'drizzle-orm/pg-core';
 import { Router, Request, Response } from 'express';
 import Joi from 'joi';
 import _ from 'lodash';
+import { bignumber } from 'mathjs';
 
-import { DEFAULT_CACHE_TTL } from 'config/constants';
+import { DECIMAL_PLACES, DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
 import { lower } from 'database/helpers';
 import { tokens } from 'database/schema';
@@ -16,14 +17,16 @@ import { getLastPrices } from 'loader/price';
 import { prepareTickers } from 'loader/tickers-loader';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
-import { BadRequestError, NotFoundError } from 'utils/custom-error';
+import { NotFoundError } from 'utils/custom-error';
 import { ceilDate } from 'utils/date';
+import { getFlagRow } from 'utils/flag';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
 
 import { Timeframe, TIMEFRAMES } from './main-controller.constants';
+import { prettyNumber } from 'utils/numbers';
 
 const router = Router();
 
@@ -88,10 +91,11 @@ router.get(
         return api.getMetadata(
           items.map((item) => {
             const lastUsdPrice = lastPrices.find((price) => price.tokenId === item.id);
+            const price = bignumber(lastUsdPrice?.value ?? 0);
             return {
               ...item,
-              usdPrice: lastUsdPrice?.value ?? '0',
-              usdPriceDate: lastUsdPrice?.tickAt ?? null,
+              usdPrice: prettyNumber(price),
+              usdPriceDate: lastUsdPrice?.updatedAt ?? lastUsdPrice?.tickAt ?? null,
               id: undefined,
               stablecoinId: undefined,
             };
@@ -150,7 +154,7 @@ router.get(
             const lastUsdPrice = lastPrices.find((price) => price.tokenId === item.id)?.value ?? '0';
             return {
               ...item,
-              usdPrice: lastUsdPrice,
+              usdPrice: prettyNumber(lastUsdPrice),
               id: undefined,
               stablecoinId: undefined,
             };
@@ -218,13 +222,40 @@ router.get(
   }),
 );
 
+// todo: some chains needs to do http or rpc calls to get data, so it would be better to run this in the background and save the data in the db
+//       which then can be queried here
 router.get(
   '/tickers',
   asyncRoute(async (req, res) => {
     const chainId = validateChainId(req, true);
-    return maybeCacheResponse(res, `tickers/${chainId}`, async () => prepareTickers(networks.listChains()), 1).then(
-      (data) => res.json(data),
-    );
+    return maybeCacheResponse(
+      res,
+      `tickers/${chainId}`,
+      async () => prepareTickers(networks.listChains()),
+      DEFAULT_CACHE_TTL,
+    ).then((data) => res.json(data));
+  }),
+);
+
+router.get('/', (req, res) => res.json({ status: 'ok' }));
+router.get('/status', (req, res) => res.json({ status: 'ok' }));
+
+// temp solution to monitor status of price feed migration without going to the db
+// cached for 10 seconds
+router.get(
+  '/sync-status',
+  asyncRoute(async (req: Request, res: Response) => {
+    return maybeCacheResponse(
+      res,
+      'sync-status',
+      async () => {
+        const sync = await getFlagRow('price-feed-migration');
+        return {
+          sync,
+        };
+      },
+      10,
+    ).then((data) => res.json(data));
   }),
 );
 

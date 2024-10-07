@@ -43,7 +43,8 @@ export function findUsdPrice(entry: number, prices: PriceItem[]) {
 export type PriceItem = {
   tokenId: number;
   value: string;
-  tickAt: string;
+  tickAt: Date;
+  updatedAt: Date;
 };
 
 export const getLastPrices = (forceUpdate = false): Promise<PriceItem[]> =>
@@ -53,7 +54,7 @@ export const getLastPrices = (forceUpdate = false): Promise<PriceItem[]> =>
       const dateMap = db
         .select({
           tokenId: usdDailyPricesTable.tokenId,
-          date: sql<string>`max(${usdDailyPricesTable.tickAt})`.as('date'),
+          date: sql<Date>`max(${usdDailyPricesTable.tickAt})`.as('date'),
         })
         .from(usdDailyPricesTable)
         .groupBy(usdDailyPricesTable.tokenId)
@@ -63,6 +64,7 @@ export const getLastPrices = (forceUpdate = false): Promise<PriceItem[]> =>
           tokenId: usdDailyPricesTable.tokenId,
           value: usdDailyPricesTable.value,
           tickAt: dateMap.date,
+          updatedAt: usdDailyPricesTable.updatedAt,
         })
         .from(usdDailyPricesTable)
         .innerJoin(
@@ -79,13 +81,13 @@ export type PriceInRange = {
   avg: string;
   low: string;
   high: string;
-  tickAt: string;
+  tickAt: Date;
 };
 export const getPricesInRange = async (from: Date, to: Date) => {
   const sq = db
     .select({
       tokenId: usdDailyPricesTable.tokenId,
-      date: sql<string>`max(${usdDailyPricesTable.tickAt})`.as('date'),
+      date: sql<Date>`max(${usdDailyPricesTable.tickAt})`.as('date'),
     })
     .from(usdDailyPricesTable)
     .where(lte(usdDailyPricesTable.tickAt, to))

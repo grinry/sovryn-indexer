@@ -7,7 +7,7 @@ import { Chain } from 'loader/networks/chain-config';
 import { NetworkFeature } from 'loader/networks/types';
 import { findUsdPrice, getLastPrices } from 'loader/price';
 import { logger } from 'utils/logger';
-import { fixBnValue } from 'utils/price';
+import { prettyNumber } from 'utils/numbers';
 
 function makeGroups(chain: Chain) {
   if (chain.hasFeature(NetworkFeature.legacy) && chain.hasFeature(NetworkFeature.sdex)) {
@@ -53,19 +53,17 @@ export async function prepareTvlEndpoint(chain: Chain) {
         assetName: item.symbol.split('_')[0],
         contract: item.contract,
         asset: item.asset,
-        balance: String(item.balance),
-        balanceUsd: fixBnValue(bignumber(item.balance).mul(findUsdPrice(item.tokenId, priceList))).toString(),
+        balance: prettyNumber(item.balance),
+        balanceUsd: prettyNumber(bignumber(item.balance).mul(findUsdPrice(item.tokenId, priceList))),
       };
       output[item.group][item.name] = entry;
 
       /** Increment tvl usd group */
       if (!isNaN(output[item.group].totalUsd)) {
-        output[item.group].totalUsd = fixBnValue(
-          bignumber(output[item.group].totalUsd).add(entry.balanceUsd),
-        ).toString();
+        output[item.group].totalUsd = prettyNumber(bignumber(output[item.group].totalUsd).add(entry.balanceUsd));
       }
       /** Increment tvl usd total */
-      if (output.total_usd) output.total_usd = fixBnValue(bignumber(output.total_usd).add(entry.balanceUsd)).toString();
+      if (output.total_usd) output.total_usd = prettyNumber(bignumber(output.total_usd).add(entry.balanceUsd));
     }
   });
 
@@ -98,14 +96,14 @@ export async function prepareTvlSummaryEndpoint(chains: Chain[]) {
     logger.info({ item, index }, 'Tvl data');
     groups.forEach((group) => {
       if (!isNil(item[group])) {
-        output.features[group].totalUsd = fixBnValue(
+        output.features[group].totalUsd = prettyNumber(
           bignumber(output.features[group].totalUsd).add(item[group].totalUsd),
-        ).toString();
+        );
       }
     });
-    output.totalUsd = fixBnValue(bignumber(output.totalUsd).add(item.total_usd)).toString();
+    output.totalUsd = prettyNumber(bignumber(output.totalUsd).add(item.total_usd));
 
-    output.chains[index].totalUsd = item.total_usd;
+    output.chains[index].totalUsd = prettyNumber(item.total_usd);
   });
 
   return output;

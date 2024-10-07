@@ -2,6 +2,7 @@ import { eq, sql, and, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { bignumber } from 'mathjs';
 
+import { DECIMAL_PLACES } from 'config/constants';
 import { db } from 'database/client';
 import { ammApyDays, tAmmPools, tokens } from 'database/schema';
 
@@ -10,6 +11,7 @@ import { LegacyChain } from './networks/legacy-chain';
 import { SdexChain } from './networks/sdex-chain';
 import { NetworkFeature } from './networks/types';
 import { getLastPrices } from './price';
+import { prettyNumber } from 'utils/numbers';
 
 type TickersItem = {
   chain_id: number;
@@ -97,11 +99,11 @@ async function getLegacyDexTickers(chain: LegacyChain) {
       ticker_id: `${baseAddress}_${quoteAddress}`,
       base_currency: baseAddress,
       target_currency: quoteAddress,
-      last_price: lastPrice.isFinite() ? lastPrice.toString() : '0',
-      base_volume: pool.baseVolume,
-      target_volume: pool.quoteVolume,
+      last_price: prettyNumber(lastPrice),
+      base_volume: prettyNumber(pool.baseVolume),
+      target_volume: prettyNumber(pool.quoteVolume),
       pool_id: `${pool.chainId}:${pool.poolId}`,
-      liquidity_in_usd: pool.liquidityInUsd, // todo: calculate liquidity in USD
+      liquidity_in_usd: prettyNumber(pool.liquidityInUsd),
 
       base_symbol: pool.baseSymbol,
       target_symbol: pool.quoteSymbol,
@@ -181,11 +183,11 @@ async function getAmbientTickers(chain: SdexChain) {
           ticker_id: `${pool.base}_${pool.quote}`,
           base_currency: pool.base,
           target_currency: pool.quote,
-          last_price: lastPrice.isFinite() ? lastPrice.toString() : '0',
-          base_volume: baseVolume.isFinite() ? baseVolume.toString() : '0',
-          target_volume: quoteVolume.isFinite() ? quoteVolume.toString() : '0',
+          last_price: prettyNumber(lastPrice),
+          base_volume: prettyNumber(baseVolume),
+          target_volume: prettyNumber(quoteVolume),
           pool_id: `${chain.context.chainId}:${pool.base}_${pool.quote}_${pool.poolIdx}`,
-          liquidity_in_usd: baseTvlUsd.add(quoteTvlUsd).toString(),
+          liquidity_in_usd: prettyNumber(baseTvlUsd.add(quoteTvlUsd)),
           base_symbol: getTokenSymbol(baseToken),
           target_symbol: getTokenSymbol(quoteToken),
         } satisfies TickersItem;
