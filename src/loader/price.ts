@@ -1,4 +1,4 @@
-import { and, avg, between, desc, eq, gte, lte, max, min, or, sql } from 'drizzle-orm';
+import { and, avg, between, desc, eq, lte, max, min, or, sql } from 'drizzle-orm';
 import { bignumber } from 'mathjs';
 
 import { MEDIUM_CACHE_TTL } from 'config/constants';
@@ -39,7 +39,6 @@ export function findUsdPrice(entry: number, prices: PriceItem[]) {
   return bignumber(0);
 }
 
-// todo: add possibility to update cache data outside current thread if TTL is almost expired
 export type PriceItem = {
   tokenId: number;
   value: string;
@@ -76,13 +75,6 @@ export const getLastPrices = (forceUpdate = false): Promise<PriceItem[]> =>
     forceUpdate,
   ).then((result) => result.data);
 
-export type PriceInRange = {
-  tokenId: number;
-  avg: string;
-  low: string;
-  high: string;
-  tickAt: Date;
-};
 export const getPricesInRange = async (from: Date, to: Date) => {
   const sq = db
     .select({

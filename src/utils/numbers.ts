@@ -1,8 +1,8 @@
 import { bignumber, BigNumber, format } from 'mathjs';
 
-import { DECIMAL_PLACES } from 'config/constants';
+import { DEFAULT_DECIMAL_PLACES } from 'config/constants';
 
-export const prettyNumber = (value: string | number | BigNumber, decimalPlaces = DECIMAL_PLACES): string => {
+export const prettyNumber = (value: string | number | BigNumber, decimalPlaces = DEFAULT_DECIMAL_PLACES): string => {
   value = bignumber(value);
   if (value.isNaN() || !value.isFinite()) {
     value = bignumber(0);

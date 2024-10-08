@@ -3,7 +3,6 @@ import { eq, and } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { bignumber, max as bnMax, min as bnMin } from 'mathjs';
 
-import { DECIMAL_PLACES } from 'config/constants';
 import { db } from 'database/client';
 import { chains, tAmmPools, tokens } from 'database/schema';
 import { getPricesInRange } from 'loader/price';
@@ -50,7 +49,7 @@ export async function prepareSummary() {
 
     const baseHigh24 =
       basePrices24h.length > 0 ? basePrices24h.map((x) => bignumber(x.high)) : [bignumber(lastPriceQuote)];
-    const baseHigh25Usd = baseHigh24.length ? prettyNumber(bnMax(baseHigh24)) : '0';
+    const baseHigh24Usd = baseHigh24.length ? prettyNumber(bnMax(baseHigh24)) : '0';
 
     const baseLow24 = basePrices24h.map((x) => bignumber(x.low));
     const baseLow24Usd = baseLow24.length ? prettyNumber(bnMin(baseLow24)) : '0';
@@ -61,7 +60,7 @@ export async function prepareSummary() {
     const quoteLow24 = quotePrices24h.map((x) => bignumber(x.low));
     const quoteLow24Usd = quoteLow24.length ? prettyNumber(bnMin(quoteLow24)) : '0';
 
-    const high24 = baseHigh25Usd && quoteHigh24Usd ? prettyNumber(bignumber(baseHigh25Usd).div(quoteHigh24Usd)) : '0';
+    const high24 = baseHigh24Usd && quoteHigh24Usd ? prettyNumber(bignumber(baseHigh24Usd).div(quoteHigh24Usd)) : '0';
     const low24 = baseLow24Usd && quoteLow24Usd ? prettyNumber(bignumber(baseLow24Usd).div(quoteLow24Usd)) : '0';
 
     const percentChange24Usd =
@@ -89,7 +88,7 @@ export async function prepareSummary() {
       base_volume_usd: prettyNumber(bignumber(pool.legacy_amm__pools.token2Volume).mul(lastUsdPrice)),
       quote_volume_usd: prettyNumber(bignumber(pool.legacy_amm__pools.token1Volume).mul(lastPriceQuote)),
       last_price_usd: maybeNumber(lastUsdPrice),
-      high_price_24_usd: maybeNumber(baseHigh25Usd),
+      high_price_24_usd: maybeNumber(baseHigh24Usd),
       lowest_price_24_usd: maybeNumber(baseLow24Usd),
       price_change_percent_24h_usd: maybeNumber(percentChange24Usd),
       price_change_percent_week_usd: maybeNumber(percentChangeWeekUsd),

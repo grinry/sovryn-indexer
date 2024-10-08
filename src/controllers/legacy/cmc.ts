@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { DECIMAL_PLACES, LONG_CACHE_TTL } from 'config/constants';
+import { LONG_CACHE_TTL } from 'config/constants';
 import { networks } from 'loader/networks';
 import { NetworkFeature } from 'loader/networks/types';
 import { prepareTvlEndpoint, prepareTvlSummaryEndpoint } from 'loader/tvl/prepare-tvl-endpoint-data';
@@ -40,9 +40,9 @@ router.get(
   asyncRoute(async (req, res) =>
     maybeCacheResponse(
       res,
-      'lsegacy/cmc/tvl',
+      'legacy/cmc/tvl',
       async () => prepareTvlSummaryEndpoint(networks.listChains()),
-      1,
+      LONG_CACHE_TTL,
     ).then((data) => res.json(toResponse(data))),
   ),
 );

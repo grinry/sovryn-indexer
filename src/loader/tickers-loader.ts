@@ -2,7 +2,7 @@ import { eq, sql, and, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { bignumber } from 'mathjs';
 
-import { DECIMAL_PLACES } from 'config/constants';
+import { DEFAULT_DECIMAL_PLACES } from 'config/constants';
 import { db } from 'database/client';
 import { ammApyDays, tAmmPools, tokens } from 'database/schema';
 

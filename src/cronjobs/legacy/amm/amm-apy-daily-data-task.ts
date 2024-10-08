@@ -10,7 +10,7 @@ import { ammApyDays, NewAmmApyDay } from 'database/schema';
 import { networks } from 'loader/networks';
 import { LegacyChain } from 'loader/networks/legacy-chain';
 import { NetworkFeature } from 'loader/networks/types';
-import { getLastPrices, getLastUsdPrice } from 'loader/price';
+import { getLastUsdPrice } from 'loader/price';
 import { logger } from 'utils/logger';
 
 const childLogger = logger.child({ module: 'crontab:legacy:amm_apy_daily_data' });

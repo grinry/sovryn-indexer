@@ -6,7 +6,7 @@ import Joi from 'joi';
 import _ from 'lodash';
 import { bignumber } from 'mathjs';
 
-import { DECIMAL_PLACES, DEFAULT_CACHE_TTL } from 'config/constants';
+import { DEFAULT_CACHE_TTL, TINY_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
 import { lower } from 'database/helpers';
 import { tokens } from 'database/schema';
@@ -21,12 +21,12 @@ import { NotFoundError } from 'utils/custom-error';
 import { ceilDate } from 'utils/date';
 import { getFlagRow } from 'utils/flag';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
+import { prettyNumber } from 'utils/numbers';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
 
 import { Timeframe, TIMEFRAMES } from './main-controller.constants';
-import { prettyNumber } from 'utils/numbers';
 
 const router = Router();
 
@@ -254,7 +254,7 @@ router.get(
           sync,
         };
       },
-      10,
+      TINY_CACHE_TTL,
     ).then((data) => res.json(data));
   }),
 );
