@@ -1,14 +1,16 @@
 import { CronJob } from 'cron';
 import dayjs from 'dayjs';
 import gql from 'graphql-tag';
-import { bignumber } from 'mathjs';
+import { BigNumber, bignumber } from 'mathjs';
 
 import { apyBlockRepository, DailyAggregatedApyResult } from 'database/repository/apy-block-repository';
 import { apyDayRepository } from 'database/repository/apy-day-repository';
+import { tokenRepository } from 'database/repository/token-repository';
 import { ammApyDays, NewAmmApyDay } from 'database/schema';
 import { networks } from 'loader/networks';
 import { LegacyChain } from 'loader/networks/legacy-chain';
 import { NetworkFeature } from 'loader/networks/types';
+import { getLastUsdPrice } from 'loader/price';
 import { logger } from 'utils/logger';
 
 const childLogger = logger.child({ module: 'crontab:legacy:amm_apy_daily_data' });
@@ -34,12 +36,14 @@ async function processLegacyChain(chain: LegacyChain) {
   const rawDayData = await apyBlockRepository.getDailyAggregatedApy(chain.context.chainId, yesterday);
 
   const volumeData = await getPoolVolumeItems(chain, Math.floor(yesterday.getTime() / 1000));
+  const btc = await tokenRepository.getBitcoin(chain.context);
+  const usdPrice = await getLastUsdPrice(btc.id);
 
   const items = rawDayData
     .map((item) => {
       if (parseFloat(item.avgBalance) > 0) {
         const poolVolume = volumeData.find((item) => item.pool === item.pool)?.btcVolume ?? '0';
-        return calculateDayApr(chain, item, poolVolume);
+        return calculateDayApr(chain, item, poolVolume, usdPrice);
       }
       return null;
     })
@@ -110,7 +114,12 @@ export const getPoolVolumeItems = async (chain: LegacyChain, timestamp: number):
   return result;
 };
 
-export function calculateDayApr(chain: LegacyChain, data: DailyAggregatedApyResult, volume: string): NewAmmApyDay {
+export function calculateDayApr(
+  chain: LegacyChain,
+  data: DailyAggregatedApyResult,
+  volume: string,
+  usdPrice: BigNumber,
+): NewAmmApyDay {
   const feeApy = bignumber(data.sumFees)
     .div(bignumber(data.avgBalance))
     .mul(365 * 100)
@@ -135,5 +144,6 @@ export function calculateDayApr(chain: LegacyChain, data: DailyAggregatedApyResu
     totalApy: totalApy,
     date: dayjs(data.date).set('hour', 0).set('minute', 0).set('second', 0).set('millisecond', 0).toDate(),
     btcVolume: volume,
+    usdVolume: bignumber(volume).mul(usdPrice).toFixed(8),
   };
 }

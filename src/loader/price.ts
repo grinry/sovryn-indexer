@@ -1,10 +1,9 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, avg, between, desc, eq, lte, max, min, or, sql } from 'drizzle-orm';
 import { bignumber } from 'mathjs';
 
-import { LONG_CACHE_TTL } from 'config/constants';
+import { MEDIUM_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
-import { NewPrice, prices } from 'database/schema';
-import { bfsShortestPath, constructGraph } from 'utils/bfs';
+import { usdDailyPricesTable } from 'database/schema';
 import { maybeCache } from 'utils/cache';
 
 export function groupItemsInPairs<T>(items: T[]): T[][] {
@@ -17,72 +16,102 @@ export function groupItemsInPairs<T>(items: T[]): T[][] {
   return groupedItems;
 }
 
-export function findPrice(base: number, quote: number, prices: NewPrice[] = []) {
-  const item = prices.find(
-    (item) => (item.baseId === base && item.quoteId === quote) || (item.baseId === quote && item.quoteId === base),
-  );
+export function findPrice(base: number, quote: number, prices: PriceItem[] = []) {
+  const basePrice = prices.find((item) => item.tokenId === base);
+  const quotePrice = prices.find((item) => item.tokenId === quote);
 
-  return item.baseId === base ? bignumber(item.value) : bignumber(1).div(item.value ?? 0);
-}
-
-export function findEndPrice(entry: number, destination: number, prices: NewPrice[]) {
-  const graph = constructGraph(prices.map((item) => [item.baseId, item.quoteId]));
-  const path = bfsShortestPath(graph, entry, destination);
-  const groupedPath = groupItemsInPairs(path ?? []);
-
-  if (entry === destination) {
+  if (base === quote) {
     return bignumber(1);
   }
 
-  if (groupedPath.length === 0) {
+  if (!basePrice || !quotePrice) {
     return bignumber(0);
   }
 
-  let price = bignumber(1);
-  for (const [base, quote] of groupedPath) {
-    price = bignumber(price).mul(findPrice(base, quote, prices));
-  }
-
-  return price;
+  return bignumber(quotePrice.value).div(basePrice.value);
 }
 
-// todo: add possibility to update cache data outside current thread if TTL is almost expired
-export const getLastPrices = (forceUpdate = false) =>
+export function findUsdPrice(entry: number, prices: PriceItem[]) {
+  const token = prices.find((item) => item.tokenId === entry);
+  if (token) {
+    return bignumber(token.value);
+  }
+  return bignumber(0);
+}
+
+export type PriceItem = {
+  tokenId: number;
+  value: string;
+  tickAt: Date;
+  updatedAt: Date;
+};
+
+export const getLastPrices = (forceUpdate = false): Promise<PriceItem[]> =>
   maybeCache(
     'lastPrices',
     async () => {
       const dateMap = db
         .select({
-          baseId: prices.baseId,
-          quoteId: prices.quoteId,
-          date: sql<string>`max(${prices.tickAt})`.as('date'),
+          tokenId: usdDailyPricesTable.tokenId,
+          date: sql<Date>`max(${usdDailyPricesTable.tickAt})`.as('date'),
         })
-        .from(prices)
-        .groupBy(prices.baseId, prices.quoteId)
+        .from(usdDailyPricesTable)
+        .groupBy(usdDailyPricesTable.tokenId)
         .as('sq_dates');
       return db
         .select({
-          baseId: prices.baseId,
-          quoteId: prices.quoteId,
-          value: prices.value,
+          tokenId: usdDailyPricesTable.tokenId,
+          value: usdDailyPricesTable.value,
           tickAt: dateMap.date,
+          updatedAt: usdDailyPricesTable.updatedAt,
         })
-        .from(prices)
+        .from(usdDailyPricesTable)
         .innerJoin(
           dateMap,
-          and(eq(prices.baseId, dateMap.baseId), eq(prices.quoteId, dateMap.quoteId), eq(prices.tickAt, dateMap.date)),
+          and(eq(usdDailyPricesTable.tokenId, dateMap.tokenId), eq(usdDailyPricesTable.tickAt, dateMap.date)),
         );
     },
-    LONG_CACHE_TTL,
+    MEDIUM_CACHE_TTL,
     forceUpdate,
   ).then((result) => result.data);
 
-export const getLastPrice = async (base: number, quote: number) => {
-  const lastPrices = await getLastPrices();
-  return lastPrices.find((item) => item.baseId === base && item.quoteId === quote);
+export const getPricesInRange = async (from: Date, to: Date) => {
+  const sq = db
+    .select({
+      tokenId: usdDailyPricesTable.tokenId,
+      date: sql<Date>`max(${usdDailyPricesTable.tickAt})`.as('date'),
+    })
+    .from(usdDailyPricesTable)
+    .where(lte(usdDailyPricesTable.tickAt, to))
+    .groupBy(usdDailyPricesTable.tokenId)
+    .as('sq');
+
+  return await db
+    .select({
+      tokenId: usdDailyPricesTable.tokenId,
+      tickAt: usdDailyPricesTable.tickAt,
+      avg: avg(sql`${usdDailyPricesTable.value}::numeric`).as('avg'),
+      low: min(sql`${usdDailyPricesTable.value}::numeric`).as('low'),
+      high: max(sql`${usdDailyPricesTable.value}::numeric`).as('high'),
+    })
+    .from(usdDailyPricesTable)
+    .innerJoin(sq, and(eq(usdDailyPricesTable.tokenId, sq.tokenId), eq(usdDailyPricesTable.tickAt, sq.date)))
+    .where(
+      or(
+        between(usdDailyPricesTable.tickAt, from, to),
+        and(eq(usdDailyPricesTable.tokenId, sq.tokenId), eq(usdDailyPricesTable.tickAt, sq.date)),
+      ),
+    )
+    .groupBy(usdDailyPricesTable.tokenId, usdDailyPricesTable.tickAt)
+    .orderBy(desc(usdDailyPricesTable.tickAt));
 };
 
-export const getLastEndPrice = async (entry: number, destination: number) => {
+export const getLastPrice = async (base: number, quote: number) => {
   const lastPrices = await getLastPrices();
-  return findEndPrice(entry, destination, lastPrices as unknown as NewPrice[]);
+  return findPrice(base, quote, lastPrices);
+};
+
+export const getLastUsdPrice = async (base: number) => {
+  const lastPrices = await getLastPrices();
+  return findUsdPrice(base, lastPrices);
 };

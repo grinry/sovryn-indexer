@@ -1,5 +1,3 @@
-import { bignumber, BigNumber } from 'mathjs';
-
 export function toDisplayPrice(price: number, baseDecimals: number, quoteDecimals: number, isInverted = false): number {
   const scaled = price * Math.pow(10, quoteDecimals - baseDecimals);
   return isInverted ? 1 / scaled : scaled;
@@ -23,11 +21,4 @@ export function decodeCrocPrice(val: bigint) {
 
 export function toBn(val: number | bigint) {
   return typeof val === 'bigint' ? val : BigInt(Number(val).toLocaleString('fullwide', { useGrouping: false }));
-}
-
-export function fixBnValue(value: BigNumber) {
-  if (value.isNaN() || !value.isFinite()) {
-    return bignumber(0);
-  }
-  return value;
 }
