@@ -43,7 +43,7 @@ export const priceFeedTask = async (ctx: CronJob) => {
 const processLegacyChain = async (chain: LegacyChain) => {
   const key = `price-feed-${chain.context.chainId}-2`;
   const currentBlock = await chain.context.rpc.getBlockNumber();
-  const savedBlock = await getFlag(key).then((value) => (value ? Number(value) : 3280000)); // 3280000 = 2022-10-24
+  const savedBlock = await getFlag(key).then((value) => (value ? Number(value) : 4580025)); // 4580025
 
   if (currentBlock < savedBlock) {
     childLogger.info(
@@ -129,10 +129,7 @@ const searchBlock = async (
       });
     });
 
-    await db
-      .update(flags)
-      .set({ value: blockNumber.toString() })
-      .where(eq(flags.key, `price-feed-${chain.context.chainId}-2`));
+    await setFlag(`price-feed-${chain.context.chainId}-2`, blockNumber.toString());
   } else {
     childLogger.info({ blockNumber }, 'No prices to add for legacy chain');
     await setFlag(`price-feed-${chain.context.chainId}-2`, blockNumber.toString());
