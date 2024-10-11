@@ -249,7 +249,7 @@ router.get(
       res,
       'sync-status',
       async () => {
-        const sync = await getFlagRow('price-feed-migration');
+        const sync = await getFlagRow('price-feed-30-2');
         return {
           sync,
         };
