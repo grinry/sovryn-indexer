@@ -2,16 +2,17 @@ import { eq, sql, and, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { bignumber } from 'mathjs';
 
-import { DEFAULT_DECIMAL_PLACES } from 'config/constants';
 import { db } from 'database/client';
 import { ammApyDays, tAmmPools, tokens } from 'database/schema';
+import { prettyNumber } from 'utils/numbers';
 
+import { networks } from './networks';
 import { Chain } from './networks/chain-config';
 import { LegacyChain } from './networks/legacy-chain';
 import { SdexChain } from './networks/sdex-chain';
 import { NetworkFeature } from './networks/types';
+import { chainIdFromHex } from './networks/utils';
 import { getLastPrices } from './price';
-import { prettyNumber } from 'utils/numbers';
 
 type TickersItem = {
   chain_id: number;
@@ -211,10 +212,9 @@ type PoolStats = {
   feeRate: number;
 };
 
-async function getPoolStats(chainId: string, base: string, quote: string, poolIdx: number): Promise<PoolStats> {
-  return fetch(
-    `https://bob-ambient-graphcache.sovryn.app/gcgo/pool_stats?chainId=${chainId}&base=${base}&quote=${quote}&poolIdx=${poolIdx}`,
-  )
+export async function getPoolStats(chainId: string, base: string, quote: string, poolIdx: number): Promise<PoolStats> {
+  const baseUrl = networks.getByChainId(chainIdFromHex(chainId)).sdex.graphCacheUrl;
+  return fetch(`${baseUrl}/pool_stats?chainId=${chainId}&base=${base}&quote=${quote}&poolIdx=${poolIdx}`)
     .then((res) => res.json())
     .then((data) => data.data satisfies PoolStats);
 }

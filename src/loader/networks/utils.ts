@@ -44,6 +44,7 @@ export function validateConfig(name: string, config: NetworkConfig) {
 function validateSdexConfig(name: string, config: SdexChainConfig) {
   const result = Joi.object({
     subgraph: Joi.string().required(),
+    graphcache: Joi.string().required(),
     dex: Joi.string().required(),
     query: Joi.string().required(),
     impact: Joi.string().required(),
@@ -82,3 +83,6 @@ function validateLegacyConfig(name: string, config: LegacyChainConfig) {
     throw new Error(`Invalid Legacy config for ${name}: ${result.error.message}`);
   }
 }
+
+export const chainIdAsHex = (chainId: number) => '0x' + chainId.toString(16);
+export const chainIdFromHex = (chainId: string) => parseInt(chainId, 16);

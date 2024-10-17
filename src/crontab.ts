@@ -1,5 +1,6 @@
 import { CronJob } from 'cron';
 
+import { updateDexPoolList, updateDexPoolListData } from 'cronjobs/dex/pools';
 import { ammApyBlockTask } from 'cronjobs/legacy/amm/amm-apy-block-task';
 import { ammApyDailyDataTask } from 'cronjobs/legacy/amm/amm-apy-daily-data-task';
 import { ammCleanUpTask } from 'cronjobs/legacy/amm/amm-cleanup-task';
@@ -20,35 +21,37 @@ export const tickWrapper = (fn: (context: CronJob) => Promise<void>) => {
 
 export const startCrontab = async () => {
   // populate chain config on startup before running other tasks
-  await updateChains();
+  // await updateChains();
 
-  runOnInit();
+  // runOnInit();
 
-  // Stores Swaps every minute
-  CronJob.from({
-    cronTime: '*/1 * * * *',
-    onTick: tickWrapper(retrieveSwaps),
-  }).start();
+  dexJobs();
 
-  // // LEGACY JOBS
-  ammApyJobs();
-  graphWrapperJobs();
+  // // Stores Swaps every minute
+  // CronJob.from({
+  //   cronTime: '*/1 * * * *',
+  //   onTick: tickWrapper(retrieveSwaps),
+  // }).start();
 
-  // update cached prices every minute
-  CronJob.from({
-    cronTime: '*/1 * * * *',
-    onTick: async function () {
-      this.stop();
-      try {
-        await getLastPrices(true);
-      } catch (e) {
-        console.error(e);
-      }
-      this.start();
-    },
-  });
+  // // // LEGACY JOBS
+  // ammApyJobs();
+  // graphWrapperJobs();
 
-  tempJobs();
+  // // update cached prices every minute
+  // CronJob.from({
+  //   cronTime: '*/1 * * * *',
+  //   onTick: async function () {
+  //     this.stop();
+  //     try {
+  //       await getLastPrices(true);
+  //     } catch (e) {
+  //       console.error(e);
+  //     }
+  //     this.start();
+  //   },
+  // });
+
+  // tempJobs();
 };
 
 function runOnInit() {
@@ -98,6 +101,20 @@ function graphWrapperJobs() {
   CronJob.from({
     cronTime: '*/30 * * * *',
     onTick: tickWrapper(tvlTask),
+  }).start();
+}
+
+function dexJobs() {
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(updateDexPoolList),
+    runOnInit: true, // todo: remove this after testing
+  }).start();
+
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(updateDexPoolListData),
+    runOnInit: true, // todo: remove this after testing
   }).start();
 }
 
