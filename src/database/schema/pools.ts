@@ -6,13 +6,17 @@ import { tokens } from './tokens';
 
 export enum PoolType {
   ambient = 'ambient',
+  bancor = 'bancor',
 }
 
 export type PoolExtra = {
   // for ambient pools
   poolIdx?: number;
   lpToken?: string;
-  // todo: add extra fields once we know what they are
+  // for bancor pools
+  type?: number;
+  version?: number | null;
+  smartToken?: string;
 };
 
 export const poolsTable = pgTable(
@@ -32,8 +36,8 @@ export const poolsTable = pgTable(
       .references(() => tokens.id, { onDelete: 'cascade' }),
     featured: boolean('highlighted').default(false), // if pool needs to be on top of the list
     price: varchar('price', { length: 256 }).default('0'), // last price of base in quote
-    fee: varchar('fee', { length: 256 }).default('0'), // fee protocol charges for swaps
-    apr: varchar('apr', { length: 256 }).default('0'), // expected APR for providing liquidity
+    fee: varchar('fee', { length: 256 }).default('0'), // fee protocol charges for swaps in % (0-100)
+    apr: varchar('apr', { length: 256 }).default('0'), // expected APR for providing liquidity in % (0-100)
     baseLiquidity: varchar('base_liquidity', { length: 256 }).default('0'),
     quoteLiquidity: varchar('quote_liquidity', { length: 256 }).default('0'),
     baseVolume: varchar('base_volume', { length: 256 }).default('0'),

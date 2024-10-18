@@ -21,35 +21,35 @@ export const tickWrapper = (fn: (context: CronJob) => Promise<void>) => {
 
 export const startCrontab = async () => {
   // populate chain config on startup before running other tasks
-  // await updateChains();
+  await updateChains();
 
-  // runOnInit();
+  runOnInit();
 
   dexJobs();
 
-  // // Stores Swaps every minute
-  // CronJob.from({
-  //   cronTime: '*/1 * * * *',
-  //   onTick: tickWrapper(retrieveSwaps),
-  // }).start();
+  // Stores Swaps every minute
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(retrieveSwaps),
+  }).start();
 
-  // // // LEGACY JOBS
-  // ammApyJobs();
-  // graphWrapperJobs();
+  // // LEGACY JOBS
+  ammApyJobs();
+  graphWrapperJobs();
 
-  // // update cached prices every minute
-  // CronJob.from({
-  //   cronTime: '*/1 * * * *',
-  //   onTick: async function () {
-  //     this.stop();
-  //     try {
-  //       await getLastPrices(true);
-  //     } catch (e) {
-  //       console.error(e);
-  //     }
-  //     this.start();
-  //   },
-  // });
+  // update cached prices every minute
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: async function () {
+      this.stop();
+      try {
+        await getLastPrices(true);
+      } catch (e) {
+        console.error(e);
+      }
+      this.start();
+    },
+  });
 
   // tempJobs();
 };
@@ -108,13 +108,11 @@ function dexJobs() {
   CronJob.from({
     cronTime: '*/1 * * * *',
     onTick: tickWrapper(updateDexPoolList),
-    runOnInit: true, // todo: remove this after testing
   }).start();
 
   CronJob.from({
     cronTime: '*/1 * * * *',
     onTick: tickWrapper(updateDexPoolListData),
-    runOnInit: true, // todo: remove this after testing
   }).start();
 }
 
