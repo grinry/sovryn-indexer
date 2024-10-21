@@ -57,7 +57,6 @@ export const startCrontab = async () => {
 function runOnInit() {
   // Check and populate supported token list every 2 minutes
   CronJob.from({
-    // cronTime: '*/10 * * * * *',
     cronTime: '*/2 * * * *',
     onTick: tickWrapper(retrieveTokens),
     runOnInit: true,

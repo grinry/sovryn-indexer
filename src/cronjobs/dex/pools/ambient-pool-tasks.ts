@@ -60,10 +60,6 @@ export const retrieveAmbientPoolList = async (chain: SdexChain) => {
   if (inserted.length) {
     await Promise.allSettled(inserted.map(updateAmbientLpToken(chain)));
   }
-
-  // 1. find new pools and push them to the database
-  // 2. update pool with information from the subgraph (liquidity, volume, etc)
-  // updateAmbientPool();
 };
 
 const updateAmbientLpToken = (chain: SdexChain) => async (pool: Pool) => {
@@ -81,8 +77,6 @@ export const updateAmbientPool = async (pool: PoolExtended) => {
   const chain = networks.getByChainId(pool.chainId);
   const stats = await getPoolStats(chain.chainIdHex, pool.base.address, pool.quote.address, pool.extra.poolIdx);
 
-  // const spotPrice = chain.sdex.query.queryPrice(pool.base.address, pool.quote.address, pool.extra.poolIdx).catch(() => BigInt(0)),
-  // const displayPrice = toDisplayPrice(decodeCrocPrice(spotPrice), pool.base.decimals, pool.quote.decimals, true);
   const displayPrice = toDisplayPrice(stats.lastPriceIndic, pool.base.decimals, pool.quote.decimals, true);
 
   const daily = await getDailyPoolVolume(chain.sdex, pool);

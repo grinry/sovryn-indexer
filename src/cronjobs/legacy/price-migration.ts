@@ -6,7 +6,7 @@ import { uniqBy } from 'lodash';
 
 import { db } from 'database/client';
 import { tokenRepository } from 'database/repository/token-repository';
-import { flags, usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable } from 'database/schema';
+import { usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable } from 'database/schema';
 import { networks } from 'loader/networks';
 import { LegacyChain } from 'loader/networks/legacy-chain';
 import { NetworkFeature } from 'loader/networks/types';
@@ -18,6 +18,7 @@ import { logger } from 'utils/logger';
 const childLogger = logger.child({ module: 'price-feed-task' });
 
 const BLOCKS = 25;
+const START_BLOCK = 4580025;
 
 export const priceFeedTask = async (ctx: CronJob) => {
   ctx.stop();
@@ -43,7 +44,7 @@ export const priceFeedTask = async (ctx: CronJob) => {
 const processLegacyChain = async (chain: LegacyChain) => {
   const key = `price-feed-${chain.context.chainId}-2`;
   const currentBlock = await chain.context.rpc.getBlockNumber();
-  const savedBlock = await getFlag(key).then((value) => (value ? Number(value) : 4580025)); // 4580025
+  const savedBlock = await getFlag(key).then((value) => (value ? Number(value) : START_BLOCK));
 
   if (currentBlock < savedBlock) {
     childLogger.info(
@@ -100,7 +101,6 @@ const searchBlock = async (
     const toAdd: Price[] = items
       .map((item) => {
         const token = tokens.find((token) => token.address === item.id);
-        // const stablecoin = stablecoins.find((token) => token.address === item.id);
 
         if (!token) {
           return null;

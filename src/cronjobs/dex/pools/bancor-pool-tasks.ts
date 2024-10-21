@@ -155,12 +155,6 @@ async function getNewPools(chain: LegacyChain) {
 
 type GetPoolData = {
   liquidityPool: {
-    // id: string;
-    // type: number;
-    // version: number | null;
-    // smartToken: {
-    //   id: string;
-    // };
     token0: {
       id: string;
     };

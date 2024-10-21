@@ -12,7 +12,6 @@ const router = Router();
 router.get(
   '/',
   asyncRoute(async (req: Request, res: Response) =>
-    // todo
     maybeCacheResponse(
       res,
       `/dex/${req.network.chainId}/pools`,
