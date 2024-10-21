@@ -17,10 +17,13 @@ const gqlSwaps = loadGqlFromArtifacts('graphQueries/sdex/swaps.graphql');
 export class SdexChain {
   readonly dex: SdexSwapDex;
   readonly query: SdexQuery;
+  readonly graphCacheUrl: string;
 
   constructor(readonly context: Chain, readonly config: SdexChainConfig) {
     this.dex = SdexSwapDex__factory.connect(config.dex, this.context.rpc);
     this.query = SdexQuery__factory.connect(config.query, this.context.rpc);
+
+    this.graphCacheUrl = config.graphcache;
   }
 
   public queryFromSubgraph<T>(query: DocumentNode, variables: Record<string, unknown> = {}) {

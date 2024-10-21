@@ -1,5 +1,5 @@
 import { CronJob } from 'cron';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { ZeroAddress } from 'ethers';
 import _, { difference, uniq } from 'lodash';
 
@@ -23,15 +23,11 @@ export const retrieveTokens = async (ctx: CronJob) => {
   const items = networks.listChains();
 
   for (const item of items) {
-    if (item.hasFeature(NetworkFeature.sdex)) {
-      await prepareSdexTokens(item.sdex);
-    }
-    if (item.hasFeature(NetworkFeature.liquidity)) {
-      await prepareLiquidityTokens(item.liquidity);
-    }
-    if (item.hasFeature(NetworkFeature.legacy)) {
-      await prepareLegacyTokens(item.legacy);
-    }
+    await Promise.allSettled([
+      item.hasFeature(NetworkFeature.sdex) && prepareSdexTokens(item.sdex),
+      item.hasFeature(NetworkFeature.liquidity) && prepareLiquidityTokens(item.liquidity),
+      item.hasFeature(NetworkFeature.legacy) && prepareLegacyTokens(item.legacy),
+    ]);
   }
 
   childLogger.info('Tokens retrieval finished.');
@@ -71,15 +67,24 @@ async function prepareLegacyTokens(chain: LegacyChain) {
     const result = await db
       .insert(tokens)
       .values(
-        items.tokens.map((item) => ({
-          chainId: chain.context.chainId,
-          address: item.id,
-          symbol: item.symbol,
-          name: item.name,
-          decimals: item.decimals,
-        })),
+        items.tokens.map(
+          (item) =>
+            ({
+              chainId: chain.context.chainId,
+              address: item.id,
+              symbol: item.symbol,
+              name: item.name,
+              decimals: item.decimals,
+              tradeableSince: new Date(),
+            } satisfies NewToken),
+        ),
       )
-      .onConflictDoNothing()
+      .onConflictDoUpdate({
+        target: [tokens.chainId, tokens.address],
+        set: {
+          tradeableSince: sql`EXCLUDED.tradeableSince`,
+        },
+      })
       .returning({ id: tokens.id })
       .execute();
 
@@ -125,8 +130,11 @@ async function prepareSdexTokens(chain: SdexChain) {
       const result = await db
         .insert(tokens)
         .values(newTokens)
-        .onConflictDoNothing({
+        .onConflictDoUpdate({
           target: [tokens.chainId, tokens.address],
+          set: {
+            tradeableSince: sql`EXCLUDED.tradeableSince`,
+          },
         })
         .returning({ id: tokens.id })
         .execute();
@@ -197,8 +205,11 @@ async function prepareLiquidityTokens(chain: LiquidityChain) {
       const result = await db
         .insert(tokens)
         .values(newTokens)
-        .onConflictDoNothing({
+        .onConflictDoUpdate({
           target: [tokens.chainId, tokens.address],
+          set: {
+            tradeableSince: sql`EXCLUDED.tradeableSince`,
+          },
         })
         .returning({ id: tokens.id })
         .execute();

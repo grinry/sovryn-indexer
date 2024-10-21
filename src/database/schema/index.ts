@@ -5,4 +5,6 @@ export * from './chains';
 export * from './swaps';
 export * from './flags';
 export * from './bins';
+
 export * from './usd-prices';
+export * from './pools';

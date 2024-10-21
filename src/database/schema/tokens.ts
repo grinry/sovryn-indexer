@@ -14,6 +14,7 @@ export const tokens = pgTable(
       .references(() => chains.id, { onDelete: 'cascade' }),
     address: char('address', { length: 42 }),
     ignored: boolean('ignored').default(false),
+    tradeableSince: timestamp('swapable_since'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at')
       .defaultNow()

@@ -7,7 +7,7 @@ import { LegacyChain } from './legacy-chain';
 import { LiquidityChain } from './liquidity-chain';
 import { SdexChain } from './sdex-chain';
 import { NativeNetworkToken, NetworkConfig, NetworkFeature } from './types';
-import { validateConfig } from './utils';
+import { chainIdAsHex, validateConfig } from './utils';
 
 export class Chain {
   readonly chainId: number;
@@ -31,7 +31,7 @@ export class Chain {
     validateConfig(name, config);
 
     this.chainId = config.chainId;
-    this.chainIdHex = '0x' + config.chainId.toString(16);
+    this.chainIdHex = chainIdAsHex(config.chainId);
     this.rpc = getProvider(config.rpc);
     this.supportsMulticall = !!config.multicall;
     this.features = config.features;

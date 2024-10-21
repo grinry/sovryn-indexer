@@ -1,14 +1,12 @@
 import { Response } from 'express';
-import { isArray } from 'lodash';
 
-import { toResponse } from './http-response';
 import { logger } from './logger';
-import { PaginationOptions } from './pagination';
 import { redis } from './redis-client';
 
 export type CacheResponse<T> = {
   data: T;
   cache: 'hit' | 'miss';
+  expiresAt: number;
 };
 
 export async function maybeCache<T>(
@@ -23,9 +21,11 @@ export async function maybeCache<T>(
 
   if (cached && !forceUpdate) {
     logger.debug({ key }, 'Cache hit');
+    const expiresAt = await cache.exp(cacheKey);
     return {
       data: JSON.parse(cached),
       cache: 'hit',
+      expiresAt: expiresAt,
     };
   }
 
@@ -39,6 +39,7 @@ export async function maybeCache<T>(
   return {
     data: result,
     cache: 'miss',
+    expiresAt: Date.now() + cacheDurationInSeconds * 1000,
   };
 }
 
@@ -50,12 +51,16 @@ export async function maybeCacheResponse<T>(
 ) {
   res.setHeader('Cache-Control', `public, max-age=${cacheDurationInSeconds}`);
 
-  const { data, cache } = await maybeCache(key, fn, cacheDurationInSeconds);
+  const { data, cache, expiresAt } = await maybeCache(key, fn, cacheDurationInSeconds);
 
   if (cache === 'hit') {
     res.setHeader('X-Cache', 'HIT');
   } else {
     res.setHeader('X-Cache', 'MISS');
+  }
+
+  if (expiresAt) {
+    res.setHeader('X-Cache-Expires', new Date(expiresAt).toISOString());
   }
 
   return data;
@@ -67,4 +72,5 @@ export const cache = {
       EX: durationInSeconds,
     }),
   get: async (key: string) => redis.get(`cache:${key}`),
+  exp: async (key: string) => /*(await redis.pExpireTime(`cache:${key}`)) ?? */ Date.now(),
 };

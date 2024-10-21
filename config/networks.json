@@ -15,6 +15,7 @@
     },
     "sdex": {
       "subgraph": "https://bob-ambient-subgraph.sovryn.app/subgraphs/name/DistributedCollective/bob-ambient-subgraph",
+      "graphcache": "https://bob-ambient-graphcache.sovryn.app/gcgo",
       "dex": "0xe5bc234A484A912A61Aa74501960cFc202e773dA",
       "query": "0x1dff4Ff93dF17Ad6F44E23368341CcFb8fB8B675",
       "impact": "0x30B2a8810B091D1DbE4aAA4905141f815586e274"
