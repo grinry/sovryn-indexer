@@ -15,7 +15,6 @@ export const tokens = pgTable(
     address: char('address', { length: 42 }),
     ignored: boolean('ignored').default(false),
     tradeableSince: timestamp('swapable_since'),
-    usdPrice: varchar('usd_price', { length: 64 }),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at')
       .defaultNow()

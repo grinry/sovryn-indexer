@@ -1,6 +1,5 @@
 import { CronJob } from 'cron';
 
-import { insertTokensToDatabase } from 'controllers/dex/tokens/tokenService';
 import { updateDexPoolList, updateDexPoolListData } from 'cronjobs/dex/pools';
 import { ammApyBlockTask } from 'cronjobs/legacy/amm/amm-apy-block-task';
 import { ammApyDailyDataTask } from 'cronjobs/legacy/amm/amm-apy-daily-data-task';
@@ -11,6 +10,7 @@ import { tvlTask } from 'cronjobs/legacy/tvl-task';
 import { retrieveSwaps } from 'cronjobs/retrieve-swaps';
 import { retrieveTokens } from 'cronjobs/retrieve-tokens';
 import { retrieveUsdPrices } from 'cronjobs/retrieve-usd-prices';
+import { insertTokensToDatabase } from 'cronjobs/tokenService';
 import { updateChains } from 'loader/networks';
 import { getLastPrices } from 'loader/price';
 
@@ -65,7 +65,7 @@ function runOnInit() {
 
   // Retrieve USD prices of tokens every minute
   CronJob.from({
-    cronTime: '*/1 * * * *',
+    cronTime: '*/5 * * * *',
     onTick: tickWrapper(retrieveUsdPrices),
     runOnInit: true,
   }).start();

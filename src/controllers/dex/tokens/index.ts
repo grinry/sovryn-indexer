@@ -21,8 +21,8 @@ const router = Router();
 router.get(
   '/',
   asyncRoute(async (req: Request, res: Response) => {
-    const chainId = validateChainId(req, true);
     const p = validatePaginatedRequest(req);
+    const chainId = req.network.chainId;
 
     return maybeCacheResponse(
       res,
@@ -30,14 +30,12 @@ router.get(
       async () => {
         const quoteToken = alias(tokens, 'quote_token');
         const chain = alias(chains, 'chain');
-
         const tokenQuery = db
           .select({
             id: tokens.id,
             symbol: tokens.symbol,
             name: tokens.name,
             decimals: tokens.decimals,
-            chainId: tokens.chainId,
             address: tokens.address,
             logoUrl: tokens.logoUrl,
             stablecoinId: sql<number>`${quoteToken.id}`.as('stablecoinId'),
@@ -45,7 +43,7 @@ router.get(
           .from(tokens)
           .where(
             and(
-              chainId ? eq(tokens.chainId, chainId) : undefined,
+              eq(tokens.chainId, chainId),
               Boolean(req.query.spam) ? undefined : eq(tokens.ignored, false),
               isNotNull(tokens.tradeableSince),
             ),
@@ -94,7 +92,6 @@ router.get(
             symbol: tokens.symbol,
             name: tokens.name,
             decimals: tokens.decimals,
-            chainId: tokens.chainId,
             address: tokens.address,
             logoUrl: tokens.logoUrl,
           })
