@@ -45,7 +45,7 @@ router.get(
             and(
               eq(tokens.chainId, chainId),
               Boolean(req.query.spam) ? undefined : eq(tokens.ignored, false),
-              isNotNull(tokens.tradeableSince),
+              isNotNull(tokens.swapableSince),
             ),
           )
           .innerJoin(chain, eq(tokens.chainId, chain.id))

@@ -75,14 +75,14 @@ async function prepareLegacyTokens(chain: LegacyChain) {
               symbol: item.symbol,
               name: item.name,
               decimals: item.decimals,
-              tradeableSince: new Date(),
+              swapableSince: new Date(),
             } satisfies NewToken),
         ),
       )
       .onConflictDoUpdate({
         target: [tokens.chainId, tokens.address],
         set: {
-          tradeableSince: sql`EXCLUDED.tradeableSince`,
+          swapableSince: sql`EXCLUDED.swapable_since`,
         },
       })
       .returning({ id: tokens.id })
@@ -133,7 +133,7 @@ async function prepareSdexTokens(chain: SdexChain) {
         .onConflictDoUpdate({
           target: [tokens.chainId, tokens.address],
           set: {
-            tradeableSince: sql`EXCLUDED.tradeableSince`,
+            swapableSince: sql`EXCLUDED.swapable_since`,
           },
         })
         .returning({ id: tokens.id })
@@ -208,7 +208,7 @@ async function prepareLiquidityTokens(chain: LiquidityChain) {
         .onConflictDoUpdate({
           target: [tokens.chainId, tokens.address],
           set: {
-            tradeableSince: sql`EXCLUDED.tradeableSince`,
+            swapableSince: sql`EXCLUDED.swapable_since`,
           },
         })
         .returning({ id: tokens.id })

@@ -56,7 +56,14 @@ export const startCrontab = async () => {
 };
 
 function runOnInit() {
-  // Check and populate supported token list every 2 minutes
+  // Update supported token list from the github repository on startup and every minute
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(insertTokensToDatabase),
+    runOnInit: true,
+  }).start();
+
+  // Update tokens used by DEXs every two minutes
   CronJob.from({
     cronTime: '*/2 * * * *',
     onTick: tickWrapper(retrieveTokens),
@@ -67,13 +74,6 @@ function runOnInit() {
   CronJob.from({
     cronTime: '*/5 * * * *',
     onTick: tickWrapper(retrieveUsdPrices),
-    runOnInit: true,
-  }).start();
-
-  // Insert tokens to database every 5 minutes
-  CronJob.from({
-    cronTime: '*/1 * * * *',
-    onTick: tickWrapper(insertTokensToDatabase),
     runOnInit: true,
   }).start();
 }
