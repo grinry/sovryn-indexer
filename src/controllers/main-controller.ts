@@ -205,20 +205,17 @@ router.get(
       req.query,
     );
 
-    const timeframeMinutes = TIMEFRAMES[timeframe];
-    const start = ceilDate(dayjs.unix(startTimestamp).toDate(), timeframeMinutes);
-    const end = ceilDate(dayjs.unix(endTimestamp).toDate(), timeframeMinutes);
+    const start = dayjs.unix(startTimestamp).toDate();
+    const end = dayjs.unix(endTimestamp).toDate();
 
-    return await maybeCacheResponse(
-      res,
-      `chart/${chainId}/${baseTokenAddress}/${quoteTokenAddress}/${start.getTime()}/${end.getTime()}/${timeframe}`,
-      async () => {
-        const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe);
-        const candlesticks = await constructCandlesticks(intervals, TIMEFRAMES[timeframe]);
-        return candlesticks;
-      },
-      DEFAULT_CACHE_TTL,
-    ).then((data) => res.json(toResponse(data)));
+    try {
+      const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe);
+      const data = await constructCandlesticks(intervals, TIMEFRAMES[timeframe]);
+
+      return res.json(toResponse(data));
+    } catch (e) {
+      return res.json(toResponse([]));
+    }
   }),
 );
 
