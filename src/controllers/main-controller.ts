@@ -21,6 +21,7 @@ import { NotFoundError } from 'utils/custom-error';
 import { ceilDate } from 'utils/date';
 import { getFlagRow } from 'utils/flag';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
+import { logger } from 'utils/logger';
 import { prettyNumber } from 'utils/numbers';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
@@ -211,9 +212,12 @@ router.get(
     try {
       const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe);
       const data = await constructCandlesticks(intervals, TIMEFRAMES[timeframe]);
-
       return res.json(toResponse(data));
     } catch (e) {
+      logger.error(
+        { e: e.message, stack: e.stack },
+        `Failed to get chart data for ${baseTokenAddress}/${quoteTokenAddress} in ${timeframe}`,
+      );
       return res.json(toResponse([]));
     }
   }),

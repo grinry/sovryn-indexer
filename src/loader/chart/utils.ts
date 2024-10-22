@@ -9,6 +9,7 @@ import { db } from 'database/client';
 import { tokens, usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable, UsdPricesTables } from 'database/schema';
 import { maybeCache } from 'utils/cache';
 import { NotFoundError, ValidationError } from 'utils/custom-error';
+import { logger } from 'utils/logger';
 import { prettyNumber } from 'utils/numbers';
 
 import { Interval } from './types';
@@ -79,12 +80,13 @@ export const getPrices = async (
 
   if (baseTokenData.length === 0 || quoteTokenData.length === 0) {
     // no data to build the chart...
+    logger.warn('No data to build the chart');
     return [];
   }
 
   const unit = getTimeStep(timeframe);
 
-  let start = dayjs(startTimestamp).startOf(unit);
+  let start = dayjs(tokenData.start).startOf(unit);
   const end = dayjs(endTimestamp).startOf(unit).unix();
 
   const items: PriceItem[] = [];
@@ -181,7 +183,8 @@ const getTokenStartPrice = async (
     .from(table)
     .where(and(eq(table.tokenId, tokenId), lte(table.tickAt, beforeTimestamp)))
     .orderBy(desc(table.tickAt))
-    .limit(1);
+    .limit(1)
+    .then((data) => (data.length ? { ...data, tickAt: beforeTimestamp } : []));
 };
 
 const validateStartPrice = async (items: PriceData[], tokenId: number, startTimestamp: Date, timeframe: Timeframe) => {
@@ -189,8 +192,6 @@ const validateStartPrice = async (items: PriceData[], tokenId: number, startTime
     const startData = await getTokenStartPrice(tokenId, startTimestamp, timeframe);
     if (startData.length) {
       items.unshift(...startData);
-    } else {
-      throw new NotFoundError('No data found for the start date');
     }
   }
 };
@@ -207,9 +208,25 @@ const queryTokenPricesInRange = async (
   await validateStartPrice(items, quoteId, startTimestamp, timeframe);
   // sort from newest to oldest, so we can search for the nearest price faster
   const result = items.sort((a, b) => dayjs(b.tickAt).unix() - dayjs(a.tickAt).unix());
+
+  const base = result.filter((item) => item.tokenId === tokenId);
+  const quote = result.filter((item) => item.tokenId === quoteId);
+
+  if (base.length === 0 || quote.length === 0) {
+    return { base: [], quote: [], start: startTimestamp, end: endTimestamp };
+  }
+
+  const oldestBase = dayjs(base[base.length - 1].tickAt).unix();
+  const oldestQuote = dayjs(quote[quote.length - 1].tickAt).unix();
+
+  const oldest = Math.max(oldestBase, oldestQuote);
+  const newest = Math.min(dayjs(base[0].tickAt).unix(), dayjs(quote[0].tickAt).unix());
+
   return {
-    base: result.filter((item) => item.tokenId === tokenId),
-    quote: result.filter((item) => item.tokenId === quoteId),
+    base: base.filter((item) => dayjs(item.tickAt).unix() >= oldest),
+    quote: quote.filter((item) => dayjs(item.tickAt).unix() >= oldest),
+    start: dayjs.unix(oldest).toDate(),
+    end: dayjs.unix(newest).toDate(),
   };
 };
 
