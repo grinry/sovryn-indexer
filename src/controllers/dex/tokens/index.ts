@@ -1,6 +1,10 @@
+import { and, eq } from 'drizzle-orm';
+import { isNotNull } from 'drizzle-orm';
 import { Router, Request, Response } from 'express';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
+import { db } from 'database/client';
+import { tokens } from 'database/schema/tokens';
 import { maybeCacheResponse } from 'utils/cache';
 import { toResponse } from 'utils/http-response';
 import { asyncRoute } from 'utils/route-wrapper';
@@ -15,8 +19,23 @@ router.get(
       res,
       `/dex/${req.network.chainId}/tokens`,
       async () => {
-        // todo: load swapable tokens from database...
-        return [];
+        const chainId = req.network.chainId;
+
+        const tokensData = await db
+          .select({
+            symbol: tokens.symbol,
+            name: tokens.name,
+            decimals: tokens.decimals,
+            chainId: tokens.chainId,
+            address: tokens.address,
+            logoUrl: tokens.logoUrl,
+            usdPrice: tokens.usdPrice,
+          })
+          .from(tokens)
+          .where(and(eq(tokens.chainId, chainId), isNotNull(tokens.tradeableSince)))
+          .execute();
+
+        return tokensData;
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data))),
@@ -31,8 +50,23 @@ router.get(
       res,
       `/dex/${req.network.chainId}/tokens/available`,
       async () => {
-        // todo: load tokens from github...
-        return [];
+        const chainId = req.network.chainId;
+
+        const tokensData = await db
+          .select({
+            symbol: tokens.symbol,
+            name: tokens.name,
+            decimals: tokens.decimals,
+            chainId: tokens.chainId,
+            address: tokens.address,
+            logoUrl: tokens.logoUrl,
+            usdPrice: tokens.usdPrice,
+          })
+          .from(tokens)
+          .where(eq(tokens.chainId, chainId))
+          .execute();
+
+        return tokensData;
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data))),

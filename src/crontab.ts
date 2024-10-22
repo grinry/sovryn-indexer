@@ -1,5 +1,6 @@
 import { CronJob } from 'cron';
 
+import { insertTokensToDatabase } from 'controllers/dex/tokens/tokenService';
 import { updateDexPoolList, updateDexPoolListData } from 'cronjobs/dex/pools';
 import { ammApyBlockTask } from 'cronjobs/legacy/amm/amm-apy-block-task';
 import { ammApyDailyDataTask } from 'cronjobs/legacy/amm/amm-apy-daily-data-task';
@@ -66,6 +67,13 @@ function runOnInit() {
   CronJob.from({
     cronTime: '*/1 * * * *',
     onTick: tickWrapper(retrieveUsdPrices),
+    runOnInit: true,
+  }).start();
+
+  // Insert tokens to database every 5 minutes
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(insertTokensToDatabase),
     runOnInit: true,
   }).start();
 }
