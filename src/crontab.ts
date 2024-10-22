@@ -10,6 +10,7 @@ import { tvlTask } from 'cronjobs/legacy/tvl-task';
 import { retrieveSwaps } from 'cronjobs/retrieve-swaps';
 import { retrieveTokens } from 'cronjobs/retrieve-tokens';
 import { retrieveUsdPrices } from 'cronjobs/retrieve-usd-prices';
+import { insertTokensToDatabase } from 'cronjobs/tokenService';
 import { updateChains } from 'loader/networks';
 import { getLastPrices } from 'loader/price';
 
@@ -55,7 +56,14 @@ export const startCrontab = async () => {
 };
 
 function runOnInit() {
-  // Check and populate supported token list every 2 minutes
+  // Update supported token list from the github repository on startup and every minute
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(insertTokensToDatabase),
+    runOnInit: true,
+  }).start();
+
+  // Update tokens used by DEXs every two minutes
   CronJob.from({
     cronTime: '*/2 * * * *',
     onTick: tickWrapper(retrieveTokens),
@@ -64,7 +72,7 @@ function runOnInit() {
 
   // Retrieve USD prices of tokens every minute
   CronJob.from({
-    cronTime: '*/1 * * * *',
+    cronTime: '*/5 * * * *',
     onTick: tickWrapper(retrieveUsdPrices),
     runOnInit: true,
   }).start();

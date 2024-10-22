@@ -1,4 +1,4 @@
-import { pgTable, timestamp, varchar, integer, unique, serial, char, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, timestamp, varchar, integer, unique, serial, char, boolean, text } from 'drizzle-orm/pg-core';
 
 import { chains } from './chains';
 
@@ -14,11 +14,12 @@ export const tokens = pgTable(
       .references(() => chains.id, { onDelete: 'cascade' }),
     address: char('address', { length: 42 }),
     ignored: boolean('ignored').default(false),
-    tradeableSince: timestamp('swapable_since'),
+    swapableSince: timestamp('swapable_since'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
       .$onUpdate(() => new Date()),
+    logoUrl: text('logo_url'),
   },
   (t) => ({
     chain_address_pkey: unique('chain_address_pkey').on(t.chainId, t.address),
