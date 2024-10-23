@@ -250,7 +250,7 @@ router.get(
       res,
       'sync-status',
       async () => {
-        const sync = await getFlagRow('price-feed-30-2');
+        const sync = await getFlagRow('price-feed-30-4');
         return {
           sync,
         };

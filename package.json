@@ -23,7 +23,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/database/seed.ts",
     "db:reset": "tsx src/database/reset.ts",
-    "debug": "tsx src/loader/debugging/index.ts",
+    "cmd": "tsx src/loader/cmd/index.ts",
     "test": "jest"
   },
   "dependencies": {
