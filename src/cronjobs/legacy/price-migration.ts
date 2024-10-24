@@ -1,25 +1,25 @@
 import { CronJob } from 'cron';
 import dayjs from 'dayjs';
 import { and, eq, lte, sql } from 'drizzle-orm';
-import { ZeroAddress } from 'ethers';
-import gql from 'graphql-tag';
+import { bignumber } from 'mathjs';
 
+import { findEndPrice, loadPoolPrices, PoolWithIndex } from 'cronjobs/helpers/ambient-query';
 import { db } from 'database/client';
 import { tokenRepository } from 'database/repository/token-repository';
 import { usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable } from 'database/schema';
 import { networks } from 'loader/networks';
-import { LegacyChain } from 'loader/networks/legacy-chain';
+import { SdexChain } from 'loader/networks/sdex-chain';
 import { NetworkFeature } from 'loader/networks/types';
 import { CurrentPrice, prepareDataToStore, Price } from 'loader/usd-prices/usd-price-store';
-import { areAddressesEqual } from 'utils/compare';
 import { floorDate } from 'utils/date';
 import { getFlag, setFlag } from 'utils/flag';
 import { logger } from 'utils/logger';
 
 const childLogger = logger.child({ module: 'price-feed-task' });
 
-const BLOCKS = 25;
-const START_BLOCK = 4580025;
+const BLOCKS = 1000;
+const START_BLOCK = 1129000; // first pool was made around this block
+const END_BLOCK = 7890000; // we already have prices from this block
 
 export const priceFeedTask = async (ctx: CronJob) => {
   ctx.stop();
@@ -29,8 +29,8 @@ export const priceFeedTask = async (ctx: CronJob) => {
     const items = networks.listChains();
 
     for (const item of items) {
-      if (item.hasFeature(NetworkFeature.legacy)) {
-        await processLegacyChain(item.legacy);
+      if (item.hasFeature(NetworkFeature.sdex)) {
+        await processChain(item.sdex);
       }
     }
 
@@ -42,10 +42,8 @@ export const priceFeedTask = async (ctx: CronJob) => {
   }
 };
 
-const DLLR = '0xc1411567d2670e24d9c4daaa7cda95686e1250aa';
-
-export const processLegacyChain = async (chain: LegacyChain) => {
-  const key = `price-feed-${chain.context.chainId}-4`;
+export const processChain = async (chain: SdexChain) => {
+  const key = `price-feed-${chain.context.chainId}-5`;
   const currentBlock = await chain.context.rpc.getBlockNumber();
   const savedBlock = await getFlag(key).then((value) => (value ? Number(value) : START_BLOCK));
 
@@ -56,24 +54,34 @@ export const processLegacyChain = async (chain: LegacyChain) => {
     return;
   }
 
+  if (savedBlock >= END_BLOCK) {
+    childLogger.info(`No need to migrate anymore... 1...`);
+    return;
+  }
+
   const tokens = await tokenRepository.listForChain(chain.context.chainId);
-  const stablecoins = await tokenRepository.getStablecoin(chain.context);
+  const stablecoin = await tokenRepository.getStablecoin(chain.context);
 
   const nextBlock = savedBlock + BLOCKS;
-  await searchBlock(chain, nextBlock, currentBlock, tokens, [stablecoins]);
+  await searchBlock(chain, nextBlock, currentBlock, tokens, stablecoin);
 };
 
 const searchBlock = async (
-  chain: LegacyChain,
+  chain: SdexChain,
   blockNumber: number,
   lastBlock: number | undefined,
   tokens: Token[],
-  stablecoins: Token[],
+  stablecoin: Token,
 ) => {
   lastBlock = lastBlock ?? (await chain.context.rpc.getBlockNumber());
 
   if (blockNumber >= lastBlock) {
     childLogger.info({ blockNumber, lastBlock }, 'Up to date. Stop processing.');
+    return;
+  }
+
+  if (blockNumber >= END_BLOCK) {
+    childLogger.info({ lastBlock, blockNumber, END_BLOCK }, `No need to migrate anymore... 2`);
     return;
   }
 
@@ -83,50 +91,42 @@ const searchBlock = async (
     .getBlock(blockNumber)
     .then((block) => floorDate(new Date(block.timestamp * 1000)));
 
-  const items = await chain
-    .queryFromSubgraph<{ tokens: { id: string; lastPriceUsd: string }[] }>(
-      gql`
-    query {
-      tokens(where: { id_in: ["${chain.nativeTokenWrapper}", "${DLLR}"]}, block: { number: ${blockNumber} }) {
-        id
-        lastPriceUsd
-      }
-    }
-  `,
-    )
-    .then((data) => data.tokens);
+  const { pools } = await chain.queryPools(1000);
+  const poolsWithIndexes = pools.map((item) => [item.base, item.quote, item.poolIdx] as PoolWithIndex);
 
-  logger.info({ items, blockNumber }, 'Retrieved prices from subgraph');
+  const goal = chain.context.stablecoinAddress;
+  const items = await loadPoolPrices(poolsWithIndexes, chain, tokens, blockNumber);
 
   if (items.length > 0) {
-    const toAdd: Price[] = items
-      .map((item) => {
-        let token;
+    const toAdd: Price[] = [];
 
-        // if token is native token wrapper, assign data to native token
-        if (areAddressesEqual(item.id, chain.nativeTokenWrapper)) {
-          token = tokens.find((token) => areAddressesEqual(token.address, ZeroAddress));
-        }
-        // if token is DLLR, assign data to ZUSD
-        else if (areAddressesEqual(item.id, DLLR) && blockNumber >= 421131) {
-          // 421131 ZUSD deployed on this block
-          token = tokens.find((token) => areAddressesEqual(token.address, chain.config.zusdToken));
-        }
-
-        if (!token) {
-          return null;
-        }
-
-        return {
-          id: token.id,
-          chainId: token.chainId,
-          address: token.address,
-          decimals: token.decimals,
-          value: item.lastPriceUsd,
+    for (const token of tokens) {
+      if (token.id === stablecoin.id) {
+        toAdd.push({
+          ...token,
+          value: '1',
           date,
-        } satisfies Price;
-      })
-      .filter((item) => Boolean(item));
+        });
+        continue;
+      }
+
+      try {
+        const price = findEndPrice(token.address, goal, pools, poolsWithIndexes, items);
+
+        // invalid price, skip
+        if (bignumber(price).eq(0)) {
+          continue;
+        }
+
+        toAdd.push({
+          ...token,
+          value: price,
+          date,
+        });
+      } catch (error) {
+        logger.error(error, 'Error while preparing Sdex token' + token.id);
+      }
+    }
 
     await Promise.allSettled([
       storeLastPrices(toAdd, date),
@@ -140,13 +140,13 @@ const searchBlock = async (
       });
     });
 
-    await setFlag(`price-feed-${chain.context.chainId}-4`, blockNumber.toString());
+    await setFlag(`price-feed-${chain.context.chainId}-5`, blockNumber.toString());
   } else {
-    childLogger.info({ blockNumber }, 'No prices to add for legacy chain');
-    await setFlag(`price-feed-${chain.context.chainId}-4`, blockNumber.toString());
+    childLogger.info({ blockNumber }, 'No prices to add for sdex chain');
+    await setFlag(`price-feed-${chain.context.chainId}-5`, blockNumber.toString());
   }
 
-  await searchBlock(chain, blockNumber + BLOCKS, lastBlock, tokens, stablecoins);
+  await searchBlock(chain, blockNumber + BLOCKS, lastBlock, tokens, stablecoin);
 };
 
 type Token = {

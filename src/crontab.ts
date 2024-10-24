@@ -52,7 +52,7 @@ export const startCrontab = async () => {
     },
   });
 
-  // tempJobs();
+  tempJobs();
 };
 
 function runOnInit() {

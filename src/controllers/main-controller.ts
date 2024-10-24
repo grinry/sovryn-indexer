@@ -18,7 +18,6 @@ import { prepareTickers } from 'loader/tickers-loader';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
 import { NotFoundError } from 'utils/custom-error';
-import { ceilDate } from 'utils/date';
 import { getFlagRow } from 'utils/flag';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { logger } from 'utils/logger';
@@ -250,7 +249,7 @@ router.get(
       res,
       'sync-status',
       async () => {
-        const sync = await getFlagRow('price-feed-30-4');
+        const sync = await getFlagRow('price-feed-60808-5');
         return {
           sync,
         };

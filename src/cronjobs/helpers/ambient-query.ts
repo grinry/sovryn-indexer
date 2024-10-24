@@ -1,3 +1,5 @@
+import { BlockTag } from 'ethers';
+
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { bfsShortestPath, constructGraph } from 'utils/bfs';
 import { logger } from 'utils/logger';
@@ -16,10 +18,11 @@ export function groupItemsInPairs<T>(items: T[]): T[][] {
   return groupedItems;
 }
 
-export function loadPoolPrices(
+export async function loadPoolPrices(
   pools: PoolWithIndex[],
   chain: SdexChain,
   tokensToQuery: { id: number; address: string; decimals: number }[],
+  blockTag?: BlockTag,
 ) {
   // todo: implement multicall
   return Promise.all(
@@ -34,7 +37,19 @@ export function loadPoolPrices(
         const [base, quote] = path[0] < path[1] ? [path[0], path[1]] : [path[1], path[0]];
         const baseDecimals = tokensToQuery.find((item) => item.address === base)!.decimals;
         const quoteDecimals = tokensToQuery.find((item) => item.address === quote)!.decimals;
-        const price = await chain.query.queryPrice(base, quote, path[2]);
+        const price = await chain.query.queryPrice(base, quote, path[2], { blockTag }).catch(() => BigInt(-1));
+
+        if (price === BigInt(-1)) {
+          return {
+            base,
+            quote,
+            index: path[2],
+            spotPrice: BigInt(-1),
+            displayPrice: 0,
+            displayPriceInBase: 0,
+          };
+        }
+
         return {
           base,
           quote,
@@ -44,7 +59,7 @@ export function loadPoolPrices(
           displayPriceInBase: toDisplayPrice(decodeCrocPrice(price), baseDecimals, quoteDecimals, false),
         };
       }),
-  );
+  ).then((items) => items.filter((item) => item.spotPrice !== BigInt(-1)));
 }
 
 export function findPrice(
@@ -88,7 +103,13 @@ export function findEndPrice(
     price = price * findPrice(base, quote, index, prices);
   }
 
-  return Number(price).toLocaleString('fullwide', { useGrouping: false, minimumFractionDigits: 18 });
+  const value = Number(price);
+
+  if (isNaN(value) || !isFinite(value) || value < 0) {
+    return '0';
+  }
+
+  return Number(value).toLocaleString('fullwide', { useGrouping: false, minimumFractionDigits: 18 });
 }
 
 const findPair = (pools: PoolWithIndex[], base: string, quote: string) => {
