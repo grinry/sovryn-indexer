@@ -18,6 +18,7 @@ import { prepareTickers } from 'loader/tickers-loader';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
 import { NotFoundError } from 'utils/custom-error';
+import { toNearestCeilDate, toNearestDate } from 'utils/date';
 import { getFlagRow } from 'utils/flag';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { logger } from 'utils/logger';
@@ -27,7 +28,6 @@ import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
 
 import { Timeframe, TIMEFRAME_ROUNDING, TIMEFRAMES } from './main-controller.constants';
-import { ceilDate, floorDate } from 'utils/date';
 
 const router = Router();
 
@@ -206,8 +206,8 @@ router.get(
       req.query,
     );
 
-    const start = ceilDate(dayjs.unix(startTimestamp).toDate(), TIMEFRAME_ROUNDING[timeframe]);
-    const end = floorDate(dayjs.unix(endTimestamp).toDate(), TIMEFRAME_ROUNDING[timeframe]);
+    const start = toNearestCeilDate(dayjs.unix(startTimestamp).toDate(), TIMEFRAME_ROUNDING[timeframe]);
+    const end = toNearestDate(dayjs.unix(endTimestamp).toDate(), TIMEFRAME_ROUNDING[timeframe]);
 
     try {
       const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe);

@@ -8,8 +8,8 @@ import { Timeframe, TIMEFRAME_ROUNDING } from 'controllers/main-controller.const
 import { db } from 'database/client';
 import { tokens, usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable, UsdPricesTables } from 'database/schema';
 import { maybeCache } from 'utils/cache';
-import { NotFoundError, ValidationError } from 'utils/custom-error';
-import { ceilDate, floorDate } from 'utils/date';
+import { ValidationError } from 'utils/custom-error';
+import { toNearestDate } from 'utils/date';
 import { logger } from 'utils/logger';
 import { prettyNumber } from 'utils/numbers';
 
@@ -103,6 +103,11 @@ export const getPrices = async (
 
   let start = dayjs(tokenData.start).startOf(unit);
   const end = dayjs(endTimestamp).startOf(unit).unix();
+
+  logger.info(
+    { s: startTimestamp.toISOString(), start: start.toISOString(), end: dayjs(endTimestamp).toISOString() },
+    'Building chart',
+  );
 
   const items: PriceItem[] = [];
 
@@ -228,7 +233,7 @@ const queryTokenPricesInRange = async (
 
   // sort from newest to oldest, so we can search for the nearest price faster
   const result = items
-    .map((item) => ({ ...item, tickAt: floorDate(item.tickAt, TIMEFRAME_ROUNDING[timeframe]) }))
+    .map((item) => ({ ...item, tickAt: toNearestDate(item.tickAt, TIMEFRAME_ROUNDING[timeframe]) }))
     .sort((a, b) => dayjs(b.tickAt).unix() - dayjs(a.tickAt).unix());
 
   const base = result.filter((item) => item.tokenId === tokenId);

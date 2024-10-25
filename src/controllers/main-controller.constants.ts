@@ -1,3 +1,5 @@
+import { NearestType } from 'utils/date';
+
 export const TIMEFRAMES = {
   '1m': 1,
   '5m': 5,
@@ -15,17 +17,17 @@ export const TIMEFRAMES = {
 
 export type Timeframe = keyof typeof TIMEFRAMES;
 
-export const TIMEFRAME_ROUNDING = {
-  '1m': 1,
-  '5m': 1,
-  '10m': 1,
-  '15m': 1,
-  '30m': 1,
-  '1h': 60,
-  '4h': 60,
-  '12h': 60,
-  '1d': 86400,
-  '3d': 86400,
-  '1w': 86400,
-  '30d': 86400,
+export const TIMEFRAME_ROUNDING: Record<Timeframe, NearestType> = {
+  '1m': 'minute',
+  '5m': 'minute',
+  '10m': 'minute',
+  '15m': 'minute',
+  '30m': 'minute',
+  '1h': 'hour',
+  '4h': 'hour',
+  '12h': 'hour',
+  '1d': 'day',
+  '3d': 'day',
+  '1w': 'day',
+  '30d': 'day',
 };
