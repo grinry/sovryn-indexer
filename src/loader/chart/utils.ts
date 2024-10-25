@@ -1,7 +1,7 @@
 import dayjs, { Dayjs, ManipulateType } from 'dayjs';
 import { and, eq, between, lte, desc, or, inArray } from 'drizzle-orm';
 import _ from 'lodash';
-import { bignumber, max, min } from 'mathjs';
+import { BigNumber, bignumber, max, min } from 'mathjs';
 
 import { LONG_CACHE_TTL } from 'config/constants';
 import { Timeframe } from 'controllers/main-controller.constants';
@@ -17,7 +17,7 @@ import { Interval } from './types';
 export const constructCandlesticks = async (intervals: Interval[], timeframe: number) => {
   const groups = groupIntervals(intervals, timeframe);
 
-  return groups
+  const candles = groups
     .filter((group) => group.length > 0)
     .map((item) => {
       const startTime = item[item.length - 1].date;
@@ -27,9 +27,9 @@ export const constructCandlesticks = async (intervals: Interval[], timeframe: nu
       const close = item[0].value;
 
       const values = item.reduce((acc, curValue) => {
-        acc.push(curValue.value, curValue.low, curValue.high);
+        acc.push(...[curValue.value, curValue.low, curValue.high].map((value) => bignumber(value)));
         return acc;
-      }, []);
+      }, [] as BigNumber[]);
 
       return {
         date: dayjs(endTime).unix(),
@@ -42,6 +42,20 @@ export const constructCandlesticks = async (intervals: Interval[], timeframe: nu
       };
     })
     .sort((a, b) => dayjs(b.start).unix() - dayjs(a.start).unix());
+
+  // make sure that open is same as previous close
+  return candles.map((item, index) => {
+    // previous is actually next in the array because we are iterating from newest to oldest
+    if (index === candles.length - 1) {
+      // last item, nothing to do
+      return item;
+    }
+
+    const previous = candles[index + 1];
+    const values = [item.open, item.close, item.high, item.low, previous.close].map((value) => bignumber(value));
+
+    return { ...item, open: previous.close, high: prettyNumber(max(...values)) };
+  });
 };
 
 type PriceItem = {
@@ -176,7 +190,7 @@ const getTokenStartPrice = async (
   tokenId: number,
   beforeTimestamp: Date,
   timeframe: Timeframe,
-): Promise<PriceData[]> => {
+): Promise<PriceData | null> => {
   const table = tableByTimeframe(timeframe);
   return db
     .select({ tokenId: table.tokenId, tickAt: table.tickAt, value: table.value, low: table.low, high: table.high })
@@ -184,14 +198,14 @@ const getTokenStartPrice = async (
     .where(and(eq(table.tokenId, tokenId), lte(table.tickAt, beforeTimestamp)))
     .orderBy(desc(table.tickAt))
     .limit(1)
-    .then((data) => (data.length ? { ...data, tickAt: beforeTimestamp } : []));
+    .then((data) => (data.length ? { ...data[0], tickAt: beforeTimestamp } : null));
 };
 
 const validateStartPrice = async (items: PriceData[], tokenId: number, startTimestamp: Date, timeframe: Timeframe) => {
   if (items.find((item) => item.tokenId === tokenId && dayjs(item.tickAt).isSame(startTimestamp)) === undefined) {
     const startData = await getTokenStartPrice(tokenId, startTimestamp, timeframe);
-    if (startData.length) {
-      items.unshift(...startData);
+    if (startData) {
+      items.unshift(startData);
     }
   }
 };
@@ -206,6 +220,7 @@ const queryTokenPricesInRange = async (
   const items = await queryPrices(tokenId, quoteId, startTimestamp, endTimestamp, timeframe);
   await validateStartPrice(items, tokenId, startTimestamp, timeframe);
   await validateStartPrice(items, quoteId, startTimestamp, timeframe);
+
   // sort from newest to oldest, so we can search for the nearest price faster
   const result = items.sort((a, b) => dayjs(b.tickAt).unix() - dayjs(a.tickAt).unix());
 

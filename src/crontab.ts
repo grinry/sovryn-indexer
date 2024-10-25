@@ -5,7 +5,6 @@ import { ammApyBlockTask } from 'cronjobs/legacy/amm/amm-apy-block-task';
 import { ammApyDailyDataTask } from 'cronjobs/legacy/amm/amm-apy-daily-data-task';
 import { ammCleanUpTask } from 'cronjobs/legacy/amm/amm-cleanup-task';
 import { ammPoolsTask } from 'cronjobs/legacy/amm/amm-pools-task';
-import { priceFeedTask } from 'cronjobs/legacy/price-migration';
 import { tvlTask } from 'cronjobs/legacy/tvl-task';
 import { retrieveSwaps } from 'cronjobs/retrieve-swaps';
 import { retrieveTokens } from 'cronjobs/retrieve-tokens';
@@ -124,9 +123,9 @@ function dexJobs() {
 }
 
 function tempJobs() {
-  CronJob.from({
-    cronTime: '*/5 * * * *',
-    onTick: tickWrapper(priceFeedTask),
-    runOnInit: true,
-  }).start();
+  // CronJob.from({
+  //   cronTime: '*/5 * * * *',
+  //   onTick: tickWrapper(priceFeedTask),
+  //   runOnInit: true,
+  // }).start();
 }
