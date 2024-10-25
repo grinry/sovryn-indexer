@@ -26,7 +26,8 @@ import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/paginat
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
 
-import { Timeframe, TIMEFRAMES } from './main-controller.constants';
+import { Timeframe, TIMEFRAME_ROUNDING, TIMEFRAMES } from './main-controller.constants';
+import { ceilDate, floorDate } from 'utils/date';
 
 const router = Router();
 
@@ -205,8 +206,8 @@ router.get(
       req.query,
     );
 
-    const start = dayjs.unix(startTimestamp).toDate();
-    const end = dayjs.unix(endTimestamp).toDate();
+    const start = ceilDate(dayjs.unix(startTimestamp).toDate(), TIMEFRAME_ROUNDING[timeframe]);
+    const end = floorDate(dayjs.unix(endTimestamp).toDate(), TIMEFRAME_ROUNDING[timeframe]);
 
     try {
       const intervals = await getPrices(chainId, baseTokenAddress, quoteTokenAddress, start, end, timeframe);

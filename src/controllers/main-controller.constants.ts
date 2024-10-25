@@ -14,3 +14,18 @@ export const TIMEFRAMES = {
 };
 
 export type Timeframe = keyof typeof TIMEFRAMES;
+
+export const TIMEFRAME_ROUNDING = {
+  '1m': 1,
+  '5m': 1,
+  '10m': 1,
+  '15m': 1,
+  '30m': 1,
+  '1h': 60,
+  '4h': 60,
+  '12h': 60,
+  '1d': 86400,
+  '3d': 86400,
+  '1w': 86400,
+  '30d': 86400,
+};

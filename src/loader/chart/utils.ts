@@ -4,11 +4,12 @@ import _ from 'lodash';
 import { BigNumber, bignumber, max, min } from 'mathjs';
 
 import { LONG_CACHE_TTL } from 'config/constants';
-import { Timeframe } from 'controllers/main-controller.constants';
+import { Timeframe, TIMEFRAME_ROUNDING } from 'controllers/main-controller.constants';
 import { db } from 'database/client';
 import { tokens, usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable, UsdPricesTables } from 'database/schema';
 import { maybeCache } from 'utils/cache';
 import { NotFoundError, ValidationError } from 'utils/custom-error';
+import { ceilDate, floorDate } from 'utils/date';
 import { logger } from 'utils/logger';
 import { prettyNumber } from 'utils/numbers';
 
@@ -106,13 +107,17 @@ export const getPrices = async (
   const items: PriceItem[] = [];
 
   while (start.unix() <= end) {
-    const { value, low, high } = findNearestPrice(start, baseTokenData, quoteTokenData);
-    items.push({
-      date: start,
-      value,
-      low,
-      high,
-    });
+    try {
+      const { value, low, high } = findNearestPrice(start, baseTokenData, quoteTokenData);
+      items.push({
+        date: start,
+        value,
+        low,
+        high,
+      });
+    } catch (e) {
+      logger.error({ e: e.message }, 'Error while building chart candle.');
+    }
     start = start.clone().add(1, unit);
   }
 
@@ -222,7 +227,9 @@ const queryTokenPricesInRange = async (
   await validateStartPrice(items, quoteId, startTimestamp, timeframe);
 
   // sort from newest to oldest, so we can search for the nearest price faster
-  const result = items.sort((a, b) => dayjs(b.tickAt).unix() - dayjs(a.tickAt).unix());
+  const result = items
+    .map((item) => ({ ...item, tickAt: floorDate(item.tickAt, TIMEFRAME_ROUNDING[timeframe]) }))
+    .sort((a, b) => dayjs(b.tickAt).unix() - dayjs(a.tickAt).unix());
 
   const base = result.filter((item) => item.tokenId === tokenId);
   const quote = result.filter((item) => item.tokenId === quoteId);
