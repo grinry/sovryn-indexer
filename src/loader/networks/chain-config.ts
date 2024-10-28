@@ -62,7 +62,8 @@ export class Chain {
 
   toJSON() {
     return {
-      chainId: this.chainId,
+      name: this.name,
+      chain_id: this.chainId,
       features: this.features,
     };
   }

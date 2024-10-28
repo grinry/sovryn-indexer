@@ -15,6 +15,8 @@ import { areAddressesEqual } from 'utils/compare';
 import { logger } from 'utils/logger';
 import { prettyNumber } from 'utils/numbers';
 
+import { markTokensAsSwapable } from './utils';
+
 const childLogger = logger.child({ module: 'crontab:dex:pools:bancor' });
 
 export const retrieveBancorPoolList = async (chain: LegacyChain) => {
@@ -55,6 +57,10 @@ export const retrieveBancorPoolList = async (chain: LegacyChain) => {
   const inserted = await poolsRepository.insertPools(pools);
 
   childLogger.info(`Inserted ${inserted.length} new pools for chain ${chain.context.chainId}`);
+
+  if (inserted.length) {
+    await markTokensAsSwapable(inserted);
+  }
 };
 
 export const updateBancorPool = async (pool: PoolExtended) => {
@@ -105,6 +111,9 @@ export const updateBancorPool = async (pool: PoolExtended) => {
       processedAt: new Date(),
     })
     .where(eq(poolsTable.id, pool.id));
+
+  // todo: remove this once confirmed that tokens are updated correctly on pool creation step.
+  await markTokensAsSwapable([pool]);
 };
 
 type GetNewPoolsResult = {

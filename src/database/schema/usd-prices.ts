@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import { pgTable, timestamp, varchar, integer, unique, serial } from 'drizzle-orm/pg-core';
 
 import { tokens } from './tokens';
@@ -30,6 +31,10 @@ export const usdPricesTable = pgTable(
   }),
 );
 
+export const usdPricesTableRelations = relations(usdPricesTable, ({ one }) => ({
+  token: one(tokens, { fields: [usdPricesTable.tokenId], references: [tokens.id] }),
+}));
+
 export type UsdPrice = typeof usdPricesTable.$inferSelect;
 export type NewUsdPrice = typeof usdPricesTable.$inferInsert;
 
@@ -55,6 +60,10 @@ export const usdHourlyPricesTable = pgTable(
   }),
 );
 
+export const usdHourlyPricesTableRelations = relations(usdHourlyPricesTable, ({ one }) => ({
+  token: one(tokens, { fields: [usdHourlyPricesTable.tokenId], references: [tokens.id] }),
+}));
+
 export type UsdHourlyPrice = typeof usdHourlyPricesTable.$inferSelect;
 export type NewHourlyUsdPrice = typeof usdHourlyPricesTable.$inferInsert;
 
@@ -79,6 +88,10 @@ export const usdDailyPricesTable = pgTable(
     prices_usd_daily_comb: unique('prices_usd_daily_comb').on(t.tokenId, t.tickAt),
   }),
 );
+
+export const usdDailyPricesTableRelations = relations(usdDailyPricesTable, ({ one }) => ({
+  token: one(tokens, { fields: [usdDailyPricesTable.tokenId], references: [tokens.id] }),
+}));
 
 export type UsdDailyPrice = typeof usdDailyPricesTable.$inferSelect;
 export type NewUsdDailyPrice = typeof usdDailyPricesTable.$inferInsert;

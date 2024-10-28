@@ -1,6 +1,8 @@
+import { relations } from 'drizzle-orm';
 import { pgTable, timestamp, varchar, integer, unique, serial, char, boolean, text } from 'drizzle-orm/pg-core';
 
 import { chains } from './chains';
+import { usdDailyPricesTable, usdHourlyPricesTable, usdPricesTable } from './usd-prices';
 
 export const tokens = pgTable(
   'tokens',
@@ -28,3 +30,10 @@ export const tokens = pgTable(
 
 export type Token = typeof tokens.$inferSelect;
 export type NewToken = typeof tokens.$inferInsert;
+
+export const tokensRelations = relations(tokens, ({ one, many }) => ({
+  chain: one(chains, { fields: [tokens.chainId], references: [chains.id] }),
+  usdDailyPrices: many(usdDailyPricesTable),
+  usdHourlyPrices: many(usdHourlyPricesTable),
+  usdPrices: many(usdPricesTable),
+}));

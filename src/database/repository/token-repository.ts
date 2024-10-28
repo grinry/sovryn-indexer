@@ -1,8 +1,9 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { ZeroAddress } from 'ethers';
 
 import { db } from 'database/client';
-import { tokens } from 'database/schema';
+import { lower } from 'database/helpers';
+import { tokens, usdDailyPricesTable } from 'database/schema';
 import { Chain } from 'loader/networks/chain-config';
 
 export const tokenRepository = {
@@ -42,4 +43,18 @@ export const tokenRepository = {
     db.query.tokens.findFirst({
       where: and(eq(tokens.chainId, chainId), eq(sql`lower(${tokens.symbol})`, symbol.toLowerCase())),
     }),
+  getByAddress(chainId: number, address: string) {
+    return db.query.tokens.findFirst({
+      where: and(eq(tokens.chainId, chainId), eq(lower(tokens.address), address.toLowerCase())),
+      with: {
+        usdDailyPrices: {
+          columns: {
+            value: true,
+          },
+          limit: 1,
+          orderBy: desc(usdDailyPricesTable.tickAt),
+        },
+      },
+    });
+  },
 };
