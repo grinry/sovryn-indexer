@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { and, eq, gte, sql, sum } from 'drizzle-orm';
+import { and, eq, gte, inArray, sql, sum } from 'drizzle-orm';
 import _ from 'lodash';
 import { bignumber } from 'mathjs';
 
@@ -8,7 +8,7 @@ import { db } from 'database/client';
 import { lower } from 'database/helpers';
 import { PoolExtended, poolsRepository } from 'database/repository/pools-repository';
 import { tokenRepository } from 'database/repository/token-repository';
-import { NewPool, Pool, poolsTable, PoolType, swapsTable } from 'database/schema';
+import { NewPool, Pool, poolsTable, PoolType, swapsTable, tokens } from 'database/schema';
 import { networks } from 'loader/networks';
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { getPoolStats } from 'loader/tickers-loader';
@@ -16,6 +16,8 @@ import { areAddressesEqual } from 'utils/compare';
 import { logger } from 'utils/logger';
 import { prettyNumber } from 'utils/numbers';
 import { toDisplayPrice } from 'utils/price';
+
+import { markTokensAsSwapable } from './utils';
 
 // todo: think about pagination...
 const POOL_LIMIT = 250;
@@ -58,7 +60,7 @@ export const retrieveAmbientPoolList = async (chain: SdexChain) => {
   childLogger.info(`Inserted ${inserted.length} new pools for chain ${chain.context.chainId}`);
 
   if (inserted.length) {
-    await Promise.allSettled(inserted.map(updateAmbientLpToken(chain)));
+    await Promise.allSettled([...inserted.map(updateAmbientLpToken(chain)), markTokensAsSwapable(inserted)]);
   }
 };
 
@@ -97,6 +99,10 @@ export const updateAmbientPool = async (pool: PoolExtended) => {
       processedAt: new Date(),
     })
     .where(eq(poolsTable.id, pool.id));
+
+  // temporary solution to mark tokens as swapable after pool update
+  // todo: remove after first run, because it was supposed to be run only once when pool is first created
+  await markTokensAsSwapable([pool]);
 };
 
 // build query to get volume of the pool for the last 24 hours

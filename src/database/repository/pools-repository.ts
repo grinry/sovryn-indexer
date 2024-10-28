@@ -1,9 +1,9 @@
 import dayjs from 'dayjs';
-import { and, asc, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, lt, or, sql } from 'drizzle-orm';
 
 import { db } from 'database/client';
 import { lower } from 'database/helpers';
-import { Token } from 'database/schema';
+import { Token, tokens, usdDailyPricesTable } from 'database/schema';
 import { NewPool, Pool, poolsTable } from 'database/schema/pools';
 
 const TEN_MINUTES = 10 * 60 * 1000;
@@ -79,5 +79,49 @@ export const poolsRepository = {
       },
       where: or(isNull(poolsTable.processedAt), lt(poolsTable.processedAt, dayjs().subtract(TEN_MINUTES).toDate())),
       orderBy: asc(poolsTable.processedAt), // process oldest first
+    }),
+
+  listForChainAsTickers: (chainId: number) =>
+    db.query.poolsTable.findMany({
+      columns: {
+        identifier: true,
+        price: true,
+        baseLiquidity: true,
+        quoteLiquidity: true,
+        dailyBaseVolume: true,
+        dailyQuoteVolume: true,
+      },
+      with: {
+        base: {
+          columns: {
+            address: true,
+          },
+          with: {
+            usdDailyPrices: {
+              columns: {
+                value: true,
+              },
+              limit: 1,
+              orderBy: desc(usdDailyPricesTable.tickAt),
+            },
+          },
+        },
+        quote: {
+          columns: {
+            address: true,
+          },
+          with: {
+            usdDailyPrices: {
+              columns: {
+                value: true,
+              },
+              limit: 1,
+              orderBy: desc(usdDailyPricesTable.tickAt),
+            },
+          },
+        },
+      },
+      where: eq(poolsTable.chainId, chainId),
+      orderBy: asc(poolsTable.id),
     }),
 };
