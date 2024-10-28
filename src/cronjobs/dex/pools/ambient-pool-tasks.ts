@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { and, eq, gte, inArray, sql, sum } from 'drizzle-orm';
+import { and, eq, gte, sql, sum } from 'drizzle-orm';
 import _ from 'lodash';
 import { bignumber } from 'mathjs';
 
@@ -8,16 +8,15 @@ import { db } from 'database/client';
 import { lower } from 'database/helpers';
 import { PoolExtended, poolsRepository } from 'database/repository/pools-repository';
 import { tokenRepository } from 'database/repository/token-repository';
-import { NewPool, Pool, poolsTable, PoolType, swapsTable, tokens } from 'database/schema';
+import { NewPool, Pool, poolsTable, PoolType, swapsTable } from 'database/schema';
 import { networks } from 'loader/networks';
 import { SdexChain } from 'loader/networks/sdex-chain';
-import { getPoolStats } from 'loader/tickers-loader';
 import { areAddressesEqual } from 'utils/compare';
 import { logger } from 'utils/logger';
 import { prettyNumber } from 'utils/numbers';
 import { toDisplayPrice } from 'utils/price';
 
-import { markTokensAsSwapable } from './utils';
+import { getPoolStats, markTokensAsSwapable } from './utils';
 
 // todo: think about pagination...
 const POOL_LIMIT = 250;

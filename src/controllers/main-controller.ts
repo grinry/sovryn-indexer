@@ -6,7 +6,7 @@ import Joi from 'joi';
 import _ from 'lodash';
 import { bignumber } from 'mathjs';
 
-import { DEFAULT_CACHE_TTL, TINY_CACHE_TTL } from 'config/constants';
+import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
 import { lower } from 'database/helpers';
 import { tokens } from 'database/schema';
@@ -14,12 +14,10 @@ import { chains } from 'database/schema/chains';
 import { constructCandlesticks, getPrices } from 'loader/chart/utils';
 import { networks } from 'loader/networks';
 import { getLastPrices } from 'loader/price';
-import { prepareTickers } from 'loader/tickers-loader';
 import { validateChainId } from 'middleware/network-middleware';
 import { maybeCacheResponse } from 'utils/cache';
 import { NotFoundError } from 'utils/custom-error';
 import { toNearestCeilDate, toNearestDate } from 'utils/date';
-import { getFlagRow } from 'utils/flag';
 import { toPaginatedResponse, toResponse } from 'utils/http-response';
 import { logger } from 'utils/logger';
 import { prettyNumber } from 'utils/numbers';
@@ -223,41 +221,7 @@ router.get(
   }),
 );
 
-// todo: some chains needs to do http or rpc calls to get data, so it would be better to run this in the background and save the data in the db
-//       which then can be queried here
-router.get(
-  '/tickers',
-  asyncRoute(async (req, res) => {
-    const chainId = validateChainId(req, true);
-    return maybeCacheResponse(
-      res,
-      `tickers/${chainId}`,
-      async () => prepareTickers(networks.listChains()),
-      DEFAULT_CACHE_TTL,
-    ).then((data) => res.json(data));
-  }),
-);
-
 router.get('/', (req, res) => res.json({ status: 'ok' }));
 router.get('/status', (req, res) => res.json({ status: 'ok' }));
-
-// temp solution to monitor status of price feed migration without going to the db
-// cached for 10 seconds
-router.get(
-  '/sync-status',
-  asyncRoute(async (req: Request, res: Response) => {
-    return maybeCacheResponse(
-      res,
-      'sync-status',
-      async () => {
-        const sync = await getFlagRow('price-feed-60808-5');
-        return {
-          sync,
-        };
-      },
-      TINY_CACHE_TTL,
-    ).then((data) => res.json(data));
-  }),
-);
 
 export default router;
