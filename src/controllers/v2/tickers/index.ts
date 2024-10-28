@@ -20,8 +20,8 @@ router.get(
         const pools = await poolsRepository.listForChainAsTickers(req.network.chainId);
 
         return pools.map((pool) => {
-          const baseUsd = bignumber(pool.baseLiquidity).mul(pool.base.usdDailyPrices?.[0].value || 0);
-          const quoteUsd = bignumber(pool.quoteLiquidity).mul(pool.quote.usdDailyPrices?.[0].value || 0);
+          const baseUsd = bignumber(pool.baseLiquidity).mul(pool.base?.usdDailyPrices?.[0]?.value ?? 0);
+          const quoteUsd = bignumber(pool.quoteLiquidity).mul(pool.quote?.usdDailyPrices?.[0]?.value ?? 0);
 
           return {
             ticker_id: `${pool.base.address}_${pool.quote.address}`,
