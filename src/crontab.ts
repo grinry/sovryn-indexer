@@ -7,6 +7,7 @@ import { ammCleanUpTask } from 'cronjobs/legacy/amm/amm-cleanup-task';
 import { ammPoolsTask } from 'cronjobs/legacy/amm/amm-pools-task';
 import { tvlTask } from 'cronjobs/legacy/tvl-task';
 import { retrieveSwaps } from 'cronjobs/retrieve-swaps';
+import { retrieveSwapsV2 } from 'cronjobs/retrieve-swaps-v2';
 import { retrieveTokens } from 'cronjobs/retrieve-tokens';
 import { retrieveUsdPrices } from 'cronjobs/retrieve-usd-prices';
 import { insertTokensToDatabase } from 'cronjobs/tokenService';
@@ -27,13 +28,19 @@ export const startCrontab = async () => {
 
   dexJobs();
 
+  // Stores Swaps V2 every minute
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(retrieveSwapsV2),
+  }).start();
+
   // Stores Swaps every minute
   CronJob.from({
     cronTime: '*/1 * * * *',
     onTick: tickWrapper(retrieveSwaps),
   }).start();
 
-  // // LEGACY JOBS
+  // LEGACY JOBS
   ammApyJobs();
   graphWrapperJobs();
 

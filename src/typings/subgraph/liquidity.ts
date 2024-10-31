@@ -78,6 +78,15 @@ export type Swap = {
   minOut: string;
   baseFlow: string;
   quoteFlow: string;
+  dex: string;
+  // Optional fields to support the extended swap data
+  extraData?: string;
+  amountIn?: string;
+  amountOut?: string;
+  amountInUSD?: string;
+  amountOutUSD?: string;
+  fees?: string;
+  feesUSD?: string;
 };
 export type SwapsResponse = {
   swaps: Swap[];

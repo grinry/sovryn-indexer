@@ -4,6 +4,7 @@ query ($minTime: BigInt, $maxTime: BigInt) {
     transactionHash
     callIndex
     user
+    dex
     pool {
       base
       quote
