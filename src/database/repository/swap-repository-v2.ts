@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { eq, and, sql, gte, desc } from 'drizzle-orm';
+import { eq, and, gte, desc } from 'drizzle-orm';
 
 import { db } from 'database/client';
 
@@ -13,18 +13,17 @@ export const swapRepositoryV2 = {
   loadAll: (chainId?: number) =>
     db
       .select({
-        baseId: swapsTableV2.baseId,
-        quoteId: swapsTableV2.quoteId,
         chainId: swapsTableV2.chainId,
         transactionHash: swapsTableV2.transactionHash,
+        baseAmount: swapsTableV2.baseAmount,
+        quoteAmount: swapsTableV2.quoteAmount,
+        fees: swapsTableV2.fees,
+        callIndex: swapsTableV2.callIndex,
+        baseId: swapsTableV2.baseId,
+        quoteId: swapsTableV2.quoteId,
         user: swapsTableV2.user,
-        tickAt: swapsTableV2.tickAt,
         block: swapsTableV2.block,
-        isBuy: swapsTableV2.isBuy,
-        amountIn: swapsTableV2.amountIn,
-        amountOut: swapsTableV2.amountOut,
-        baseFlow: swapsTableV2.baseFlow,
-        quoteFlow: swapsTableV2.quoteFlow,
+        tickAt: swapsTableV2.tickAt,
       })
       .from(swapsTableV2)
       .where(and(chainId ? eq(swapsTableV2.chainId, chainId) : undefined)),

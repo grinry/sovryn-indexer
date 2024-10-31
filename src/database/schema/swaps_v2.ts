@@ -1,7 +1,10 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, serial, varchar, integer, timestamp, boolean, unique, jsonb, numeric } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, integer, timestamp, unique, jsonb, char } from 'drizzle-orm/pg-core';
+
+import { SwapExtra } from 'typings/subgraph/liquidity';
 
 import { chains } from './chains';
+import { poolsTable } from './pools';
 import { tokens } from './tokens';
 
 export const swapsTableV2 = pgTable(
@@ -11,33 +14,30 @@ export const swapsTableV2 = pgTable(
     chainId: integer('chain_id')
       .notNull()
       .references(() => chains.id, { onDelete: 'cascade' }),
-    transactionHash: varchar('transaction_hash', { length: 256 }).notNull(),
-    user: varchar('user', { length: 256 }).notNull(),
-    baseId: varchar('base_id', { length: 256 }).notNull(),
-    quoteId: varchar('quote_id', { length: 256 }).notNull(),
-    poolId: integer('pool_id').notNull(),
-    dexType: varchar('dex_type', { length: 256 }).notNull(),
-    poolIdx: varchar('pool_idx', { length: 256 }).notNull(),
-    block: integer('block').notNull(),
-    isBuy: boolean('is_buy').notNull(),
-    amountIn: numeric('amount_in', { precision: 38, scale: 18 }).default('0'),
-    amountOut: numeric('amount_out', { precision: 38, scale: 18 }).default('0'),
-    amountInUSD: numeric('amount_in_usd', { precision: 38, scale: 18 }).default('0'),
-    amountOutUSD: numeric('amount_out_usd', { precision: 38, scale: 18 }).default('0'),
+    transactionHash: char('transaction_hash', { length: 66 }).notNull(),
+    baseAmount: varchar('base_amount', { length: 256 }).notNull().default('0'),
+    quoteAmount: varchar('quote_amount', { length: 256 }).notNull().default('0'),
     fees: varchar('fees', { length: 256 }).default('0'),
-    feesUSD: numeric('fees_usd', { precision: 38, scale: 18 }).default('0'),
-    baseFlow: varchar('base_flow', { length: 256 }).notNull(),
-    quoteFlow: varchar('quote_flow', { length: 256 }).notNull(),
     callIndex: integer('call_index').notNull(),
+    user: char('user', { length: 42 }).notNull(),
+    baseId: integer('base_id')
+      .notNull()
+      .references(() => tokens.id, { onDelete: 'cascade' }),
+    quoteId: integer('quote_id')
+      .notNull()
+      .references(() => tokens.id, { onDelete: 'cascade' }),
+    poolId: integer('pool_id').references(() => poolsTable.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 64 }),
+    block: integer('block').notNull(),
     tickAt: timestamp('tick_at').notNull(),
-    extraData: jsonb('extra_data').default({}),
+    extra: jsonb('extra').$type<SwapExtra>().default({}),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
   (t) => ({
-    comb: unique('swaps_idx_comb').on(t.chainId, t.transactionHash, t.poolId),
+    comb: unique('swaps_idx_comb').on(t.chainId, t.transactionHash, t.callIndex),
   }),
 );
 
