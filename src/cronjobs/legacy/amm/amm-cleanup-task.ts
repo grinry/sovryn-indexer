@@ -1,6 +1,6 @@
 import { CronJob } from 'cron';
 import dayjs from 'dayjs';
-import { and, eq } from 'drizzle-orm';
+import { lt } from 'drizzle-orm';
 
 import { db } from 'database/client';
 import { ammApyBlocks } from 'database/schema';
@@ -15,7 +15,7 @@ export const ammCleanUpTask = async (ctx: CronJob) => {
 
   const result = await db
     .delete(ammApyBlocks)
-    .where(and(eq(ammApyBlocks.blockTimestamp, endDate)))
+    .where(lt(ammApyBlocks.blockTimestamp, endDate))
     .returning({ id: ammApyBlocks.id })
     .execute();
 
