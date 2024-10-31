@@ -4,7 +4,6 @@ import { pgTable, serial, varchar, integer, timestamp, boolean, unique, jsonb, n
 import { chains } from './chains';
 import { tokens } from './tokens';
 
-// Define the swaps table without foreign key constraints on poolId
 export const swapsTableV2 = pgTable(
   'swaps_v2',
   {
@@ -16,8 +15,7 @@ export const swapsTableV2 = pgTable(
     user: varchar('user', { length: 256 }).notNull(),
     baseId: varchar('base_id', { length: 256 }).notNull(),
     quoteId: varchar('quote_id', { length: 256 }).notNull(),
-    poolId: integer('pool_id') // Removed foreign key constraint
-      .notNull(), // You can still keep it as not null if you need to ensure a value is always provided
+    poolId: integer('pool_id').notNull(),
     dexType: varchar('dex_type', { length: 256 }).notNull(),
     poolIdx: varchar('pool_idx', { length: 256 }).notNull(),
     block: integer('block').notNull(),
@@ -39,17 +37,14 @@ export const swapsTableV2 = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => ({
-    // Composite unique index on chainId, transactionHash, and poolId
     comb: unique('swaps_idx_comb').on(t.chainId, t.transactionHash, t.poolId),
   }),
 );
 
-// Define the relationships without pool reference
 export const swapsTableRelations = relations(swapsTableV2, ({ one }) => ({
   chain: one(chains, { fields: [swapsTableV2.chainId], references: [chains.id] }),
   base: one(tokens, { fields: [swapsTableV2.baseId], references: [tokens.id] }),
   quote: one(tokens, { fields: [swapsTableV2.quoteId], references: [tokens.id] }),
-  // Removed the pool relationship since poolId is no longer foreign key constrained
 }));
 
 export type Swap = typeof swapsTableV2.$inferSelect;
