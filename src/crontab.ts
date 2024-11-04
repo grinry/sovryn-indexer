@@ -28,12 +28,6 @@ export const startCrontab = async () => {
 
   dexJobs();
 
-  // Stores Swaps V2 every minute
-  CronJob.from({
-    cronTime: '*/1 * * * *',
-    onTick: tickWrapper(ambientSwapTasks),
-  }).start();
-
   // Stores Swaps every minute
   CronJob.from({
     cronTime: '*/1 * * * *',
@@ -126,6 +120,12 @@ function dexJobs() {
   CronJob.from({
     cronTime: '*/1 * * * *',
     onTick: tickWrapper(updateDexPoolListData),
+  }).start();
+
+  // Stores Swaps V2 every minute
+  CronJob.from({
+    cronTime: '*/1 * * * *',
+    onTick: tickWrapper(ambientSwapTasks),
   }).start();
 }
 

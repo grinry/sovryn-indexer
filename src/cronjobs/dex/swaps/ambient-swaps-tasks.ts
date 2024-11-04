@@ -1,5 +1,6 @@
 import { CronJob } from 'cron';
 import _ from 'lodash';
+import { bignumber } from 'mathjs';
 
 import { DEFAULT_DECIMAL_PLACES } from 'config/constants';
 import { poolsRepository } from 'database/repository/pools-repository';
@@ -71,6 +72,7 @@ async function prepareSdexSwaps(chain: SdexChain, chainId: number) {
         transactionHash: swap.transactionHash,
         baseAmount: baseAmount,
         quoteAmount: quoteAmount,
+        price: prettyNumber(bignumber(baseAmount).div(quoteAmount), DEFAULT_DECIMAL_PLACES),
         fees: swap.fees,
         callIndex: swap.callIndex,
         user: swap.user,
