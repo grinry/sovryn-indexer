@@ -18,6 +18,7 @@ export const swapsTableV2 = pgTable(
     baseAmount: varchar('base_amount', { length: 256 }).notNull().default('0'),
     quoteAmount: varchar('quote_amount', { length: 256 }).notNull().default('0'),
     fees: varchar('fees', { length: 256 }).default('0'),
+    price: varchar('price', { length: 256 }).default('0'),
     callIndex: integer('call_index').notNull(),
     user: char('user', { length: 42 }).notNull(),
     baseId: integer('base_id')
