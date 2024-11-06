@@ -1,0 +1,31 @@
+query ($user: String!, $first: Int = 1000, $skip: Int = 0) {
+  swaps(
+    first: $first,
+    skip: $skip,
+    where: {
+      user: $user,
+    },
+    orderBy: block,
+    orderDirection: desc
+  ) {
+    id
+    transactionHash
+    callIndex
+    user
+    dex
+    pool {
+      base
+      quote
+      poolIdx
+    }
+    block
+    time
+    isBuy
+    inBaseQty
+    qty
+    limitPrice
+    minOut
+    baseFlow
+    quoteFlow
+  }
+}

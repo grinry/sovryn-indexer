@@ -20,6 +20,13 @@ const querySchema = Joi.object({
   poolIdx: Joi.number().required(),
 });
 
+const swapHistoryQuerySchema = Joi.object({
+  user: Joi.string().required(),
+  chainId: Joi.string().required(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(10),
+});
+
 router.get(
   '/pool_list',
   asyncRoute(async (req, res) => {
@@ -69,6 +76,25 @@ router.get(
       },
       DEFAULT_CACHE_TTL,
     ).then((data) => res.json(toResponse(data.liquidity)));
+  }),
+);
+
+router.get(
+  '/swaps',
+  asyncRoute(async (req, res) => {
+    const { user, chainId, cursor, limit } = validate(swapHistoryQuerySchema, req.query);
+
+    const cacheKey = `sdex/swaps/${chainId}/${user}/${cursor || 0}/${limit}`;
+
+    return maybeCacheResponse(
+      res,
+      cacheKey,
+      async () => {
+        const swaps = await req.network.sdex.querySwapsByUser(user, limit, cursor || 0);
+        return swaps;
+      },
+      DEFAULT_CACHE_TTL,
+    ).then((data) => res.json(toResponse(data)));
   }),
 );
 
