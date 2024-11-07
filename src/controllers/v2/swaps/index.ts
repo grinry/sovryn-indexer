@@ -19,11 +19,11 @@ const swapHistoryQuerySchema = Joi.object({
 });
 
 router.get(
-  '/swaps',
+  '/',
   asyncRoute(async (req, res) => {
     const { user, chainId } = validate(swapHistoryQuerySchema, req.query);
     const p = validatePaginatedRequest(req);
-    const cacheKey = `sdex/swaps/${chainId}/${user}/${p.limit}/${p.cursor}`;
+    const cacheKey = `/v2/${chainId}/swaps/${user}/${p.limit}/${p.cursor}`;
 
     return maybeCacheResponse(
       res,
