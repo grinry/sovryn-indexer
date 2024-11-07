@@ -21,9 +21,9 @@ const swapHistoryQuerySchema = Joi.object({
 router.get(
   '/',
   asyncRoute(async (req, res) => {
-    const { user, chainId } = validate(swapHistoryQuerySchema, req.query);
+    const { user } = validate(swapHistoryQuerySchema, req.query, { allowUnknown: true });
     const p = validatePaginatedRequest(req);
-    const cacheKey = `/v2/${chainId}/swaps/${user}/${p.limit}/${p.cursor}`;
+    const cacheKey = `/v2/${req.network.chainId}/swaps/${user}/${p.limit}/${p.cursor}`;
 
     return maybeCacheResponse(
       res,
@@ -44,13 +44,7 @@ router.get(
             tickAt: swapsTableV2.tickAt,
           })
           .from(swapsTableV2)
-          .where(
-            and(
-              chainId ? eq(swapsTableV2.chainId, chainId) : undefined,
-              user ? eq(swapsTableV2.user, user) : undefined,
-            ),
-          )
-          .limit(p.limit)
+          .where(and(eq(swapsTableV2.chainId, req.network.chainId), user ? eq(swapsTableV2.user, user) : undefined))
           .$dynamic();
 
         const api = createApiQuery('id', OrderBy.desc, (key) => swapsTableV2[key], p);
@@ -66,7 +60,7 @@ router.get(
               decimals: true,
               symbol: true,
             },
-            where: and(eq(tokens.chainId, chainId), inArray(tokens.id, tokenIds)),
+            where: inArray(tokens.id, tokenIds),
           });
 
           return api.getMetadata(
