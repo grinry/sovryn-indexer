@@ -13,7 +13,6 @@ const DEFAULT_PAGINATION_LIMIT = 500;
 export type PaginationOptions = {
   cursor: string | null;
   limit: number;
-  page?: number;
 };
 
 export enum OrderBy {

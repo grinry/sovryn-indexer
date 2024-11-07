@@ -26,9 +26,6 @@ const querySchema = Joi.object({
 
 const swapHistoryQuerySchema = Joi.object({
   user: Joi.string().required(),
-  chainId: Joi.string().required(),
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
 });
 
 router.get(
@@ -88,7 +85,6 @@ router.get(
   asyncRoute(async (req, res) => {
     const { user, chainId } = validate(swapHistoryQuerySchema, req.query);
     const p = validatePaginatedRequest(req);
-    const offset = (p.page - 1) * p.limit;
     const cacheKey = `sdex/swaps/${chainId}/${user}/${p.limit}/${p.cursor}`;
 
     return maybeCacheResponse(
@@ -117,10 +113,9 @@ router.get(
             ),
           )
           .limit(p.limit)
-          .offset(offset)
           .$dynamic();
 
-        const api = createApiQuery('transactionHash', OrderBy.asc, (key) => swapsTableV2[key], p);
+        const api = createApiQuery('id', OrderBy.desc, (key) => swapsTableV2[key], p);
         const swaps = await api.applyPagination(swapsQuery).execute();
 
         if (swaps.length > 0) {
@@ -136,13 +131,6 @@ router.get(
             where: and(eq(tokens.chainId, chainId), inArray(tokens.id, tokenIds)),
           });
 
-          const tokenMap = Object.fromEntries(
-            tokensData.map((token) => [
-              token.id,
-              { address: token.address, symbol: token.symbol, decimals: token.decimals },
-            ]),
-          );
-
           return api.getMetadata(
             swaps.map((swap) => ({
               transactionHash: swap.transactionHash,
@@ -150,16 +138,8 @@ router.get(
               quoteAmount: swap.quoteAmount,
               fees: swap.fees,
               callIndex: swap.callIndex,
-              base: {
-                address: tokenMap[swap.baseId]?.address,
-                symbol: tokenMap[swap.baseId]?.symbol,
-                decimals: tokenMap[swap.baseId]?.decimals,
-              },
-              quote: {
-                address: tokenMap[swap.quoteId]?.address,
-                symbol: tokenMap[swap.quoteId]?.symbol,
-                decimals: tokenMap[swap.quoteId]?.decimals,
-              },
+              base: tokensData.find((item) => item.id === swap.baseId),
+              quote: tokensData.find((item) => item.id === swap.quoteId),
               user: swap.user,
               block: swap.block,
               tickAt: swap.tickAt,
