@@ -1,8 +1,7 @@
 import dayjs from 'dayjs';
-import { eq, and, gte, desc, inArray } from 'drizzle-orm';
+import { eq, and, gte, desc } from 'drizzle-orm';
 
 import { db } from 'database/client';
-import { tokens } from 'database/schema';
 
 import { swapsTableV2, NewSwap } from './../schema/swaps_v2';
 
@@ -12,7 +11,7 @@ export const swapRepositoryV2 = {
   create: (data: NewSwapItem[]) => db.insert(swapsTableV2).values(data).onConflictDoNothing(),
 
   loadAll: async (chainId?: number) => {
-    const swaps = await db
+    return await db
       .select({
         chainId: swapsTableV2.chainId,
         transactionHash: swapsTableV2.transactionHash,
@@ -27,36 +26,7 @@ export const swapRepositoryV2 = {
         tickAt: swapsTableV2.tickAt,
       })
       .from(swapsTableV2)
-      .where(and(chainId ? eq(swapsTableV2.chainId, chainId) : undefined));
-
-    const tokenIds = [...new Set(swaps.map((swap) => swap.baseId).concat(swaps.map((swap) => swap.quoteId)))];
-
-    const tokensData = await db.query.tokens.findMany({
-      columns: {
-        id: true,
-        chainId: true,
-        address: true,
-        decimals: true,
-        symbol: true,
-      },
-      where: and(eq(tokens.chainId, chainId), inArray(tokens.id, tokenIds)),
-    });
-
-    const tokenMap = Object.fromEntries(
-      tokensData.map((token) => [token.id, { address: token.address, symbol: token.symbol, decimals: token.decimals }]),
-    );
-
-    return swaps.map((swap) => ({
-      ...swap,
-      base: {
-        address: tokenMap[swap.baseId]?.address,
-        symbol: tokenMap[swap.baseId]?.symbol,
-      },
-      quote: {
-        address: tokenMap[swap.quoteId]?.address,
-        symbol: tokenMap[swap.quoteId]?.symbol,
-      },
-    }));
+      .where(chainId ? eq(swapsTableV2.chainId, chainId) : undefined);
   },
 
   loadLastSwap: (chainId?: number) =>

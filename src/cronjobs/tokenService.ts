@@ -1,5 +1,5 @@
 import { CronJob } from 'cron';
-import { sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 
 import { GIT_TOKEN_LIST_URL } from 'config/constants';
 import { db } from 'database/client';
@@ -43,11 +43,7 @@ async function insertTokensToDatabase(ctx: CronJob) {
 
       let dbTokens = [];
       try {
-        dbTokens = await db
-          .select()
-          .from(tokens)
-          .where(sql`${tokens.chainId} = ${chainId}`)
-          .execute();
+        dbTokens = await db.select().from(tokens).where(eq(tokens.chainId, chainId)).execute();
         logger.info(`Fetched ${dbTokens.length} tokens from the database for chainId ${chainId}`);
       } catch (error) {
         logger.error(`Error fetching tokens from the database for chainId ${chainId}:`, error);
@@ -133,11 +129,7 @@ async function insertTokensToDatabase(ctx: CronJob) {
           await db
             .update(tokens)
             .set({ ignored: true })
-            .where(
-              sql`${tokens.chainId} = ${chainId} AND ${tokens.address} IN (${ignoreList
-                .map((address) => `'${address}'`)
-                .join(', ')})`,
-            )
+            .where(and(eq(tokens.chainId, chainId), inArray(tokens.address, ignoreList)))
             .execute();
           logger.info(`Set ignored = true for ${ignoreList.length} tokens for chainId ${chainId}`);
         } catch (error) {

@@ -1,10 +1,14 @@
+import { eq, and, inArray } from 'drizzle-orm';
 import { Router } from 'express';
 import Joi from 'joi';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
+import { db } from 'database/client';
+import { tokens } from 'database/schema';
+import { swapsTableV2 } from 'database/schema/swaps_v2';
 import { maybeCacheResponse } from 'utils/cache';
-import { toResponse } from 'utils/http-response';
-import { validatePaginatedRequest } from 'utils/pagination';
+import { toPaginatedResponse, toResponse } from 'utils/http-response';
+import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
 
@@ -82,19 +86,91 @@ router.get(
 router.get(
   '/swaps',
   asyncRoute(async (req, res) => {
-    const { user, chainId, cursor, limit } = validate(swapHistoryQuerySchema, req.query);
-
-    const cacheKey = `sdex/swaps/${chainId}/${user}/${cursor || 0}/${limit}`;
+    const { user, chainId } = validate(swapHistoryQuerySchema, req.query);
+    const p = validatePaginatedRequest(req);
+    const offset = (p.page - 1) * p.limit;
+    const cacheKey = `sdex/swaps/${chainId}/${user}/${p.limit}/${p.cursor}`;
 
     return maybeCacheResponse(
       res,
       cacheKey,
       async () => {
-        const swaps = await req.network.sdex.querySwapsByUser(user, limit, cursor || 0);
-        return swaps;
+        const swapsQuery = db
+          .select({
+            chainId: swapsTableV2.chainId,
+            transactionHash: swapsTableV2.transactionHash,
+            baseAmount: swapsTableV2.baseAmount,
+            quoteAmount: swapsTableV2.quoteAmount,
+            fees: swapsTableV2.fees,
+            callIndex: swapsTableV2.callIndex,
+            baseId: swapsTableV2.baseId,
+            quoteId: swapsTableV2.quoteId,
+            user: swapsTableV2.user,
+            block: swapsTableV2.block,
+            tickAt: swapsTableV2.tickAt,
+          })
+          .from(swapsTableV2)
+          .where(
+            and(
+              chainId ? eq(swapsTableV2.chainId, chainId) : undefined,
+              user ? eq(swapsTableV2.user, user) : undefined,
+            ),
+          )
+          .limit(p.limit)
+          .offset(offset)
+          .$dynamic();
+
+        const api = createApiQuery('transactionHash', OrderBy.asc, (key) => swapsTableV2[key], p);
+        const swaps = await api.applyPagination(swapsQuery).execute();
+
+        if (swaps.length > 0) {
+          const tokenIds = [...new Set(swaps.flatMap((swap) => [swap.baseId, swap.quoteId]))];
+          const tokensData = await db.query.tokens.findMany({
+            columns: {
+              id: true,
+              chainId: true,
+              address: true,
+              decimals: true,
+              symbol: true,
+            },
+            where: and(eq(tokens.chainId, chainId), inArray(tokens.id, tokenIds)),
+          });
+
+          const tokenMap = Object.fromEntries(
+            tokensData.map((token) => [
+              token.id,
+              { address: token.address, symbol: token.symbol, decimals: token.decimals },
+            ]),
+          );
+
+          return api.getMetadata(
+            swaps.map((swap) => ({
+              transactionHash: swap.transactionHash,
+              baseAmount: swap.baseAmount,
+              quoteAmount: swap.quoteAmount,
+              fees: swap.fees,
+              callIndex: swap.callIndex,
+              base: {
+                address: tokenMap[swap.baseId]?.address,
+                symbol: tokenMap[swap.baseId]?.symbol,
+                decimals: tokenMap[swap.baseId]?.decimals,
+              },
+              quote: {
+                address: tokenMap[swap.quoteId]?.address,
+                symbol: tokenMap[swap.quoteId]?.symbol,
+                decimals: tokenMap[swap.quoteId]?.decimals,
+              },
+              user: swap.user,
+              block: swap.block,
+              tickAt: swap.tickAt,
+            })),
+          );
+        }
+
+        return { data: [], next: null };
       },
       DEFAULT_CACHE_TTL,
-    ).then((data) => res.json(toResponse(data)));
+    ).then((data) => res.json(toPaginatedResponse(data)));
   }),
 );
 

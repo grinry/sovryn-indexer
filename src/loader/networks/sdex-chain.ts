@@ -4,7 +4,7 @@ import gql from 'graphql-tag';
 import { SdexQuery, SdexQuery__factory, SdexSwapDex, SdexSwapDex__factory } from 'artifacts/abis/types';
 import { queryFromSubgraph } from 'loader/subgraph';
 import { getUserPositions } from 'loader/userPositionsLoader';
-import { LiquidityChangesResponse, Swap, SwapsResponse } from 'typings/subgraph/liquidity';
+import { LiquidityChangesResponse, SwapsResponse } from 'typings/subgraph/liquidity';
 import { loadGqlFromArtifacts } from 'utils/subgraph';
 
 import type { Chain } from './chain-config';
@@ -13,7 +13,6 @@ import type { SdexChainConfig } from './types';
 const gqlPools = loadGqlFromArtifacts('graphQueries/sdex/pools.graphql');
 const gqlLiquidityChanges = loadGqlFromArtifacts('graphQueries/sdex/liqchanges.graphql');
 const gqlSwaps = loadGqlFromArtifacts('graphQueries/sdex/swaps.graphql');
-const gqlSwapsByUser = loadGqlFromArtifacts('graphQueries/sdex/swapsByUser.graphql');
 
 export class SdexChain {
   readonly dex: SdexSwapDex;
@@ -47,10 +46,6 @@ export class SdexChain {
 
   public async querySwaps(minTime: number, maxTime: number) {
     return this.queryFromSubgraph<SwapsResponse>(gqlSwaps, { minTime, maxTime });
-  }
-
-  public async querySwapsByUser(user: string, first = 1000, skip = 0) {
-    return this.queryFromSubgraph<SwapsResponse>(gqlSwapsByUser, { user, first, skip });
   }
 
   public async getUpdatedLiquidity(user: string, base: string, quote: string, poolIdx: number) {
