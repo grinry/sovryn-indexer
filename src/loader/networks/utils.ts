@@ -48,6 +48,7 @@ function validateSdexConfig(name: string, config: SdexChainConfig) {
     dex: Joi.string().required(),
     query: Joi.string().required(),
     impact: Joi.string().required(),
+    block: Joi.number().default(0),
   }).validate(config ?? {});
 
   if (result.error) {

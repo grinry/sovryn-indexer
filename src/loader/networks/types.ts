@@ -28,6 +28,7 @@ export type NetworkConfig = {
 };
 
 export type SdexChainConfig = {
+  block: number;
   subgraph: string;
   graphcache: string;
   dex: string;

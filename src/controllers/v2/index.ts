@@ -4,6 +4,7 @@ import { toResponse } from 'utils/http-response';
 import { asyncRoute } from 'utils/route-wrapper';
 
 import poolsController from './pools';
+import swapsController from './swaps';
 import tickersController from './tickers';
 import tokensController from './tokens';
 
@@ -17,5 +18,6 @@ router.get(
 router.use('/tokens', tokensController);
 router.use('/tickers', tickersController);
 router.use('/pools', poolsController);
+router.use('/swaps', swapsController);
 
 export default router;

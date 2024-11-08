@@ -78,6 +78,12 @@ export type Swap = {
   minOut: string;
   baseFlow: string;
   quoteFlow: string;
+  dex: string;
+  // Optional fields to support the extended swap data
+  extra?: string;
+  baseAmount?: string;
+  quoteAmount?: string;
+  fees?: string;
 };
 export type SwapsResponse = {
   swaps: Swap[];
@@ -103,4 +109,10 @@ export type Bin = {
 };
 export type BinsResponse = {
   userBinLiquidities: Bin[];
+};
+
+export type SwapExtra = {
+  isBuy?: boolean;
+  baseFlow?: string;
+  quoteFlow?: string;
 };

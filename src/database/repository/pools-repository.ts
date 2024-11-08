@@ -30,6 +30,7 @@ export const poolsRepository = {
   listForChain: (chainId: number) =>
     db.query.poolsTable.findMany({
       columns: {
+        id: true,
         identifier: true,
         type: true,
         price: true,
