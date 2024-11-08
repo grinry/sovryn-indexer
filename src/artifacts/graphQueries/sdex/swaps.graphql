@@ -1,5 +1,5 @@
 query ($minTime: BigInt, $maxTime: BigInt) {
-  swaps(first: 1000, where: { block_gte: $minTime, block_lte: $maxTime }, orderBy: block, orderDirection: desc) {
+  swaps(first: 1000, where: { block_gte: $minTime, block_lte: $maxTime }, orderBy: block, orderDirection: asc) {
     id
     transactionHash
     callIndex

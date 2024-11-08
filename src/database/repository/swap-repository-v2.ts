@@ -3,9 +3,9 @@ import { eq, and, gte, desc } from 'drizzle-orm';
 
 import { db } from 'database/client';
 
-import { swapsTableV2, NewSwap } from './../schema/swaps_v2';
+import { swapsTableV2, NewSwapV2 } from './../schema/swaps_v2';
 
-export type NewSwapItem = Omit<NewSwap, 'createdAt' | 'updatedAt'>;
+export type NewSwapItem = Omit<NewSwapV2, 'createdAt' | 'updatedAt'>;
 
 export const swapRepositoryV2 = {
   create: (data: NewSwapItem[]) => db.insert(swapsTableV2).values(data).onConflictDoNothing(),
@@ -30,7 +30,7 @@ export const swapRepositoryV2 = {
   },
 
   loadLastSwap: (chainId?: number) =>
-    db.query.swapsTable.findFirst({
+    db.query.swapsTableV2.findFirst({
       where: and(chainId ? eq(swapsTableV2.chainId, chainId) : undefined),
       orderBy: desc(swapsTableV2.block),
     }),

@@ -48,5 +48,5 @@ export const swapsTableRelations = relations(swapsTableV2, ({ one }) => ({
   quote: one(tokens, { fields: [swapsTableV2.quoteId], references: [tokens.id] }),
 }));
 
-export type Swap = typeof swapsTableV2.$inferSelect;
-export type NewSwap = typeof swapsTableV2.$inferInsert;
+export type SwapV2 = typeof swapsTableV2.$inferSelect;
+export type NewSwapV2 = typeof swapsTableV2.$inferInsert;

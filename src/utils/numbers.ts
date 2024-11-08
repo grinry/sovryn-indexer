@@ -10,3 +10,6 @@ export const prettyNumber = (value: string | number | BigNumber, decimalPlaces =
 
   return format(bignumber(value).toDecimalPlaces(decimalPlaces), { notation: 'fixed' });
 };
+
+export const unwei = (value: string | number | BigNumber, decimals: number): BigNumber =>
+  bignumber(value).div(bignumber(10).pow(decimals));

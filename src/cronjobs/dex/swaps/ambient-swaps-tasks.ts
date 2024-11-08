@@ -12,7 +12,7 @@ import { NetworkFeature } from 'loader/networks/types';
 import { areAddressesEqual } from 'utils/compare';
 import { floorDate } from 'utils/date';
 import { logger } from 'utils/logger';
-import { prettyNumber } from 'utils/numbers';
+import { prettyNumber, unwei } from 'utils/numbers';
 
 const childLogger = logger.child({ module: 'crontab:retrieve-swaps-v2' });
 
@@ -39,7 +39,8 @@ async function prepareSdexSwaps(chain: SdexChain, chainId: number) {
     const blockNumber = await chain.queryBlockNumber(); // Get the current block number
     const lastSwap = await swapRepositoryV2.loadLastSwap(); // Load the last swap from the repository
 
-    const startBlock = lastSwap?.block || 0; // Determine the start block for querying
+    const startBlock = lastSwap ? lastSwap.block - 100 : chain.startBlock; // Determine the start block for querying
+
     const items = await chain.querySwaps(startBlock, blockNumber); // Query new swaps
 
     // Fetch tokens and pools from the database
@@ -60,20 +61,26 @@ async function prepareSdexSwaps(chain: SdexChain, chainId: number) {
       const pool = poolsList.find((p) => p.identifier === poolIdentifier);
 
       if (!baseToken || !quoteToken || !pool) {
-        childLogger.warn({ swap, pool }, 'Missing reference for swap');
+        // childLogger.warn({ swap, pool, baseToken, quoteToken, tokensList }, 'Missing reference for swap');
         return null;
       }
 
-      const baseAmount = prettyNumber(swap.isBuy ? swap.baseFlow : swap.quoteFlow, DEFAULT_DECIMAL_PLACES);
-      const quoteAmount = prettyNumber(swap.isBuy ? swap.quoteFlow : swap.baseFlow, DEFAULT_DECIMAL_PLACES);
+      const baseAmount = prettyNumber(
+        unwei(swap.isBuy ? swap.baseFlow : swap.quoteFlow, baseToken.decimals).abs(),
+        DEFAULT_DECIMAL_PLACES,
+      );
+      const quoteAmount = prettyNumber(
+        unwei(swap.isBuy ? swap.quoteFlow : swap.baseFlow, quoteToken.decimals).abs(),
+        DEFAULT_DECIMAL_PLACES,
+      );
 
       return {
         chainId,
         transactionHash: swap.transactionHash,
         baseAmount: baseAmount,
         quoteAmount: quoteAmount,
-        price: prettyNumber(bignumber(baseAmount).div(quoteAmount), DEFAULT_DECIMAL_PLACES),
-        fees: swap.fees,
+        price: prettyNumber(bignumber(quoteAmount).div(baseAmount), DEFAULT_DECIMAL_PLACES),
+        fees: prettyNumber(unwei(swap.fees ?? 0, baseToken.decimals), DEFAULT_DECIMAL_PLACES),
         callIndex: swap.callIndex,
         user: swap.user,
         baseId: baseToken.id,

@@ -14,6 +14,7 @@
       "decimals": 18
     },
     "sdex": {
+      "block": 455343,
       "subgraph": "https://bob-ambient-subgraph.test.sovryn.app/subgraphs/name/DistributedCollective/bob-ambient-subgraph",
       "graphcache": "https://bob-ambient-graphcache.test.sovryn.app/gcgo",
       "dex": "0x6E47BC2BC7CF8383369BbA36F520323C5F16dC1C",

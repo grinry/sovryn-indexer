@@ -19,7 +19,10 @@ export class SdexChain {
   readonly query: SdexQuery;
   readonly graphCacheUrl: string;
 
+  readonly startBlock: number;
+
   constructor(readonly context: Chain, readonly config: SdexChainConfig) {
+    this.startBlock = config.block;
     this.dex = SdexSwapDex__factory.connect(config.dex, this.context.rpc);
     this.query = SdexQuery__factory.connect(config.query, this.context.rpc);
 
