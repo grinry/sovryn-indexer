@@ -4,6 +4,7 @@ import Joi from 'joi';
 
 import { DEFAULT_CACHE_TTL } from 'config/constants';
 import { db } from 'database/client';
+import { lower } from 'database/helpers';
 import { tokens } from 'database/schema';
 import { swapsTableV2 } from 'database/schema/swaps_v2';
 import { maybeCacheResponse } from 'utils/cache';
@@ -11,6 +12,7 @@ import { toPaginatedResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
+import { logger } from 'utils/logger';
 
 const router = Router();
 
@@ -31,11 +33,13 @@ router.get(
       async () => {
         const swapsQuery = db
           .select({
+            id: swapsTableV2.id,
             chainId: swapsTableV2.chainId,
             transactionHash: swapsTableV2.transactionHash,
             baseAmount: swapsTableV2.baseAmount,
             quoteAmount: swapsTableV2.quoteAmount,
             fees: swapsTableV2.fees,
+            price: swapsTableV2.price,
             callIndex: swapsTableV2.callIndex,
             baseId: swapsTableV2.baseId,
             quoteId: swapsTableV2.quoteId,
@@ -44,7 +48,7 @@ router.get(
             tickAt: swapsTableV2.tickAt,
           })
           .from(swapsTableV2)
-          .where(and(eq(swapsTableV2.chainId, req.network.chainId), user ? eq(swapsTableV2.user, user) : undefined))
+          .where(and(eq(swapsTableV2.chainId, req.network.chainId), eq(lower(swapsTableV2.user), user.toLowerCase())))
           .$dynamic();
 
         const api = createApiQuery('id', OrderBy.desc, (key) => swapsTableV2[key], p);
@@ -55,26 +59,28 @@ router.get(
           const tokensData = await db.query.tokens.findMany({
             columns: {
               id: true,
-              chainId: true,
               address: true,
               decimals: true,
               symbol: true,
+              logoUrl: true,
             },
             where: inArray(tokens.id, tokenIds),
           });
 
           return api.getMetadata(
             swaps.map((swap) => ({
+              id: swap.id,
               transactionHash: swap.transactionHash,
+              user: swap.user,
+              base: printTokenData(tokensData.find((item) => item.id === swap.baseId)),
               baseAmount: swap.baseAmount,
+              quote: printTokenData(tokensData.find((item) => item.id === swap.quoteId)),
               quoteAmount: swap.quoteAmount,
               fees: swap.fees,
-              callIndex: swap.callIndex,
-              base: tokensData.find((item) => item.id === swap.baseId),
-              quote: tokensData.find((item) => item.id === swap.quoteId),
-              user: swap.user,
+              price: swap.price,
+              confirmedAt: swap.tickAt,
               block: swap.block,
-              tickAt: swap.tickAt,
+              callIndex: swap.callIndex,
             })),
           );
         }
@@ -85,5 +91,17 @@ router.get(
     ).then((data) => res.json(toPaginatedResponse(data)));
   }),
 );
+
+function printTokenData(tokenData) {
+  if (!tokenData) {
+    return null;
+  }
+  return {
+    address: tokenData.address,
+    decimals: tokenData.decimals,
+    symbol: tokenData.symbol,
+    logoUrl: tokenData.logoUrl,
+  };
+}
 
 export default router;
