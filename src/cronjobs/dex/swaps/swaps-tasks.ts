@@ -41,7 +41,7 @@ export const swapTasks = async (ctx: CronJob) => {
 async function prepareSdexSwaps(chain: SdexChain, chainId: number) {
   try {
     const blockNumber = await chain.queryBlockNumber(); // Get the current block number
-    const lastSwap = await swapRepositoryV2.loadLastSwap(); // Load the last swap from the repository
+    const lastSwap = await swapRepositoryV2.loadLastSwap(chainId); // Load the last swap from the repository
 
     const startBlock = lastSwap ? lastSwap.block - 100 : chain.startBlock; // Determine the start block for querying
 
@@ -117,7 +117,9 @@ async function prepareSdexSwaps(chain: SdexChain, chainId: number) {
 async function prepareLegacySwaps(chain: LegacyChain, chainId: number) {
   try {
     const blockNumber = await chain.queryBlockNumber();
-    const items = await chain.querySwaps(blockNumber);
+    const lastSwap = await swapRepositoryV2.loadLastSwap(chainId); // Load the last swap from the repository
+    const startBlock = lastSwap ? lastSwap.block - 100 : chain.startBlock; // Determine the start block for querying
+    const items = await chain.querySwaps(startBlock, blockNumber);
     const tokensList = await tokenRepository.listForChain(chainId);
     const poolsList = await poolsRepository.listForChain(chainId);
 

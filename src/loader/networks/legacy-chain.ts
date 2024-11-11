@@ -81,8 +81,8 @@ export class LegacyChain {
     return queryFromSubgraph<T>(this.config.subgraph, query as any, variables);
   }
 
-  public async querySwaps(block: number) {
-    return this.queryFromSubgraph<SwapsResponse>(gqlSwaps, { block });
+  public async querySwaps(from: number, to: number) {
+    return this.queryFromSubgraph<SwapsResponse>(gqlSwaps, { from, to });
   }
 
   public async queryBlockNumber() {
