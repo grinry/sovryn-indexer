@@ -12,7 +12,6 @@ import { toPaginatedResponse } from 'utils/http-response';
 import { createApiQuery, OrderBy, validatePaginatedRequest } from 'utils/pagination';
 import { asyncRoute } from 'utils/route-wrapper';
 import { validate } from 'utils/validation';
-import { logger } from 'utils/logger';
 
 const router = Router();
 

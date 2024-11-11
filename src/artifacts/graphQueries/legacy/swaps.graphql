@@ -1,0 +1,22 @@
+query ($block: Int!) {
+  swaps(first: 1000, block: { number: $block }, orderBy: timestamp, orderDirection: asc) {
+    id
+    timestamp
+    transaction {
+      id
+      blockNumber
+    }
+    user {
+      id
+    }
+    fromToken {
+      id
+    }
+    toToken {
+      id
+    }
+    fromAmount
+    toAmount
+    conversionFee
+  }
+}

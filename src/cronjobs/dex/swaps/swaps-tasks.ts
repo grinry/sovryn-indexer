@@ -7,6 +7,7 @@ import { poolsRepository } from 'database/repository/pools-repository';
 import { swapRepositoryV2 } from 'database/repository/swap-repository-v2';
 import { tokenRepository } from 'database/repository/token-repository';
 import { networks } from 'loader/networks';
+import { LegacyChain } from 'loader/networks/legacy-chain';
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { NetworkFeature } from 'loader/networks/types';
 import { areAddressesEqual } from 'utils/compare';
@@ -16,7 +17,7 @@ import { prettyNumber, unwei } from 'utils/numbers';
 
 const childLogger = logger.child({ module: 'crontab:retrieve-swaps-v2' });
 
-export const ambientSwapTasks = async (ctx: CronJob) => {
+export const swapTasks = async (ctx: CronJob) => {
   ctx.stop(); // Stop the job to prevent overlap
   const tickAt = floorDate(ctx.lastDate()); // Get the tick time
   childLogger.info({ tickAt }, 'Retrieving Swaps V2...');
@@ -27,6 +28,9 @@ export const ambientSwapTasks = async (ctx: CronJob) => {
   for (const item of items) {
     if (item.hasFeature(NetworkFeature.sdex)) {
       await prepareSdexSwaps(item.sdex, item.chainId);
+    }
+    if (item.hasFeature(NetworkFeature.legacy)) {
+      await prepareLegacySwaps(item.legacy, item.chainId);
     }
   }
 
@@ -107,5 +111,57 @@ async function prepareSdexSwaps(chain: SdexChain, chainId: number) {
     }
   } catch (error) {
     childLogger.error(error, 'Error while retrieving Swaps V2 for Sdex chain');
+  }
+}
+
+async function prepareLegacySwaps(chain: LegacyChain, chainId: number) {
+  try {
+    const blockNumber = await chain.queryBlockNumber();
+    const items = await chain.querySwaps(blockNumber);
+    const tokensList = await tokenRepository.listForChain(chainId);
+    const poolsList = await poolsRepository.listForChain(chainId);
+
+    const values = items.swaps.map((swap: any) => {
+      const baseToken = tokensList.find((token) => areAddressesEqual(token.address, swap.fromToken.id));
+      const quoteToken = tokensList.find((token) => areAddressesEqual(token.address, swap.toToken.id));
+
+      const poolIdentifier = `${swap.fromToken.id}_${swap.toToken.id}`;
+
+      const pool = poolsList.find((p) => p.identifier === poolIdentifier);
+
+      if (!baseToken || !quoteToken || !pool || !swap.user) {
+        return null;
+      }
+      const baseAmount = prettyNumber(unwei(swap.fromAmount, baseToken.decimals).abs(), DEFAULT_DECIMAL_PLACES);
+      const quoteAmount = prettyNumber(unwei(swap.toAmount, quoteToken.decimals).abs(), DEFAULT_DECIMAL_PLACES);
+
+      return {
+        chainId,
+        transactionHash: swap.transaction.id,
+        baseAmount: baseAmount,
+        quoteAmount: quoteAmount,
+        price: prettyNumber(bignumber(quoteAmount).div(baseAmount), DEFAULT_DECIMAL_PLACES),
+        fees: prettyNumber(unwei(swap.conversionFee ?? 0, baseToken.decimals), DEFAULT_DECIMAL_PLACES),
+        callIndex: 0,
+        user: swap.user.id,
+        baseId: baseToken.id,
+        quoteId: quoteToken.id,
+        poolId: pool.id,
+        type: 'bancor',
+        block: Number(swap.transaction.blockNumber),
+        tickAt: new Date(Number(swap.timestamp) * 1e3),
+      };
+    });
+
+    // Filter out any null values before inserting
+    const filteredValues = values.filter((value) => value !== null);
+
+    if (filteredValues.length > 0) {
+      await swapRepositoryV2.create(filteredValues); // Insert valid swaps only
+    } else {
+      childLogger.info('No valid swaps to insert.');
+    }
+  } catch (error) {
+    childLogger.error(error, 'Error while retrieving Swaps V2 for Legacy chain');
   }
 }
