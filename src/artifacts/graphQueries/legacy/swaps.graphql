@@ -1,0 +1,22 @@
+query ($from: Int!, $to: Int!) {
+  swaps(first: 1000, block: { number_gte: $from, number: $to }, orderBy: timestamp, orderDirection: asc) {
+    id
+    timestamp
+    transaction {
+      id
+      blockNumber
+    }
+    user {
+      id
+    }
+    fromToken {
+      id
+    }
+    toToken {
+      id
+    }
+    fromAmount
+    toAmount
+    conversionFee
+  }
+}

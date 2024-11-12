@@ -1,7 +1,7 @@
 import { CronJob } from 'cron';
 
 import { updateDexPoolList, updateDexPoolListData } from 'cronjobs/dex/pools';
-import { ambientSwapTasks } from 'cronjobs/dex/swaps/ambient-swaps-tasks';
+import { swapTasks } from 'cronjobs/dex/swaps/swaps-tasks';
 import { ammApyBlockTask } from 'cronjobs/legacy/amm/amm-apy-block-task';
 import { ammApyDailyDataTask } from 'cronjobs/legacy/amm/amm-apy-daily-data-task';
 import { ammCleanUpTask } from 'cronjobs/legacy/amm/amm-cleanup-task';
@@ -26,12 +26,6 @@ export const startCrontab = async () => {
   runOnInit();
 
   dexJobs();
-
-  // Stores Swaps every minute
-  // CronJob.from({
-  //   cronTime: '*/1 * * * *',
-  //   onTick: tickWrapper(retrieveSwaps),
-  // }).start();
 
   // LEGACY JOBS
   ammApyJobs();
@@ -124,7 +118,7 @@ function dexJobs() {
   // Stores Swaps V2 every minute
   CronJob.from({
     cronTime: '*/1 * * * *',
-    onTick: tickWrapper(ambientSwapTasks),
+    onTick: tickWrapper(swapTasks),
   }).start();
 }
 

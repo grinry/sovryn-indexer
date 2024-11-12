@@ -3,6 +3,7 @@ import gql from 'graphql-tag';
 
 import { StabilityPool, StabilityPool__factory, TroveManager, TroveManager__factory } from 'artifacts/abis/types';
 import { queryFromSubgraph } from 'loader/subgraph';
+import { SwapsResponse } from 'typings/subgraph/liquidity';
 import { loadGqlFromArtifacts } from 'utils/subgraph';
 
 import type { Chain } from './chain-config';
@@ -11,6 +12,7 @@ import type { LegacyChainConfig } from './types';
 const gqlTokens = loadGqlFromArtifacts('graphQueries/legacy/tokens.graphql');
 const gqlTokenPrices = loadGqlFromArtifacts('graphQueries/legacy/token-prices.graphql');
 const gqlAmmApyBlocks = loadGqlFromArtifacts('graphQueries/legacy/amm-apy-data.graphql');
+const gqlSwaps = loadGqlFromArtifacts('graphQueries/legacy/swaps.graphql');
 
 export type QueryAmmApyDataForBlock = {
   liquidityPools: {
@@ -80,6 +82,10 @@ export class LegacyChain {
 
   public queryFromSubgraph<T>(query: DocumentNode, variables: Record<string, unknown> = {}) {
     return queryFromSubgraph<T>(this.config.subgraph, query as any, variables);
+  }
+
+  public async querySwaps(from: number, to: number) {
+    return this.queryFromSubgraph<SwapsResponse>(gqlSwaps, { from, to });
   }
 
   public async queryBlockNumber() {
