@@ -23,6 +23,12 @@ const config = convict({
     default: 'info',
     env: 'LOG_LEVEL',
   },
+  dbLogLevel: {
+    doc: 'The database log level.',
+    format: ['warn', 'info', 'debug'],
+    default: 'debug',
+    env: 'DB_LOG_LEVEL',
+  },
   networks: {
     doc: 'Path to the networks configuration file.',
     format: String,

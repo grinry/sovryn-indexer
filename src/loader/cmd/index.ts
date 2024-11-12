@@ -13,6 +13,9 @@ import migrate from './migrate';
     case 'migrate':
       await migrate();
       break;
+    case 'pool':
+      await import('./pool').then((mod) => mod.default());
+      break;
     default:
       logger.warn('Unknown command');
   }

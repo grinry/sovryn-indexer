@@ -32,7 +32,7 @@ export const swapRepositoryV2 = {
   loadLastSwap: (chainId?: number) =>
     db.query.swapsTableV2.findFirst({
       where: and(chainId ? eq(swapsTableV2.chainId, chainId) : undefined),
-      orderBy: desc(swapsTableV2.block),
+      orderBy: desc(swapsTableV2.tickAt),
     }),
   loadSwaps: (days = 1, chainId?: number) =>
     db.query.swapsTableV2.findMany({
