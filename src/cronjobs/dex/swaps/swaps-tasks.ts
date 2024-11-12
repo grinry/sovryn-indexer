@@ -127,9 +127,7 @@ async function prepareLegacySwaps(chain: LegacyChain, chainId: number) {
       const baseToken = tokensList.find((token) => areAddressesEqual(token.address, swap.fromToken.id));
       const quoteToken = tokensList.find((token) => areAddressesEqual(token.address, swap.toToken.id));
 
-      const poolIdentifier = `${swap.fromToken.id}_${swap.toToken.id}`;
-
-      const pool = poolsList.find((p) => p.identifier === poolIdentifier);
+      const pool = poolsList.find((p) => p.identifier === `${swap.fromToken.id}_${swap.toToken.id}` || p.identifier === `${swap.toToken.id}_${swap.fromToken.id}`);
 
       if (!baseToken || !quoteToken || !pool || !swap.user) {
         return null;
