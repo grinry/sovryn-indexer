@@ -16,12 +16,17 @@ export async function prepareSdexVolume(chainId: number, days = 1) {
     if (baseIndex < 0) {
       result.push({
         token: swap.base.address,
-        volume: swap.baseAmount,
+        volume: bignumber(swap.baseAmount)
+          .mul(10 ** swap.base.decimals)
+          .toFixed(0),
       });
     } else {
       result[baseIndex] = {
         token: swap.base.address,
-        volume: bignumber(swap.baseAmount).plus(result[baseIndex].volume).toString(),
+        volume: bignumber(swap.baseAmount)
+          .mul(10 ** swap.base.decimals)
+          .plus(result[baseIndex].volume)
+          .toFixed(0),
       };
     }
 
@@ -29,12 +34,17 @@ export async function prepareSdexVolume(chainId: number, days = 1) {
     if (quoteIndex < 0) {
       result.push({
         token: swap.quote.address,
-        volume: bignumber(swap.quoteAmount).toString(),
+        volume: bignumber(swap.quoteAmount)
+          .mul(10 ** swap.quote.decimals)
+          .toFixed(0),
       });
     } else {
       result[quoteIndex] = {
         token: swap.quote.address,
-        volume: bignumber(swap.quoteAmount).plus(result[quoteIndex].volume).toString(),
+        volume: bignumber(swap.quoteAmount)
+          .mul(10 ** swap.quote.decimals)
+          .plus(result[quoteIndex].volume)
+          .toFixed(0),
       };
     }
   });
