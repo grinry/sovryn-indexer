@@ -104,13 +104,39 @@ export const updateAmbientPool = async (pool: PoolExtended) => {
 };
 
 // build query to get volume of the pool for the last 24 hours
-const getDailyPoolVolume = (chain: SdexChain, pool: PoolExtended) =>
-  db
+const getDailyPoolVolume = async (chain: SdexChain, pool: PoolExtended) => {
+  const baseVolume = await db
     .select({
-      baseVolume: sum(sql`${swapsTableV2.baseAmount}::numeric`).as('baseVolume'),
-      quoteVolume: sum(sql`${swapsTableV2.quoteAmount}::numeric`).as('quoteVolume'),
+      volume: sum(sql`${swapsTableV2.baseAmount}::numeric`).as('baseVolume'),
     })
     .from(swapsTableV2)
-    .where(and(eq(swapsTableV2.poolId, pool.id), gte(swapsTableV2.tickAt, dayjs().subtract(1, 'days').toDate())))
+    .where(
+      and(
+        eq(swapsTableV2.poolId, pool.id),
+        eq(swapsTableV2.baseId, pool.baseId),
+        gte(swapsTableV2.tickAt, dayjs().subtract(1, 'days').toDate()),
+      ),
+    )
     .groupBy(swapsTableV2.poolId)
-    .then((rows) => (rows.length ? rows[0] : { baseVolume: '0', quoteVolume: '0' }));
+    .then((rows) => (rows.length ? rows[0] : { volume: '0' }));
+
+  const quoteVolume = await db
+    .select({
+      volume: sum(sql`${swapsTableV2.quoteAmount}::numeric`).as('baseVolume'),
+    })
+    .from(swapsTableV2)
+    .where(
+      and(
+        eq(swapsTableV2.poolId, pool.id),
+        eq(swapsTableV2.quoteId, pool.quoteId),
+        gte(swapsTableV2.tickAt, dayjs().subtract(1, 'days').toDate()),
+      ),
+    )
+    .groupBy(swapsTableV2.poolId)
+    .then((rows) => (rows.length ? rows[0] : { volume: '0' }));
+
+  return {
+    baseVolume: baseVolume.volume,
+    quoteVolume: quoteVolume.volume,
+  };
+};
