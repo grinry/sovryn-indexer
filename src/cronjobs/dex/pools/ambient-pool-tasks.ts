@@ -5,10 +5,9 @@ import { bignumber } from 'mathjs';
 
 import { MAX_DECIMAL_PLACES } from 'config/constants';
 import { db } from 'database/client';
-import { lower } from 'database/helpers';
 import { PoolExtended, poolsRepository } from 'database/repository/pools-repository';
 import { tokenRepository } from 'database/repository/token-repository';
-import { NewPool, Pool, poolsTable, PoolType, swapsTable } from 'database/schema';
+import { NewPool, Pool, poolsTable, PoolType, swapsTableV2 } from 'database/schema';
 import { networks } from 'loader/networks';
 import { SdexChain } from 'loader/networks/sdex-chain';
 import { areAddressesEqual } from 'utils/compare';
@@ -92,8 +91,8 @@ export const updateAmbientPool = async (pool: PoolExtended) => {
       quoteLiquidity: prettyNumber(bignumber(stats.quoteTvl).div(10 ** pool.quote.decimals), MAX_DECIMAL_PLACES),
       baseVolume: prettyNumber(bignumber(stats.baseVolume).div(10 ** pool.base.decimals)),
       quoteVolume: prettyNumber(bignumber(stats.quoteVolume).div(10 ** pool.quote.decimals)),
-      dailyBaseVolume: prettyNumber(bignumber(daily.baseFlow).div(10 ** pool.base.decimals)),
-      dailyQuoteVolume: prettyNumber(bignumber(daily.quoteFlow).div(10 ** pool.quote.decimals)),
+      dailyBaseVolume: prettyNumber(bignumber(daily.baseVolume)),
+      dailyQuoteVolume: prettyNumber(bignumber(daily.quoteVolume)),
       // mark as just processed to avoid reprocessing
       processedAt: new Date(),
     })
@@ -108,18 +107,10 @@ export const updateAmbientPool = async (pool: PoolExtended) => {
 const getDailyPoolVolume = (chain: SdexChain, pool: PoolExtended) =>
   db
     .select({
-      baseFlow: sum(sql`abs(${swapsTable.baseFlow}::numeric)`).as('baseFlow'),
-      quoteFlow: sum(sql`abs(${swapsTable.quoteFlow}::numeric)`).as('quoteFlow'),
+      baseVolume: sum(sql`${swapsTableV2.baseAmount}::numeric`).as('baseVolume'),
+      quoteVolume: sum(sql`${swapsTableV2.quoteAmount}::numeric`).as('quoteVolume'),
     })
-    .from(swapsTable)
-    .where(
-      and(
-        eq(swapsTable.chainId, chain.context.chainId),
-        eq(lower(swapsTable.baseId), pool.base.address.toLowerCase()),
-        eq(lower(swapsTable.quoteId), pool.quote.address.toLowerCase()),
-        eq(swapsTable.poolIdx, String(pool.extra.poolIdx)),
-        gte(swapsTable.tickAt, dayjs().subtract(1, 'days').toDate()),
-      ),
-    )
-    .groupBy(swapsTable.baseId, swapsTable.quoteId, swapsTable.poolIdx)
-    .then((rows) => (rows.length ? rows[0] : { baseFlow: '0', quoteFlow: '0' }));
+    .from(swapsTableV2)
+    .where(and(eq(swapsTableV2.poolId, pool.id), gte(swapsTableV2.tickAt, dayjs().subtract(1, 'days').toDate())))
+    .groupBy(swapsTableV2.poolId)
+    .then((rows) => (rows.length ? rows[0] : { baseVolume: '0', quoteVolume: '0' }));

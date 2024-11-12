@@ -2,6 +2,7 @@ import { pgTable, timestamp, varchar, integer, unique, serial, char, boolean } f
 
 import { chains } from './chains';
 
+/** @deprecated */
 export const swapsTable = pgTable(
   'swaps',
   {

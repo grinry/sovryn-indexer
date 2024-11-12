@@ -6,6 +6,7 @@ import { NewSwap, swapsTable } from 'database/schema';
 
 export type NewSwapItem = Omit<NewSwap, 'createdAt' | 'updatedAt'>;
 
+/** @deprecated */
 export const swapRepository = {
   create: (data: NewSwapItem[]) => db.insert(swapsTable).values(data).onConflictDoNothing(),
 
