@@ -35,13 +35,14 @@ export const swapRepositoryV2 = {
       orderBy: desc(swapsTableV2.block),
     }),
   loadSwaps: (days = 1, chainId?: number) =>
-    db
-      .select()
-      .from(swapsTableV2)
-      .where(
-        and(
-          chainId ? eq(swapsTableV2.chainId, chainId) : undefined,
-          gte(swapsTableV2.tickAt, dayjs().subtract(days, 'days').toDate()),
-        ),
+    db.query.swapsTableV2.findMany({
+      with: {
+        base: true,
+        quote: true,
+      },
+      where: and(
+        chainId ? eq(swapsTableV2.chainId, chainId) : undefined,
+        gte(swapsTableV2.tickAt, dayjs().subtract(days, 'days').toDate()),
       ),
+    }),
 };

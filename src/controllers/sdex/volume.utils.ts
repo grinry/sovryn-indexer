@@ -1,10 +1,10 @@
 import { bignumber } from 'mathjs';
 
-import { swapRepository } from 'database/repository/swap-repository';
+import { swapRepositoryV2 } from 'database/repository/swap-repository-v2';
 import { areAddressesEqual } from 'utils/compare';
 
 export async function prepareSdexVolume(chainId: number, days = 1) {
-  const last24hSwaps = await swapRepository.loadSwaps(days, chainId);
+  const last24hSwaps = await swapRepositoryV2.loadSwaps(days, chainId);
 
   const result: {
     token: string;
@@ -12,29 +12,29 @@ export async function prepareSdexVolume(chainId: number, days = 1) {
   }[] = [];
 
   last24hSwaps.map((swap) => {
-    const baseIndex = result.findIndex((s) => areAddressesEqual(s.token, swap.baseId));
+    const baseIndex = result.findIndex((s) => areAddressesEqual(s.token, swap.base.address));
     if (baseIndex < 0) {
       result.push({
-        token: swap.baseId,
-        volume: bignumber(swap.baseFlow).abs().toString(),
+        token: swap.base.address,
+        volume: swap.baseAmount,
       });
     } else {
       result[baseIndex] = {
-        token: swap.baseId,
-        volume: bignumber(swap.baseFlow).abs().plus(result[baseIndex].volume).toString(),
+        token: swap.base.address,
+        volume: bignumber(swap.baseAmount).plus(result[baseIndex].volume).toString(),
       };
     }
 
-    const quoteIndex = result.findIndex((s) => areAddressesEqual(s.token, swap.quoteId));
+    const quoteIndex = result.findIndex((s) => areAddressesEqual(s.token, swap.quote.address));
     if (quoteIndex < 0) {
       result.push({
-        token: swap.quoteId,
-        volume: bignumber(swap.quoteFlow).abs().toString(),
+        token: swap.quote.address,
+        volume: bignumber(swap.quoteAmount).toString(),
       });
     } else {
       result[quoteIndex] = {
-        token: swap.quoteId,
-        volume: bignumber(swap.quoteFlow).abs().plus(result[quoteIndex].volume).toString(),
+        token: swap.quote.address,
+        volume: bignumber(swap.quoteAmount).plus(result[quoteIndex].volume).toString(),
       };
     }
   });
