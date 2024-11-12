@@ -53,6 +53,8 @@ export type QueryAmmApyDataForBlock = {
 
 export class LegacyChain {
   readonly nativeTokenWrapper: string;
+  readonly zusdTokenAddress;
+
   readonly protocolAddress: string;
   readonly babelFishMultisig: string;
   readonly babelFishStaking: string;
@@ -67,6 +69,7 @@ export class LegacyChain {
     this.startBlock = config.block;
 
     this.nativeTokenWrapper = config.native.toLowerCase();
+    this.zusdTokenAddress = config.zusdToken.toLowerCase();
     this.protocolAddress = config.protocol.toLowerCase();
     this.babelFishMultisig = (config.babelFishMultisig || '').toLowerCase();
     this.babelFishStaking = (config.babelFishStaking || '').toLowerCase();

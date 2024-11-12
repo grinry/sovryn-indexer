@@ -209,7 +209,7 @@ export async function getZeroTvl(chain: LegacyChain) {
   try {
     const items: NewTvlItem[] = [];
 
-    const btc = await tokenRepository.getBySymbol('WRBTC', chain.context.chainId).execute();
+    const btc = await tokenRepository.getByAddress(chain.context.chainId, chain.nativeTokenWrapper).execute();
 
     if (btc) {
       const collateralBalance = await chain.troveManager
@@ -225,7 +225,7 @@ export async function getZeroTvl(chain: LegacyChain) {
       });
     }
 
-    const zusd = await tokenRepository.getBySymbol('ZUSD', chain.context.chainId).execute();
+    const zusd = await tokenRepository.getByAddress(chain.context.chainId, chain.nativeTokenWrapper).execute();
 
     if (zusd) {
       const zusdBalance = await chain.stabilityPool.getTotalZUSDDeposits().then((item) => bignumber(item).div(1e18));
@@ -255,7 +255,7 @@ export async function getMyntTvl(chain: LegacyChain) {
       return;
     }
 
-    const zusdToken = await tokenRepository.getBySymbol('ZUSD', chain.context.chainId).execute();
+    const zusdToken = await tokenRepository.getByAddress(chain.context.chainId, chain.zusdTokenAddress).execute();
     const docToken = await tokenRepository.getBySymbol('DOC', chain.context.chainId).execute();
 
     const myntTokens = [docToken, zusdToken].filter((item) => item) as NewToken[];
