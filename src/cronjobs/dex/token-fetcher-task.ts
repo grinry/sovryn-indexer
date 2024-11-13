@@ -1,13 +1,22 @@
 import { CronJob } from 'cron';
 import { and, eq, inArray, sql } from 'drizzle-orm';
+import { uniqBy } from 'lodash';
 
 import { GIT_TOKEN_LIST_URL } from 'config/constants';
 import { db } from 'database/client';
-import { tokens } from 'database/schema/tokens';
+import { NewToken, Token, tokens } from 'database/schema/tokens';
 import { networks } from 'loader/networks';
 import { logger } from 'utils/logger';
 
-async function fetchTokensByChain(chainId: number) {
+type TokenData = {
+  name: string;
+  address: string;
+  symbol: string;
+  decimals: number;
+  logoURI: string;
+};
+
+export async function fetchTokensByChain(chainId: number) {
   const tokensUrl = `${GIT_TOKEN_LIST_URL}/${chainId}/tokens.json`;
   try {
     const response = await fetch(tokensUrl);
@@ -16,14 +25,19 @@ async function fetchTokensByChain(chainId: number) {
       throw new Error(`Failed to fetch tokens for chainId ${chainId}: ${response.statusText}`);
     }
 
-    return await response.json();
+    return await response.json().then((data: TokenData[]) =>
+      uniqBy(
+        data.map((item) => ({ ...item, address: item.address.toLowerCase() })),
+        'address',
+      ),
+    );
   } catch (error) {
     console.error(`Error fetching tokens for chainId ${chainId}:`, error);
     return [];
   }
 }
 
-async function insertTokensToDatabase(ctx: CronJob) {
+export async function tokenFetcherTask(ctx: CronJob) {
   ctx.stop();
   const chains = networks.listChains();
 
@@ -41,7 +55,7 @@ async function insertTokensToDatabase(ctx: CronJob) {
         continue;
       }
 
-      let dbTokens = [];
+      let dbTokens: Token[] = [];
       try {
         dbTokens = await db.select().from(tokens).where(eq(tokens.chainId, chainId)).execute();
         logger.info(`Fetched ${dbTokens.length} tokens from the database for chainId ${chainId}`);
@@ -52,7 +66,7 @@ async function insertTokensToDatabase(ctx: CronJob) {
 
       const dbTokenMap = new Map(dbTokens.map((token) => [token.address.toLowerCase(), token]));
 
-      const tokensToUpsert = [];
+      const tokensToUpsert: NewToken[] = [];
       const tokensToIgnore = new Set<string>();
 
       // Process tokens fetched from GitHub
@@ -60,12 +74,12 @@ async function insertTokensToDatabase(ctx: CronJob) {
         const address = token.address.toLowerCase();
         const dbToken = dbTokenMap.get(address);
 
-        const tokenData = {
+        const tokenData: NewToken = {
           chainId,
           address,
           symbol: token.symbol,
           name: token.name,
-          decimals: token.decimals || 18,
+          decimals: token.decimals,
           logoUrl: token.logoURI,
         };
 
@@ -95,53 +109,35 @@ async function insertTokensToDatabase(ctx: CronJob) {
 
       // Upsert new or updated tokens
       if (tokensToUpsert.length > 0) {
-        for (const token of tokensToUpsert) {
-          try {
-            await db
-              .insert(tokens)
-              .values(token)
-              .onConflictDoUpdate({
-                target: [tokens.chainId, tokens.address],
-                set: {
-                  symbol: sql`EXCLUDED.symbol`,
-                  name: sql`EXCLUDED.name`,
-                  decimals: sql`EXCLUDED.decimals`,
-                  logoUrl: sql`EXCLUDED.logo_url`,
-                  ignored: sql`EXCLUDED.ignored`,
-                },
-              })
-              .execute();
-
-            logger.info(`Upserted token ${token.address} for chainId ${chainId}`);
-          } catch (error) {
-            logger.error(`Error upserting token ${token.address} for chainId ${chainId}: ${error.message}`, {
-              stack: error.stack,
-              token,
-            });
-          }
-        }
+        await db
+          .insert(tokens)
+          .values(tokensToUpsert)
+          .onConflictDoUpdate({
+            target: [tokens.chainId, tokens.address],
+            set: {
+              symbol: sql`EXCLUDED.symbol`,
+              name: sql`EXCLUDED.name`,
+              decimals: sql`EXCLUDED.decimals`,
+              logoUrl: sql`EXCLUDED.logo_url`,
+              ignored: sql`EXCLUDED.ignored`,
+            },
+          })
+          .execute();
       }
 
       // Set ignored = true for tokens not in GitHub
       if (tokensToIgnore.size > 0) {
         const ignoreList = Array.from(tokensToIgnore);
-        try {
-          await db
-            .update(tokens)
-            .set({ ignored: true })
-            .where(and(eq(tokens.chainId, chainId), inArray(tokens.address, ignoreList)))
-            .execute();
-          logger.info(`Set ignored = true for ${ignoreList.length} tokens for chainId ${chainId}`);
-        } catch (error) {
-          logger.error(`Error setting tokens to ignored for chainId ${chainId}:`, error);
-        }
+        await db
+          .update(tokens)
+          .set({ ignored: true })
+          .where(and(eq(tokens.chainId, chainId), eq(tokens.ignored, false), inArray(tokens.address, ignoreList)))
+          .execute();
       }
     }
   } catch (error) {
-    logger.error('Error inserting tokens to database:', error);
+    logger.error({ error: error.message }, 'Error inserting tokens to database:');
   } finally {
     ctx.start();
   }
 }
-
-export { fetchTokensByChain, insertTokensToDatabase };

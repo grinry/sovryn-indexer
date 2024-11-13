@@ -1,10 +1,11 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import _ from 'lodash';
 
 import { db } from 'database/client';
 import { Pool, tokens } from 'database/schema';
 import { networks } from 'loader/networks';
 import { chainIdFromHex } from 'loader/networks/utils';
+import { logger } from 'utils/logger';
 
 type PoolStats = {
   latestTime: number;
@@ -25,7 +26,7 @@ export async function markTokensAsSwapable(pool: Pool[]) {
   await db
     .update(tokens)
     .set({ swapableSince: new Date() })
-    .where(and(inArray(tokens.id, tokenIds), eq(tokens.swapableSince, null)));
+    .where(and(inArray(tokens.id, tokenIds), isNull(tokens.swapableSince)));
 }
 
 export async function getPoolStats(chainId: string, base: string, quote: string, poolIdx: number): Promise<PoolStats> {

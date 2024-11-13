@@ -16,6 +16,7 @@ import { logger } from 'utils/logger';
 
 const childLogger = logger.child({ module: 'crontab:retrieve-tokens' });
 
+/** @deprecated */
 export const retrieveTokens = async (ctx: CronJob) => {
   ctx.stop();
   childLogger.info('Retrieving tokens...');

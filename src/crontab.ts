@@ -2,14 +2,13 @@ import { CronJob } from 'cron';
 
 import { updateDexPoolList, updateDexPoolListData } from 'cronjobs/dex/pools';
 import { swapTasks } from 'cronjobs/dex/swaps/swaps-tasks';
+import { tokenFetcherTask } from 'cronjobs/dex/token-fetcher-task';
 import { ammApyBlockTask } from 'cronjobs/legacy/amm/amm-apy-block-task';
 import { ammApyDailyDataTask } from 'cronjobs/legacy/amm/amm-apy-daily-data-task';
 import { ammCleanUpTask } from 'cronjobs/legacy/amm/amm-cleanup-task';
 import { ammPoolsTask } from 'cronjobs/legacy/amm/amm-pools-task';
 import { tvlTask } from 'cronjobs/legacy/tvl-task';
-import { retrieveTokens } from 'cronjobs/retrieve-tokens';
 import { retrieveUsdPrices } from 'cronjobs/retrieve-usd-prices';
-import { insertTokensToDatabase } from 'cronjobs/tokenService';
 import { updateChains } from 'loader/networks';
 import { getLastPrices } from 'loader/price';
 
@@ -52,14 +51,7 @@ function runOnInit() {
   // Update supported token list from the github repository on startup and every minute
   CronJob.from({
     cronTime: '*/1 * * * *',
-    onTick: tickWrapper(insertTokensToDatabase),
-    runOnInit: true,
-  }).start();
-
-  // Update tokens used by DEXs every two minutes
-  CronJob.from({
-    cronTime: '*/2 * * * *',
-    onTick: tickWrapper(retrieveTokens),
+    onTick: tickWrapper(tokenFetcherTask),
     runOnInit: true,
   }).start();
 
