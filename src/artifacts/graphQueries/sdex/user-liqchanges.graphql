@@ -1,5 +1,5 @@
-query ($minTime: BigInt) {
-  liquidityChanges(first: 1000, where: { block_gte: $minTime }, orderBy: block, orderDirection: asc) {
+query ($user: Bytes) {
+  liquidityChanges(first: 1000, where: { user: $user }, orderBy: block, orderDirection: desc) {
     id
     transactionHash
     callIndex

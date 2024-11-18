@@ -1,0 +1,1791 @@
+{
+  "id": "875c29c1-254a-43d7-a7be-6e56556c8da0",
+  "prevId": "337e0834-eca4-40eb-b727-e8b4b0a8be3d",
+  "version": "6",
+  "dialect": "postgresql",
+  "tables": {
+    "public.bins": {
+      "name": "bins",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bin_id": {
+          "name": "bin_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "liquidity": {
+          "name": "liquidity",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_x": {
+          "name": "price_x",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_y": {
+          "name": "price_y",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_supply": {
+          "name": "total_supply",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reserve_x": {
+          "name": "reserve_x",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reserve_y": {
+          "name": "reserve_y",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tick_at": {
+          "name": "tick_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "block": {
+          "name": "block",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address": {
+          "name": "address",
+          "type": "char",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bins_chain_id_chains_id_fk": {
+          "name": "bins_chain_id_chains_id_fk",
+          "tableFrom": "bins",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "bins_comb_pkey": {
+          "name": "bins_comb_pkey",
+          "nullsNotDistinct": false,
+          "columns": [
+            "bin_id"
+          ]
+        }
+      }
+    },
+    "public.chains": {
+      "name": "chains",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stablecoin_address": {
+          "name": "stablecoin_address",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.flags": {
+      "name": "flags",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "varchar(32)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.legacy_amm__apy_blocks": {
+      "name": "legacy_amm__apy_blocks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pool_token": {
+          "name": "pool_token",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pool": {
+          "name": "pool",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "block": {
+          "name": "block",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "block_timestamp": {
+          "name": "block_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "balance_btc": {
+          "name": "balance_btc",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "balance_usd": {
+          "name": "balance_usd",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "conversion_fee_btc": {
+          "name": "conversion_fee_btc",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "conversion_fee_usd": {
+          "name": "conversion_fee_usd",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "rewards": {
+          "name": "rewards",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rewards_currency": {
+          "name": "rewards_currency",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rewards_btc": {
+          "name": "rewards_btc",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "rewards_usd": {
+          "name": "rewards_usd",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "legacy_amm__apy_blocks_chain_id_chains_id_fk": {
+          "name": "legacy_amm__apy_blocks_chain_id_chains_id_fk",
+          "tableFrom": "legacy_amm__apy_blocks",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "lamab__unq": {
+          "name": "lamab__unq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chain_id",
+            "pool",
+            "block"
+          ]
+        }
+      }
+    },
+    "public.legacy_amm__apy_days": {
+      "name": "legacy_amm__apy_days",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pool_token": {
+          "name": "pool_token",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pool": {
+          "name": "pool",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "balance_btc": {
+          "name": "balance_btc",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "balance_usd": {
+          "name": "balance_usd",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "fee_apy": {
+          "name": "fee_apy",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rewards_apy": {
+          "name": "rewards_apy",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_apy": {
+          "name": "total_apy",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "btc_volume": {
+          "name": "btc_volume",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "usd_volume": {
+          "name": "usd_volume",
+          "type": "numeric(25, 18)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "legacy_amm__apy_days_chain_id_chains_id_fk": {
+          "name": "legacy_amm__apy_days_chain_id_chains_id_fk",
+          "tableFrom": "legacy_amm__apy_days",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "lamad__unq": {
+          "name": "lamad__unq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chain_id",
+            "date",
+            "pool_token"
+          ]
+        }
+      }
+    },
+    "public.legacy_amm__pools": {
+      "name": "legacy_amm__pools",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pool": {
+          "name": "pool",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token1_id": {
+          "name": "token1_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token2_id": {
+          "name": "token2_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token1_volume": {
+          "name": "token1_volume",
+          "type": "numeric(50, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token2_volume": {
+          "name": "token2_volume",
+          "type": "numeric(50, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "legacy_amm__pools_chain_id_chains_id_fk": {
+          "name": "legacy_amm__pools_chain_id_chains_id_fk",
+          "tableFrom": "legacy_amm__pools",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "legacy_amm__pools_token1_id_tokens_id_fk": {
+          "name": "legacy_amm__pools_token1_id_tokens_id_fk",
+          "tableFrom": "legacy_amm__pools",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token1_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "legacy_amm__pools_token2_id_tokens_id_fk": {
+          "name": "legacy_amm__pools_token2_id_tokens_id_fk",
+          "tableFrom": "legacy_amm__pools",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token2_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "lap__unq": {
+          "name": "lap__unq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chain_id",
+            "pool"
+          ]
+        }
+      }
+    },
+    "public.legacy_tvls": {
+      "name": "legacy_tvls",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group": {
+          "name": "group",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pool": {
+          "name": "pool",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_id": {
+          "name": "token_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "balance": {
+          "name": "balance",
+          "type": "numeric(50, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "legacy_tvls_chain_id_chains_id_fk": {
+          "name": "legacy_tvls_chain_id_chains_id_fk",
+          "tableFrom": "legacy_tvls",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "legacy_tvls_token_id_tokens_id_fk": {
+          "name": "legacy_tvls_token_id_tokens_id_fk",
+          "tableFrom": "legacy_tvls",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "ltvl__unq": {
+          "name": "ltvl__unq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chain_id",
+            "date",
+            "group",
+            "pool",
+            "token_id"
+          ]
+        }
+      }
+    },
+    "public.tokens": {
+      "name": "tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "varchar(24)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decimals": {
+          "name": "decimals",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 18
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address": {
+          "name": "address",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ignored": {
+          "name": "ignored",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "swapable_since": {
+          "name": "swapable_since",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "logo_url": {
+          "name": "logo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tokens_chain_id_chains_id_fk": {
+          "name": "tokens_chain_id_chains_id_fk",
+          "tableFrom": "tokens",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "chain_address_pkey": {
+          "name": "chain_address_pkey",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chain_id",
+            "address"
+          ]
+        }
+      }
+    },
+    "public.swaps": {
+      "name": "swaps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "transactionHash": {
+          "name": "transactionHash",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address": {
+          "name": "address",
+          "type": "char",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "base_id": {
+          "name": "base_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quote_id": {
+          "name": "quote_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pool_idx": {
+          "name": "pool_idx",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "block": {
+          "name": "block",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tick_at": {
+          "name": "tick_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "is_buy": {
+          "name": "is_buy",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_base_qty": {
+          "name": "is_base_qty",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qty": {
+          "name": "qty",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "limit_price": {
+          "name": "limit_price",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "min_out": {
+          "name": "min_out",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "base_flow": {
+          "name": "base_flow",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quote_flow": {
+          "name": "quote_flow",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "call_index": {
+          "name": "call_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "swaps_chain_id_chains_id_fk": {
+          "name": "swaps_chain_id_chains_id_fk",
+          "tableFrom": "swaps",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "swaps_comb_pkey": {
+          "name": "swaps_comb_pkey",
+          "nullsNotDistinct": false,
+          "columns": [
+            "base_id",
+            "quote_id",
+            "transactionHash",
+            "call_index"
+          ]
+        }
+      }
+    },
+    "public.swaps_v2": {
+      "name": "swaps_v2",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transaction_hash": {
+          "name": "transaction_hash",
+          "type": "char(66)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_amount": {
+          "name": "base_amount",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "quote_amount": {
+          "name": "quote_amount",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "fees": {
+          "name": "fees",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "price": {
+          "name": "price",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "call_index": {
+          "name": "call_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user": {
+          "name": "user",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_id": {
+          "name": "base_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quote_id": {
+          "name": "quote_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pool_id": {
+          "name": "pool_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "block": {
+          "name": "block",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tick_at": {
+          "name": "tick_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "extra": {
+          "name": "extra",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "swaps_v2_chain_id_chains_id_fk": {
+          "name": "swaps_v2_chain_id_chains_id_fk",
+          "tableFrom": "swaps_v2",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "swaps_v2_base_id_tokens_id_fk": {
+          "name": "swaps_v2_base_id_tokens_id_fk",
+          "tableFrom": "swaps_v2",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "base_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "swaps_v2_quote_id_tokens_id_fk": {
+          "name": "swaps_v2_quote_id_tokens_id_fk",
+          "tableFrom": "swaps_v2",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "quote_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "swaps_v2_pool_id_pools_id_fk": {
+          "name": "swaps_v2_pool_id_pools_id_fk",
+          "tableFrom": "swaps_v2",
+          "tableTo": "pools",
+          "columnsFrom": [
+            "pool_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "swaps_idx_comb": {
+          "name": "swaps_idx_comb",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chain_id",
+            "transaction_hash",
+            "call_index"
+          ]
+        }
+      }
+    },
+    "public.pool-balance": {
+      "name": "pool-balance",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "base_id": {
+          "name": "base_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quote_id": {
+          "name": "quote_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ambient-liq": {
+          "name": "ambient-liq",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user": {
+          "name": "user",
+          "type": "char(42)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "time": {
+          "name": "time",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "concLiq": {
+          "name": "concLiq",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rewardLiq": {
+          "name": "rewardLiq",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "baseQty": {
+          "name": "baseQty",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quoteQty": {
+          "name": "quoteQty",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aggregatedLiquidity": {
+          "name": "aggregatedLiquidity",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aggregatedBaseFlow": {
+          "name": "aggregatedBaseFlow",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aggregatedQuoteFlow": {
+          "name": "aggregatedQuoteFlow",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "positionType": {
+          "name": "positionType",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bidTick": {
+          "name": "bidTick",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "askTick": {
+          "name": "askTick",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aprDuration": {
+          "name": "aprDuration",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aprPostLiq": {
+          "name": "aprPostLiq",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aprContributedLiq": {
+          "name": "aprContributedLiq",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aprEst": {
+          "name": "aprEst",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "block": {
+          "name": "block",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pool-balance_chain_id_chains_id_fk": {
+          "name": "pool-balance_chain_id_chains_id_fk",
+          "tableFrom": "pool-balance",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "pool_balance_comb_pkey": {
+          "name": "pool_balance_comb_pkey",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user",
+            "chain_id",
+            "identifier"
+          ]
+        }
+      }
+    },
+    "public.prices_usd_daily": {
+      "name": "prices_usd_daily",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token_id": {
+          "name": "token_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "low": {
+          "name": "low",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "high": {
+          "name": "high",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "tick_at": {
+          "name": "tick_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "prices_usd_daily_token_id_tokens_id_fk": {
+          "name": "prices_usd_daily_token_id_tokens_id_fk",
+          "tableFrom": "prices_usd_daily",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "prices_usd_daily_comb": {
+          "name": "prices_usd_daily_comb",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_id",
+            "tick_at"
+          ]
+        }
+      }
+    },
+    "public.prices_usd_hourly": {
+      "name": "prices_usd_hourly",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token_id": {
+          "name": "token_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "low": {
+          "name": "low",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "high": {
+          "name": "high",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "tick_at": {
+          "name": "tick_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "prices_usd_hourly_token_id_tokens_id_fk": {
+          "name": "prices_usd_hourly_token_id_tokens_id_fk",
+          "tableFrom": "prices_usd_hourly",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "prices_usd_hourly_comb": {
+          "name": "prices_usd_hourly_comb",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_id",
+            "tick_at"
+          ]
+        }
+      }
+    },
+    "public.prices_usd": {
+      "name": "prices_usd",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token_id": {
+          "name": "token_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "low": {
+          "name": "low",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "high": {
+          "name": "high",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "tick_at": {
+          "name": "tick_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "prices_usd_token_id_tokens_id_fk": {
+          "name": "prices_usd_token_id_tokens_id_fk",
+          "tableFrom": "prices_usd",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "prices_usd_comb": {
+          "name": "prices_usd_comb",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_id",
+            "tick_at"
+          ]
+        }
+      }
+    },
+    "public.pools": {
+      "name": "pools",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_id": {
+          "name": "base_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quote_id": {
+          "name": "quote_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "highlighted": {
+          "name": "highlighted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "price": {
+          "name": "price",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "fee": {
+          "name": "fee",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "apr": {
+          "name": "apr",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "base_liquidity": {
+          "name": "base_liquidity",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "quote_liquidity": {
+          "name": "quote_liquidity",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "base_volume": {
+          "name": "base_volume",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "quote_volume": {
+          "name": "quote_volume",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "daily_volume": {
+          "name": "daily_volume",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "daily_quote_volume": {
+          "name": "daily_quote_volume",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "extra": {
+          "name": "extra",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::jsonb"
+        },
+        "processed_at": {
+          "name": "processed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pools_chain_id_chains_id_fk": {
+          "name": "pools_chain_id_chains_id_fk",
+          "tableFrom": "pools",
+          "tableTo": "chains",
+          "columnsFrom": [
+            "chain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "pools_base_id_tokens_id_fk": {
+          "name": "pools_base_id_tokens_id_fk",
+          "tableFrom": "pools",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "base_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "pools_quote_id_tokens_id_fk": {
+          "name": "pools_quote_id_tokens_id_fk",
+          "tableFrom": "pools",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "quote_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "pools_idx_comb": {
+          "name": "pools_idx_comb",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chain_id",
+            "type",
+            "identifier"
+          ]
+        },
+        "pools_search_comb": {
+          "name": "pools_search_comb",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chain_id",
+            "identifier"
+          ]
+        }
+      }
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
