@@ -60,9 +60,9 @@ export class SdexChain {
     return this.queryFromSubgraph<SwapsResponse>(gqlSwaps, { minTime, maxTime });
   }
 
-  public async getUpdatedLiquidity(user: string, base: string, quote: string, poolIdx: number) {
+  public async getUpdatedLiquidity(user: string) {
     const { liquidityChanges } = await this.queryUserPositions(user);
-    return getUserPositions(this.query, this.context.rpc, user, base, quote, poolIdx, liquidityChanges, this.context);
+    return getUserPositions(this.query, this.context.rpc, liquidityChanges, this.context);
   }
 
   public async queryBlockNumber() {
