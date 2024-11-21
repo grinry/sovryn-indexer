@@ -225,7 +225,7 @@ export async function getZeroTvl(chain: LegacyChain) {
       });
     }
 
-    const zusd = await tokenRepository.getByAddress(chain.context.chainId, chain.nativeTokenWrapper).execute();
+    const zusd = await tokenRepository.getByAddress(chain.context.chainId, chain.zusdTokenAddress).execute();
 
     if (zusd) {
       const zusdBalance = await chain.stabilityPool.getTotalZUSDDeposits().then((item) => bignumber(item).div(1e18));
