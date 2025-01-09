@@ -115,4 +115,6 @@ export type SwapExtra = {
   isBuy?: boolean;
   baseFlow?: string;
   quoteFlow?: string;
+  protocolFee?: string;
+  conversionFee?: string;
 };

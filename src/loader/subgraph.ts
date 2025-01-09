@@ -31,7 +31,12 @@ export async function queryFromSubgraph<T = unknown>(
   try {
     return await queryFromSubgraphTry<T>(subgraph, query, variables);
   } catch (error) {
-    logger.error('Failed to query subgraph, retrying in ' + SUBGRAPH_RETRY_MS + 'ms', { error });
+    logger.error('Failed to query subgraph, retrying in ' + SUBGRAPH_RETRY_MS + 'ms', {
+      error,
+      subgraph,
+      query,
+      variables,
+    });
     await sleep(SUBGRAPH_RETRY_MS);
     // todo: add retry limit, exponential backoff and use `queryFromSubgraph` here...
     return queryFromSubgraphTry<T>(subgraph, query, variables);

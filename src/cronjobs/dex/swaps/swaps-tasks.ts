@@ -45,6 +45,7 @@ async function prepareSdexSwaps(chain: SdexChain, chainId: number) {
 
     const startBlock = lastSwap ? lastSwap.block - 100 : chain.startBlock; // Determine the start block for querying
 
+    logger.info({ startBlock, blockNumber }, 'Querying Swaps V2 for Sdex chain');
     const items = await chain.querySwaps(startBlock, blockNumber); // Query new swaps
 
     // Fetch tokens and pools from the database
@@ -116,24 +117,34 @@ async function prepareSdexSwaps(chain: SdexChain, chainId: number) {
 
 async function prepareLegacySwaps(chain: LegacyChain, chainId: number) {
   try {
-    const blockNumber = await chain.queryBlockNumber();
+    const now = Math.floor(Date.now() / 1e3); // Get the current timestamp
     const lastSwap = await swapRepositoryV2.loadLastSwap(chainId); // Load the last swap from the repository
     const startBlock = lastSwap ? lastSwap.block - 100 : chain.startBlock; // Determine the start block for querying
-    const items = await chain.querySwaps(startBlock, blockNumber);
+    const startTime = Math.floor((await chain.context.rpc.getBlock(startBlock)).date.getTime() / 1e3); // Get the start time for querying
+    const items = await chain.querySwaps(startTime, now);
     const tokensList = await tokenRepository.listForChain(chainId);
     const poolsList = await poolsRepository.listForChain(chainId);
+
+    logger.info({ startTime, now, items: items.swaps.length, lastSwap }, 'Querying Swaps V2 for Legacy chain');
 
     const values = items.swaps.map((swap: any) => {
       const baseToken = tokensList.find((token) => areAddressesEqual(token.address, swap.fromToken.id));
       const quoteToken = tokensList.find((token) => areAddressesEqual(token.address, swap.toToken.id));
 
-      const pool = poolsList.find((p) => p.identifier === `${swap.fromToken.id}_${swap.toToken.id}` || p.identifier === `${swap.toToken.id}_${swap.fromToken.id}`);
+      const pool = poolsList.find(
+        (p) =>
+          ((areAddressesEqual(p.base.address, swap.fromToken.id) &&
+            areAddressesEqual(p.quote.address, swap.toToken.id)) ||
+            (areAddressesEqual(p.base.address, swap.toToken.id) &&
+              areAddressesEqual(p.quote.address, swap.fromToken.id))) &&
+          p.type === 'bancor',
+      );
 
       if (!baseToken || !quoteToken || !pool || !swap.user) {
         return null;
       }
-      const baseAmount = prettyNumber(unwei(swap.fromAmount, baseToken.decimals).abs(), DEFAULT_DECIMAL_PLACES);
-      const quoteAmount = prettyNumber(unwei(swap.toAmount, quoteToken.decimals).abs(), DEFAULT_DECIMAL_PLACES);
+      const baseAmount = prettyNumber(swap.fromAmount, baseToken.decimals);
+      const quoteAmount = prettyNumber(swap.toAmount, quoteToken.decimals);
 
       return {
         chainId,
@@ -141,7 +152,8 @@ async function prepareLegacySwaps(chain: LegacyChain, chainId: number) {
         baseAmount: baseAmount,
         quoteAmount: quoteAmount,
         price: prettyNumber(bignumber(quoteAmount).div(baseAmount), DEFAULT_DECIMAL_PLACES),
-        fees: prettyNumber(unwei(swap.conversionFee ?? 0, baseToken.decimals), DEFAULT_DECIMAL_PLACES),
+        // fee is quoted in the quote token
+        fees: prettyNumber(swap.conversionFee ?? 0, quoteToken.decimals),
         callIndex: 0,
         user: swap.user.id,
         baseId: baseToken.id,
@@ -150,12 +162,17 @@ async function prepareLegacySwaps(chain: LegacyChain, chainId: number) {
         type: 'bancor',
         block: Number(swap.transaction.blockNumber),
         tickAt: new Date(Number(swap.timestamp) * 1e3),
+        extra: {
+          conversionFee: String(swap.conversionFee ?? 0),
+          protocolFee: String(swap.protocolFee ?? 0),
+        },
       };
     });
 
     // Filter out any null values before inserting
     const filteredValues = values.filter((value) => value !== null);
 
+    logger.info({ items: filteredValues.length, all: values.length }, 'Inserting Swaps V2 for Legacy chain');
     if (filteredValues.length > 0) {
       await swapRepositoryV2.create(filteredValues); // Insert valid swaps only
     } else {

@@ -1,5 +1,5 @@
 query ($from: Int!, $to: Int!) {
-  swaps(first: 1000, block: { number_gte: $from, number: $to }, orderBy: timestamp, orderDirection: asc) {
+  swaps(first: 1000, where: { timestamp_gte: $from, timestamp_lt: $to, user_not: null }, orderBy: timestamp, orderDirection: asc) {
     id
     timestamp
     transaction {
